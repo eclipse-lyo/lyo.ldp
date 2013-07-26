@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>Linked Data Profile Reference Implementation</title>
+<link rel="stylesheet" type="text/css" href="style.css">
+<script src="//ajax.googleapis.com/ajax/libs/dojo/1.8.3/dojo/dojo.js" data-dojo-config="async: true"></script>
+<script src="http://d3js.org/d3.v3.min.js"></script>
+</head>
+<body>
+
+<h1>Linked Data Profile Reference Implementation</h1>
+
+<div id="visualization"></div>
+
+<div class="tabs">
+<a href="#" id="getTab" style="font-weight: bold;">GET</a> |
+<a href="#" id="putTab">PUT</a> |
+<a href="#" id="postTab">POST</a> |
+<a href="#" id="deleteTab">DELETE</a>
+</div>
+
+<div id="get" class="tabContent">
+<div>
+<form id="getForm">
+<input type="url" id="getURI" class="urlInput" value="http://localhost:8080/ldp/resources/" required>
+<select id="getMediaType">
+	<option>text/turtle</option>
+	<option>application/json</option>
+	<option>application/rdf+xml</option>
+</select>
+<input type="submit" value="GET">
+</form>
+</div>
+<div id="resources" class="fixed">Loading...</div>
+</div>
+
+<div id="put" class="tabContent" style="display: none;">
+<form id="putForm">
+<div id="putResult" style="display: none;" class="message"></div>
+<label for="putURI">Resource:</label>
+<input type="url" id="putURI" class="urlInput" value="" required>
+<textarea id="putContent" class="textArea" required></textarea>
+<label for="putMediaType">Media Type:</label>
+<select id="putMediaType">
+	<option>text/turtle</option>
+	<option>application/json</option>
+	<option>application/rdf+xml</option>
+</select>
+<input type="submit" value="PUT">
+</form>
+</div>
+
+<div id="post" class="tabContent" style="display: none;">
+<form id="postForm">
+<div id="postResult" style="display: none;" class="message"></div>
+<textarea id="postContent" class="textArea" required></textarea>
+<label for="postMediaType">Media Type:</label>
+<select id="postMediaType">
+	<option>text/turtle</option>
+	<option>application/json</option>
+	<option>application/rdf+xml</option>
+</select>
+<input type="submit" value="POST">
+</form>
+</div>
+
+<div id="delete" class="tabContent" style="display: none;">
+<div id="deleteResult" style="display: none;" class="message"></div>
+<form id="deleteForm">
+<label for="deleteURI">Resource:</label>
+<input type="url" id="deleteURI" class="urlInput" value="" required>
+<input type="submit" value="DELETE">
+</form>
+</div>
+
+<script>
+require([ "dojo/_base/xhr",
+          "dojo/_base/event",
+          "dojo/dom",
+          "dojo/on",
+          "dojo/query",
+          "dojo/ready",
+          "dojo/NodeList-dom"], function(xhr, event, dom, on, query, ready) {
+	function showTab(tab, content) {
+		query('.tabs a').style('font-weight', 'normal');
+		query('.tabContent').style('display', 'none');
+		dom.byId(tab).style.fontWeight = 'bold';
+		dom.byId(content).style.display = '';
+	}
+	
+	function refresh() {
+		visualize();
+		getResource();
+	}
+
+	function getResource(e) {
+		if (e) {
+			event.stop(e);
+		}
+
+		xhr.get({
+			url: dom.byId('getURI').value,
+			headers: { Accept: dom.byId('getMediaType').value },
+			handleAs: 'text',
+			load: function(data) {
+				var n = dom.byId('resources');
+				n.innerHTML = '';
+				n.appendChild(document.createTextNode(data));
+			},
+			error: function() {
+				alert('Could not get resource.');
+			}
+		})
+	}
+	
+	function putResource(e) {
+		event.stop(e);
+		xhr.put({
+			url: dom.byId('putURI').value,
+			headers: { 'Content-Type': dom.byId('putMediaType').value },
+			putData: dom.byId('putContent').value,
+			load: function(data, ioArgs) {
+				var n = dom.byId('putResult');
+				n.innerHTML = '';
+				n.appendChild(document.createTextNode('Updated resource ' + dom.byId('putURI').value));
+				n.style.display = '';
+				refresh();
+			},
+			error: function() {
+				var n = dom.byId('putResult');
+				n.innerHTML = '<span class="error">Could not update resource.</span>';
+				n.style.display = '';
+			}
+		});
+	}
+	
+	function postResource(e) {
+		event.stop(e);
+		xhr.post({
+			url: '/ldp/resources',
+			headers: { 'Content-Type': dom.byId('postMediaType').value },
+			postData: dom.byId('postContent').value,
+			load: function(data, ioArgs) {
+				var l = ioArgs.xhr.getResponseHeader('Location');
+				var n = dom.byId('postResult');
+				n.innerHTML = '';
+				n.appendChild(document.createTextNode('Created resource ' + l));
+				n.style.display = '';
+				refresh();
+			},
+			error: function() {
+				var n = dom.byId('postResult');
+				n.innerHTML = '<span class="error">Could not create resource.</span>';
+				n.style.display = '';
+			}
+		});
+	}
+
+	function deleteResource(e) {
+		event.stop(e);
+
+		xhr.del({
+			url: dom.byId('deleteURI').value,
+			load: function(data) {
+				var n = dom.byId('deleteResult');
+				n.innerHTML = '';
+				n.appendChild(document.createTextNode('Deleted resource ' + dom.byId('putURI').value));
+				n.style.display = '';
+				refresh();
+			},
+			error: function() {
+				var n = dom.byId('deleteResult');
+				n.innerHTML = '<span class="error">Could not delete resource.</span>';
+				n.style.display = '';
+				n.innerHTML = '';
+			}
+		})
+	}
+	
+	function visualize() {
+		dom.byId('visualization').innerHTML = '';
+		var width = Math.max(window.innerWidth - 50, 600),
+	    height = 400;
+
+		var color = d3.scale.category20();
+	
+		var force = d3.layout.force()
+		    .charge(-150)
+		    .linkDistance(300)
+		    .size([width, height]);
+	
+		var svg = d3.select("#visualization").append("svg")
+		    .attr("width", width)
+		    .attr("height", height);
+	
+		d3.json("/ldp/resources/visualization", function(error, graph) {
+		  force
+		      .nodes(graph.nodes)
+		      .links(graph.links)
+		      .start();
+	
+ 		  var link = svg.selectAll(".link")
+		      .data(graph.links)
+		    .enter().append("line")
+		      .attr("class", "link")
+		      .style("stroke-width", function(d) { return Math.sqrt(d.value); });
+	
+		  var node = svg.selectAll(".node")
+		      .data(graph.nodes)
+		    .enter().append("g")
+		      .attr("class", "node")
+		      .call(force.drag);
+		  
+		  node.append("circle").attr("r", 5)
+		      .style("fill", function(d) { return color(d.group); })
+	
+		  node.append("text")
+			  .attr("x", 12)
+		      .attr("dy", ".35em")
+		      .text(function(d) { return d.name; });
+	
+		  force.on("tick", function() {
+		    link.attr("x1", function(d) { return d.source.x; })
+		        .attr("y1", function(d) { return d.source.y; })
+		        .attr("x2", function(d) { return d.target.x; })
+		        .attr("y2", function(d) { return d.target.y; });
+	
+		    node.attr("transform", function(d) { 
+	            return "translate(" + d.x + "," + d.y + ")"; });
+		  });
+		});
+	}
+	
+	ready(function() {
+		on(dom.byId('getTab'), 'click', function(e) {
+			event.stop(e);
+			showTab('getTab', 'get');
+		});
+		on(dom.byId('putTab'), 'click', function(e) {
+			event.stop(e);
+			showTab('putTab', 'put');
+		});
+		on(dom.byId('postTab'), 'click', function(e) {
+			event.stop(e);
+			showTab('postTab', 'post');
+		});
+		on(dom.byId('deleteTab'), 'click', function(e) {
+			event.stop(e);
+			showTab('deleteTab', 'delete');
+		});
+		on(dom.byId('getForm'), 'submit', getResource);
+		on(dom.byId('putForm'), 'submit', putResource);
+		on(dom.byId('postForm'), 'submit', postResource);
+		on(dom.byId('deleteForm'), 'submit', deleteResource);
+		visualize();
+		getResource();	
+	});
+});
+</script>
+
+</body>
+</html>

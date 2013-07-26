@@ -1,0 +1,4 @@
+# The following is the POST representation for asset a5
+@prefix o:       <http://example.org/ontology/>.
+<> a o:Stock .
+<> o:value 25000 .

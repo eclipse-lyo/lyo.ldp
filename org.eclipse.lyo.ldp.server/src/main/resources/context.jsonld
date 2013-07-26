@@ -1,0 +1,33 @@
+{
+	"@context":
+	{
+	    "Container": "http://www.w3.org/ns/ldp#Container",
+	    "member":
+	    {
+	      "@id": "http://www.w3.org/2000/01/rdf-schema#member",
+	      "@type": "@id"
+	    },
+	    "title": "http://purl.org/dc/terms/title",
+	    "description": "http://purl.org/dc/terms/description",
+	    "creator":
+	    {
+	      "@id": "http://purl.org/dc/terms/creator",
+	      "@type": "@id"
+	    },
+	    "contributor":
+	    {
+	      "@id": "http://purl.org/dc/terms/contributor",
+	      "@type": "@id"
+	    },
+	    "created":
+	    {
+	      "@id": "http://purl.org/dc/terms/created",
+	      "@type": "http://www.w3.org/2001/XMLSchema#dateTime"
+	    },
+	    "modified":
+	    {
+	      "@id": "http://purl.org/dc/terms/modified",
+	      "@type": "http://www.w3.org/2001/XMLSchema#dateTime"
+	    }
+    }
+}

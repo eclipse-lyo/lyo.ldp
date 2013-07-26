@@ -1,0 +1,10 @@
+CONSTRUCT {
+  <http://example.org/netWorth/nw1> <http://example.org/ontology/asset> ?m . 
+}
+WHERE {
+  <http://example.org/netWorth/nw1> <http://example.org/ontology/asset> ?m . 
+  GRAPH ?m {
+    ?s1 <http://example.org/ontology/value> ?p1 .
+  }
+}
+ORDER BY ?p1 OFFSET 0 LIMIT 2

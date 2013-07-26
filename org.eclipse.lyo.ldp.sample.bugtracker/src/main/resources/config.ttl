@@ -1,0 +1,7 @@
+# The following is the configuration info for http://example.org/netWorth/nw1/assetContainer
+@prefix ldpimpl:  <http://example.com/ns/LDPImpl#> .
+@prefix rdf:     <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix dcterms: <http://purl.org/dc/terms/> .
+
+#<> ldpimpl:memberInfo true . # Include member info in BPC rep (default: false)
+<> ldpimpl:resourceURIPrefix "bug" . # Prefix (appended to container URI) for POSTed resourced (default: "res")
