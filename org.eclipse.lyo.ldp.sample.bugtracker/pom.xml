@@ -17,5 +17,10 @@
 			<artifactId>ldp-server</artifactId>
 			<version>0.0.1-SNAPSHOT</version>
 		</dependency>
+		<dependency>
+			<groupId>org.apache.jena</groupId>
+			<artifactId>jena-tdb</artifactId>
+			<version>0.10.1</version>
+		</dependency>
 	</dependencies>
 </project>

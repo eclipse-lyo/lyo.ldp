@@ -64,6 +64,7 @@ public interface LDPContainer {
 	 * "text/turtle", and "application/x-turtle".</p>
 	 * @param stream the input stream containing the posted resource representation.
 	 * @param contentType the Content-Type of the input stream.
+	 * @return the new resource URI
 	 */
 	public abstract String post(InputStream stream, String contentType);
 

@@ -1,0 +1,8 @@
+@prefix foaf: <http://xmlns.com/foaf/0.1/> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>.
+
+<>
+   a foaf:Person ;
+   foaf:name "John Doe" ;
+   foaf:mbox <mailto:johndoe@example.com> ;
+   foaf:interest <http://www.w3.org/2012/ldp/wiki/Main_Page> , <http://eclipse.org/lyo/> .

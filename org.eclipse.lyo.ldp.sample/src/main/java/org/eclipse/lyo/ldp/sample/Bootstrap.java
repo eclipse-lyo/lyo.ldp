@@ -21,7 +21,6 @@ import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
 
 import org.eclipse.lyo.ldp.sample.bugtracker.BugTrackerSample;
-import org.eclipse.lyo.ldp.sample.networth.NetWorthSample;
 import org.eclipse.lyo.ldp.server.LDPContainer;
 import org.eclipse.lyo.ldp.server.jena.JenaLDPService;
 
@@ -30,7 +29,7 @@ public class Bootstrap implements ServletContextListener {
 	@Override
 	public void contextInitialized(ServletContextEvent e) {
 		LDPContainer container = JenaLDPService.getJenaRootContainer();
-		NetWorthSample.load(container);
+		//NetWorthSample.load(container);
 		BugTrackerSample.load(container);
 	}
 
