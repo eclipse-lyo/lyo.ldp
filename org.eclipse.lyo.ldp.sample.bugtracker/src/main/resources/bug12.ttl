@@ -7,6 +7,4 @@
 
 <> a bt:Bug;
       dcterms:title "Product B is too slow";
-      dcterms:creator <http://example.org/users/johndoe>;
-      dcterms:created "2013-05-07T10:00"^^xsd:dateTime;
       bt:isInState "InProgress" . 

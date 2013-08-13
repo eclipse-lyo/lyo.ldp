@@ -7,6 +7,4 @@
 
 <> a bt:Bug;
       dcterms:title "Product B does not make coffee";
-      dcterms:creator <http://example.org/users/johndoe>;
-      dcterms:created "2013-05-05T10:00"^^xsd:dateTime;
       bt:isInState "New" .
