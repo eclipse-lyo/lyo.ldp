@@ -53,6 +53,15 @@ public abstract class LDPService {
 	public static final String ROOT_APP_URL = "http://localhost:8080/ldp";
 	public static final String ROOT_CONTAINER_URL = ROOT_APP_URL + "/resources/";
 	
+	public static final String[] ACCEPT_POST_CONTENT_TYPES = {
+			LDPConstants.CT_APPLICATION_RDFXML, 
+			LDPConstants.CT_TEXT_TURTLE,
+			LDPConstants.CT_APPLICATION_XTURTLE,
+			LDPConstants.CT_APPLICATION_JSON,
+			LDPConstants.CT_APPLICATION_LD_JSON };
+	
+	public static final String ACCEPT_POST_CONTENT_TYPES_STR = encodeAccept(ACCEPT_POST_CONTENT_TYPES);
+	
 //	static {
 //		// Check to see if we should bootstrap some examples.
 //		if (rootContainer == null) {
@@ -180,7 +189,12 @@ public abstract class LDPService {
     
     @POST
     @Path("{id}")
-    @Consumes({ LDPConstants.CT_APPLICATION_RDFXML, LDPConstants.CT_TEXT_TURTLE, LDPConstants.CT_APPLICATION_XTURTLE, LDPConstants.CT_APPLICATION_JSON, LDPConstants.CT_APPLICATION_LD_JSON })
+    @Consumes( {
+		LDPConstants.CT_APPLICATION_RDFXML, 
+		LDPConstants.CT_TEXT_TURTLE,
+		LDPConstants.CT_APPLICATION_XTURTLE,
+		LDPConstants.CT_APPLICATION_JSON,
+		LDPConstants.CT_APPLICATION_LD_JSON } )
     public Response addResource(InputStream content, @PathParam("id") String id) {
     	String loc = getRootContainer().post(content, stripCharset(fRequestHeaders.getMediaType().toString()));
     	if (loc != null)
@@ -240,6 +254,14 @@ public abstract class LDPService {
     	return url.toString();
     }
     
+    public static String encodeAccept(String[] contentTypes) {
+    	String result = "";
+    	for (int i = 0; i < contentTypes.length; i++) {
+			result += contentTypes[i];
+			if (i+1 < contentTypes.length) result += ", ";
+		}
+    	return result;
+    }
     
 
 }

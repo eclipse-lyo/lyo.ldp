@@ -23,12 +23,14 @@ import java.util.Set;
 import javax.ws.rs.core.Application;
 
 import org.eclipse.lyo.ldp.server.jena.JenaLDPService;
+import org.eclipse.lyo.ldp.server.service.HttpHeaderResponseFilter;
 
 public class LDPApplication extends Application {
 	@Override
 	public Set<Class<?>> getClasses() {
         Set<Class<?>> classes = new HashSet<Class<?>>();
         classes.add(JenaLDPService.class);
+        classes.add(HttpHeaderResponseFilter.class);
         return classes;
 	}
 }

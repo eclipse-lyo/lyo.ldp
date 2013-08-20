@@ -44,6 +44,9 @@ public class LDPConstants
 	public static final String CT_TEXT_TURTLE = "text/turtle";
 	public static final String CT_TEXT_TRIG = "text/trig";
 	
+	// HTTP Headers
+	public static final String HDR_ACCEPT_POST = "Accept-Post";
+	
 	// RDF Property names both namespace and local
 	public static final String PROP_LNAME_MEMBERSHIP_SUBJECT = "membershipSubject";
 	public static final String PROP_MEMBERSHIP_SUBJECT = nsName(PROP_LNAME_MEMBERSHIP_SUBJECT);
