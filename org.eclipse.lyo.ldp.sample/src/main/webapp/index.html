@@ -54,7 +54,15 @@
 <div id="post" class="tabContent" style="display: none;">
 <form id="postForm">
 <div id="postResult" style="display: none;" class="message"></div>
-<textarea id="postContent" class="textArea" required></textarea>
+<textarea id="postContent" class="textArea" required>
+@prefix dcterms: &lt;http://purl.org/dc/terms/&gt;.
+@prefix rdf:     &lt;http://www.w3.org/1999/02/22-rdf-syntax-ns#&gt;.
+@prefix bt:      &lt;http://example.org/vocab/bugtracker#&gt;.
+
+&lt;&gt; a bt:Bug;
+      dcterms:title "Product C crashes when shutting down.";
+      bt:isInState "New" . 
+</textarea>
 <label for="postMediaType">Media Type:</label>
 <select id="postMediaType">
 	<option>text/turtle</option>
