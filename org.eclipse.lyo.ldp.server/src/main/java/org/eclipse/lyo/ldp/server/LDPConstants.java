@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2013 IBM Corporation.
+ * Copyright (c) 2013, 2014 IBM Corporation.
  *
  *  All rights reserved. This program and the accompanying materials
  *  are made available under the terms of the Eclipse Public License v1.0
@@ -14,6 +14,7 @@
  *     Frank Budinsky - initial API and implementation
  *     Steve Speicher - initial API and implementation
  *     Samuel Padgett - initial API and implementation
+ *     Steve Speicher - updates for recent LDP spec changes
  *******************************************************************************/
 package org.eclipse.lyo.ldp.server;
 
@@ -46,6 +47,11 @@ public class LDPConstants
 	
 	// HTTP Headers
 	public static final String HDR_ACCEPT_POST = "Accept-Post";
+	public static final String HDR_LINK = "Link";
+	public static final String HDR_LINK_TYPE = "rel=\"type\"";
+	public static final String HDR_LINK_NEXT = "rel=\"next\"";
+	public static final String HDR_SLUG = "Slug";
+	
 	
 	// RDF Property names both namespace and local
 	public static final String PROP_LNAME_MEMBERSHIP_SUBJECT = "membershipSubject";
@@ -54,6 +60,10 @@ public class LDPConstants
 	public static final String PROP_MEMBERSHIP_PREDICATE = nsName(PROP_LNAME_MEMBERSHIP_PREDICATE);
 	public static final String PROP_LNAME_MEMBERSHIP_OBJECT = "membershipObject";
 	public static final String PROP_MEMBERSHIP_OBJECT = nsName(PROP_LNAME_MEMBERSHIP_OBJECT);
+	public static final String PROP_LNAME_MEMBER = "member";
+	public static final String PROP_MEMBER = nsName(PROP_LNAME_MEMBER);
+	public static final String PROP_LNAME_CONTAINS = "contains";
+	public static final String PROP_CONTAINS = nsName(PROP_LNAME_CONTAINS);
 	public static final String PROP_LNAME_PAGEOF = "pageOf";
 	public static final String PROP_PAGEOF = nsName(PROP_LNAME_PAGEOF);
 	public static final String PROP_LNAME_NEXTPAGE = "nextPage";

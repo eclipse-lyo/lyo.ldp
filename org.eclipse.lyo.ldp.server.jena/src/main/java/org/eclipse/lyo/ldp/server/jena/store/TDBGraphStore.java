@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2013 IBM Corporation.
+ * Copyright (c) 2013, 2014 IBM Corporation.
  *
  *  All rights reserved. This program and the accompanying materials
  *  are made available under the terms of the Eclipse Public License v1.0
@@ -14,6 +14,7 @@
  *     Frank Budinsky - initial API and implementation
  *     Steve Speicher - initial API and implementation
  *     Samuel Padgett - initial API and implementation
+ *     Steve Speicher - updates for recent LDP spec changes
  *******************************************************************************/
 package org.eclipse.lyo.ldp.server.jena.store;
 
@@ -104,15 +105,22 @@ public class TDBGraphStore implements GraphStore
 		}
 	}
 
-	public String createGraph(String graphURIPrefix)
+	public String createGraph(String containerURI, String graphURIPrefix, String nameHint)
 	{
-		String graphURI;
+		String graphURI = null;
 		Lock lock = fDataset.getLock();
 		lock.enterCriticalSection(Lock.WRITE);
 		try {
-			for (long count = 1; ; ++count) {
-				graphURI = graphURIPrefix + count;
-				if (!fDataset.containsNamedModel(graphURI)) break;
+			if (nameHint != null && nameHint.length() > 0) {
+				graphURI = appendURISegment(containerURI,  nameHint);
+				if (fDataset.containsNamedModel(graphURI)) graphURI = null;
+			} 
+			if (graphURI == null) {
+				// TODO: Use count # from container so we don't have to always start at 1
+				for (long count = 1; ; ++count) {
+					graphURI = appendURISegment(containerURI, graphURIPrefix + count);
+					if (!fDataset.containsNamedModel(graphURI)) break;
+				}
 			}
 			// Add a dummy triple, just to allocate the graph
 			Model model = fDataset.getNamedModel(graphURI);
@@ -159,4 +167,9 @@ public class TDBGraphStore implements GraphStore
 		} finally { lock.leaveCriticalSection(); }
 	}
 
+
+	public static String appendURISegment(String base, String append)
+	{
+		return base.endsWith("/") ? base + append : base + "/" + append;
+	}
 }

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2013 IBM Corporation.
+ * Copyright (c) 2013, 2014 IBM Corporation.
  *
  *  All rights reserved. This program and the accompanying materials
  *  are made available under the terms of the Eclipse Public License v1.0
@@ -14,6 +14,7 @@
  *     Frank Budinsky - initial API and implementation
  *     Steve Speicher - initial API and implementation
  *     Samuel Padgett - initial API and implementation
+ *     Steve Speicher - updates for recent LDP spec changes
  *******************************************************************************/
 package org.eclipse.lyo.ldp.server;
 
@@ -21,7 +22,17 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
-public interface LDPContainer {
+public abstract class LDPContainer extends LDPRDFResource{
+	
+	/**
+	 * Often a LDPcontainer will want to have some counter to
+	 * help with LDPR name assignment, such as: res1, res2, ..., res87.
+	 */
+	int resourceSuffixCount=0;
+
+	public LDPContainer(String resourceURI, Object model) {
+		super(resourceURI, model);
+	}
 
 	/**
 	 * Set the configuration parameters.
@@ -64,12 +75,14 @@ public interface LDPContainer {
 	 * "text/turtle", and "application/x-turtle".</p>
 	 * @param stream the input stream containing the posted resource representation.
 	 * @param contentType the Content-Type of the input stream.
+	 * @param user The user URI to use for dcterms:creator
+	 * @param nameHint Value from Slug header or other source, used to determine the newly created resource's URL 
 	 * @return the new resource URI
 	 */
 	public abstract String post(InputStream stream, String contentType);
 
 	public abstract String post(InputStream stream, String contentType,
-			String user);
+			String user, String nameHint);
 
 	/**
 	 * Set the value of the container or member resource to the content of the specified stream.

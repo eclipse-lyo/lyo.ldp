@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2013 IBM Corporation.
+ * Copyright (c) 2013, 2014 IBM Corporation.
  *
  *  All rights reserved. This program and the accompanying materials
  *  are made available under the terms of the Eclipse Public License v1.0
@@ -14,6 +14,7 @@
  *     Frank Budinsky - initial API and implementation
  *     Steve Speicher - initial API and implementation
  *     Samuel Padgett - initial API and implementation
+ *     Steve Speicher - updates for recent LDP spec changes
  *******************************************************************************/
 package org.eclipse.lyo.ldp.server.service;
 
@@ -42,12 +43,15 @@ import javax.ws.rs.core.UriInfo;
 import org.apache.commons.io.IOUtils;
 import org.eclipse.lyo.ldp.server.LDPConstants;
 import org.eclipse.lyo.ldp.server.LDPContainer;
+import org.eclipse.lyo.ldp.server.LDPResource;
+import org.eclipse.lyo.ldp.server.LDPResourceManager;
 
-@Path("/")
+@Path("/{path:.*}")
 public abstract class LDPService {
 	
 	@Context HttpHeaders fRequestHeaders;
 	@Context UriInfo fRequestUrl;
+	@PathParam("path") String fPath;
 	
 	// TODO: Need to properly setup public URL
 	public static final String ROOT_APP_URL = "http://localhost:8080/ldp";
@@ -79,40 +83,21 @@ public abstract class LDPService {
 	protected abstract void resetContainer();
 	protected abstract LDPContainer getRootContainer();
 	
+	protected abstract LDPResourceManager getResourceManger();
+	
     public LDPService() {
     }
 
-    @GET
-    @Path("{id}")
-    @Produces(LDPConstants.CT_APPLICATION_RDFXML)
-    public StreamingOutput getResourceApplicationRDFXML() {	
-        return getResourceRDF(LDPConstants.CT_APPLICATION_RDFXML);
-    }
-    
     @GET
     @Produces(LDPConstants.CT_APPLICATION_RDFXML)
     public StreamingOutput getContainerApplicationRDFXML() {	
         return getResourceRDF(LDPConstants.CT_APPLICATION_RDFXML);
     }
-    
-    @GET
-    @Path("{id}")
-    @Produces(LDPConstants.CT_TEXT_TURTLE)
-    public StreamingOutput getResourceTextTurtle() {	
-        return getResourceRDF(LDPConstants.CT_TEXT_TURTLE);
-    }
-
+  
     @GET
     @Produces(LDPConstants.CT_TEXT_TURTLE)
     public StreamingOutput getContainerTextTurtle() {	
         return getResourceRDF(LDPConstants.CT_TEXT_TURTLE);
-    }
-
-    @GET
-    @Path("{id}")
-    @Produces(LDPConstants.CT_APPLICATION_XTURTLE)
-    public StreamingOutput getResourceApplicationXTurtle() {	
-        return getResourceRDF(LDPConstants.CT_APPLICATION_XTURTLE);
     }
     
     @GET
@@ -122,36 +107,18 @@ public abstract class LDPService {
     }
 
     @GET
-    @Path("{id}")
-    @Produces({ LDPConstants.CT_APPLICATION_JSON, LDPConstants.CT_APPLICATION_LD_JSON })
-    public StreamingOutput getResourceJSON() {	
-        return getResourceRDF(LDPConstants.CT_APPLICATION_JSON);
-    }
-
-    @GET
     @Produces({ LDPConstants.CT_APPLICATION_JSON, LDPConstants.CT_APPLICATION_LD_JSON })
     public StreamingOutput getContainerJSON() {	
         return getResourceRDF(LDPConstants.CT_APPLICATION_JSON);
     }
-    
-    private StreamingOutput getResourceRDF(final String type) {	
-        return new StreamingOutput() {
-            public void write(OutputStream output) throws IOException, WebApplicationException {
-        		try {
-        			getRootContainer().get(getConanicalURL(fRequestUrl.getRequestUri()), output, type);
-        		} catch (IllegalArgumentException e) { 
-        			throw new WebApplicationException(Response.status(Status.NOT_FOUND).build()); 
-        		}
-            }
-        };
-    }
-    
+
     @GET
     @Produces(LDPConstants.CT_TEXT_HTML)
     public StreamingOutput getResourceHTML() {
     	return null; // TODO fix me
     }
-
+    
+    // TODO: Validate we need both forms of PUT
     @PUT
     @Consumes({ LDPConstants.CT_APPLICATION_RDFXML, LDPConstants.CT_TEXT_TURTLE, LDPConstants.CT_APPLICATION_XTURTLE })
     public Response updateResource(InputStream content) {
@@ -176,35 +143,51 @@ public abstract class LDPService {
     	}
         return Response.status(Status.NO_CONTENT).build();
     }
-
+    
     @POST
     @Consumes({ LDPConstants.CT_APPLICATION_RDFXML, LDPConstants.CT_TEXT_TURTLE, LDPConstants.CT_APPLICATION_XTURTLE, LDPConstants.CT_APPLICATION_JSON, LDPConstants.CT_APPLICATION_LD_JSON })
-    public Response addResource(InputStream content) {
-    	String loc = getRootContainer().post(content, stripCharset(fRequestHeaders.getMediaType().toString()));
+    public Response createResource(InputStream content) {
+    	
+    	// Look up content at Request-URI
+    	//   if null return 404
+    	//   if not container return 400
+    	//   else follow model for container
+    	LDPResource ldpR = getResourceManger().get(getConanicalURL(fRequestUrl.getRequestUri()));
+    	if (ldpR == null) return Response.status(Status.NOT_FOUND).build();
+    	else if (!(ldpR instanceof LDPContainer))  return Response.status(Status.BAD_REQUEST).build();  // TODO: Provide some details in response
+    	
+    	//   else follow model for POST against container
+    	
+    	LDPContainer ldpC = (LDPContainer)ldpR;
+    	
+    	String slug = fRequestHeaders.getHeaderString(LDPConstants.HDR_SLUG);
+    	
+    	// HACK: Do we need to mint the new resource URI early?
+    	/*String newResURI = ldpC.mintNewResourceName(slug); */
+    	
+    	//  Look at headers (rel='type') and content to determine kind + interaction model
+    	/* List<String> typeHeaders = getLDPTypesFromTypeHeader(fRequestHeaders); */
+    	
+    	//   if null/no-type and RDF content then create LDP-RR
+    	/* @SuppressWarnings("rawtypes")
+		Class interactionModel = LDPRDFResource.class; */
+    	
+    	//   TODO: if null/no-type and NOT RDF content then create LDP-BR and meta-LDP-RR (note: this could be separate @Consumes(XML, GIF, ...)
+    	
+    	//   TODO: if LDPC/w-LDPR interaction model, create container and mark as LDPR model
+    	
+    	//   else create LDPC with default interaction model (based on rdf:type)
+    	String loc = ldpC.post(content, stripCharset(fRequestHeaders.getMediaType().toString()), null, slug);
     	if (loc != null)
-    		return Response.status(Status.CREATED).header(HttpHeaders.LOCATION, loc).build();
+    		return Response.status(Status.CREATED).header(HttpHeaders.LOCATION, loc).
+    				header(LDPConstants.HDR_LINK_TYPE, "href='"+LDPConstants.CLASS_RESOURCE+"'").build();
+    		// TODO: Send back right Link: rel='type'
     	else
     		return Response.status(Status.CONFLICT).build();
     }
     
     @POST
-    @Path("{id}")
-    @Consumes( {
-		LDPConstants.CT_APPLICATION_RDFXML, 
-		LDPConstants.CT_TEXT_TURTLE,
-		LDPConstants.CT_APPLICATION_XTURTLE,
-		LDPConstants.CT_APPLICATION_JSON,
-		LDPConstants.CT_APPLICATION_LD_JSON } )
-    public Response addResource(InputStream content, @PathParam("id") String id) {
-    	String loc = getRootContainer().post(content, stripCharset(fRequestHeaders.getMediaType().toString()));
-    	if (loc != null)
-    		return Response.status(Status.CREATED).header(HttpHeaders.LOCATION, loc).build();
-    	else
-    		return Response.status(Status.CONFLICT).build();
-    }
-
-    @POST
-    @Path("{id}")
+    @Path("{id:.*}")
     @Consumes(LDPConstants.CT_APPLICATION_SPARQLQUERY)
     @Produces(LDPConstants.CT_APPLICATION_SPARQLRESULTSJSON)
     public StreamingOutput postQuery(final InputStream content, @PathParam("id") String id) {
@@ -226,7 +209,6 @@ public abstract class LDPService {
     }
 
     @DELETE
-    @Path("{id}")
     public Response deleteResource() {
     	String uri = getConanicalURL(fRequestUrl.getRequestUri());
     	getRootContainer().delete(uri);
@@ -235,11 +217,23 @@ public abstract class LDPService {
     
     @PATCH
     @Path("id")
-    @Consumes(LDPConstants.CT_TEXT_TRIG)    
+    @Consumes(LDPConstants.CT_TEXT_TURTLE)    
     public Response patchResource(final InputStream content, @PathParam("id") String id) {
     	getRootContainer().patch(getConanicalURL(fRequestUrl.getRequestUri()), content, stripCharset(fRequestHeaders.getMediaType().toString()));
 
       	return Response.status(Status.OK).build();
+    }
+    
+    private StreamingOutput getResourceRDF(final String type) {	
+        return new StreamingOutput() {
+            public void write(OutputStream output) throws IOException, WebApplicationException {
+        		try {
+        			getRootContainer().get(getConanicalURL(fRequestUrl.getRequestUri()), output, type);
+        		} catch (IllegalArgumentException e) { 
+        			throw new WebApplicationException(Response.status(Status.NOT_FOUND).build()); 
+        		}
+            }
+        };
     }
     
     String stripCharset(String contentType) {
@@ -263,6 +257,9 @@ public abstract class LDPService {
     	return result;
     }
     
-
+    public static String parseSlug(String header) {
+    	return header;
+    }
+    
 }
 

@@ -9,6 +9,3 @@
    dcterms:title "The assets of JohnZSmith";
    ldp:membershipSubject <http://example.org/netWorth/nw1>;
    ldp:membershipPredicate o:asset.
-
-<http://example.org/netWorth/nw1>
-   a o:NetWorth.
