@@ -17,13 +17,18 @@
  *******************************************************************************/
 package org.eclipse.lyo.ldp.server.jena;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintWriter;
+import java.io.Writer;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Method;
 import java.util.Calendar;
 import java.util.HashSet;
 import java.util.Set;
+
+import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.core.Response.Status;
 
 import org.apache.jena.riot.WebContent;
 import org.eclipse.lyo.ldp.server.LDPConstants;
@@ -31,13 +36,6 @@ import org.eclipse.lyo.ldp.server.LDPContainer;
 import org.eclipse.lyo.ldp.server.jena.store.GraphStore;
 import org.eclipse.lyo.ldp.server.jena.vocabulary.LDP;
 
-import com.github.jsonldjava.core.JSONLD;
-import com.github.jsonldjava.core.JSONLDProcessingError;
-import com.github.jsonldjava.core.JSONLDTripleCallback;
-import com.github.jsonldjava.core.Options;
-import com.github.jsonldjava.impl.JenaRDFParser;
-import com.github.jsonldjava.impl.JenaTripleCallback;
-import com.github.jsonldjava.utils.JSONUtils;
 import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.rdf.model.ModelFactory;
 import com.hp.hpl.jena.rdf.model.NodeIterator;
@@ -283,12 +281,24 @@ public class JenaLDPContainer implements LDPContainer
 	private Model readModel(String baseURI, InputStream stream, String contentType) {
 		final Model model;
 		if (LDPConstants.CT_APPLICATION_JSON.equals(contentType) || LDPConstants.CT_APPLICATION_LD_JSON.equals(contentType)) {
-			final JSONLDTripleCallback callback = new JenaTripleCallback();
+			if (!isJSONLDPresent()) {
+				throw new WebApplicationException(Status.UNSUPPORTED_MEDIA_TYPE);
+			}
+
 	        try {
-				model = (Model) JSONLD.toRDF(JSONUtils.fromInputStream(stream), callback);
-			} catch (JSONLDProcessingError e) {
-				throw new RuntimeException(e);
-			} catch (IOException e) {
+	        	// Use reflection to invoke the optional jsonld-java dependency.
+	        	Class<?> jsonldTripleCallback = Class.forName("com.github.jsonldjava.core.JSONLDTripleCallback");
+	        	Class<?> jenaTripleCallback = Class.forName("com.github.jsonldjava.impl.JenaTripleCallback");
+				Class<?> jsonldUtilsClass = Class.forName("com.github.jsonldjava.utils.JSONUtils");
+				Class<?> jsonldClass = Class.forName("com.github.jsonldjava.core.JSONLD");
+
+	        	//final JSONLDTripleCallback callback = new JenaTripleCallback();
+				//model = (Model) JSONLD.toRDF(JSONUtils.fromInputStream(stream), callback);
+				Method fromInputStreamMethod = jsonldUtilsClass.getMethod("fromInputStream", InputStream.class);
+				Object input = fromInputStreamMethod.invoke(null, stream);
+				Method toRDFMethod = jsonldClass.getMethod("toRDF", Object.class, jsonldTripleCallback);
+				model = (Model) toRDFMethod.invoke(null, input, jenaTripleCallback.newInstance());
+			} catch (Exception e) {
 				throw new RuntimeException(e);
 			}
 		} else {
@@ -370,12 +380,37 @@ public class JenaLDPContainer implements LDPContainer
 			graph = addMemberInformation(graph);
 		
 		if (LDPConstants.CT_APPLICATION_JSON.equals(contentType)) {
+			if (!isJSONLDPresent()) {
+				throw new WebApplicationException(Status.UNSUPPORTED_MEDIA_TYPE);
+			}
+
 			try {
-				Object json = JSONLD.fromRDF(graph, new JenaRDFParser());
+				// Use Java reflection for the optional jsonld-java depedency.
+				Class<?> jsonldClass = Class.forName("com.github.jsonldjava.core.JSONLD");
+				Class<?> rdfParserClass = Class.forName("com.github.jsonldjava.core.RDFParser");
+				Class<?> jsonldUtilsClass = Class.forName("com.github.jsonldjava.utils.JSONUtils");
+				Class<?> jenaRDFParserClass = Class.forName("com.github.jsonldjava.impl.JenaRDFParser");
+				Class<?> optionsClass = Class.forName("com.github.jsonldjava.core.Options");
+
+				//Object json = JSONLD.fromRDF(graph, new JenaRDFParser());
+				Method fromRDFMethod = jsonldClass.getMethod("fromRDF", Object.class, rdfParserClass);
+				Object json = fromRDFMethod.invoke(null, graph, jenaRDFParserClass.newInstance());
+
 				InputStream is = getClass().getClassLoader().getResourceAsStream("context.jsonld");
-				Object context = JSONUtils.fromInputStream(is);
-				json = JSONLD.compact(json, context, new Options("", true));
-				JSONUtils.writePrettyPrint(new PrintWriter(outStream), json);
+
+				//Object context = JSONUtils.fromInputStream(is);
+				Method fromInputStreamMethod = jsonldUtilsClass.getMethod("fromInputStream", InputStream.class);
+				Object context = fromInputStreamMethod.invoke(null, is);
+				
+				//json = JSONLD.compact(json, context, new Options("", true));
+				Method compactMethod = jsonldClass.getMethod("compact", Object.class, Object.class, optionsClass);
+				Constructor<?> optionsContructor = optionsClass.getDeclaredConstructor(String.class, Boolean.class);
+				Object options = optionsContructor.newInstance("", true);
+				json = compactMethod.invoke(null, json, context, options);
+
+				//JSONUtils.writePrettyPrint(new PrintWriter(outStream), json);
+				Method writePrettyPrintMethod = jsonldUtilsClass.getMethod("writePrettyPrint", Writer.class, Object.class);
+				writePrettyPrintMethod.invoke(null, new PrintWriter(outStream), json);
 			} catch (Exception e) {
 				e.printStackTrace();
 				throw new RuntimeException(e);
@@ -611,4 +646,16 @@ public class JenaLDPContainer implements LDPContainer
 		return base.endsWith("/") ? base + append : base + "/" + append;
 	}
 
+	/*
+	 * Check if the jsonld-java library is present.
+	 */
+	private boolean isJSONLDPresent() {
+		try {
+			Class.forName("com.github.jsonldjava.core.JSONLD");
+			Class.forName("com.github.jsonldjava.impl.JenaRDFParser");
+			return true;
+		} catch (Throwable t) {
+			return false;
+		}
+	}
 }
