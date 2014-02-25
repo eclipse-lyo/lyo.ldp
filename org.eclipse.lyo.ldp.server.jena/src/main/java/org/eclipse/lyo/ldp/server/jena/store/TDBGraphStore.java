@@ -15,6 +15,7 @@
  *     Steve Speicher - initial API and implementation
  *     Samuel Padgett - initial API and implementation
  *     Steve Speicher - updates for recent LDP spec changes
+ *     Steve Speicher - make root URI configurable 
  *******************************************************************************/
 package org.eclipse.lyo.ldp.server.jena.store;
 
@@ -118,7 +119,7 @@ public class TDBGraphStore implements GraphStore
 			if (graphURI == null) {
 				// TODO: Use count # from container so we don't have to always start at 1
 				for (long count = 1; ; ++count) {
-					graphURI = appendURISegment(containerURI, graphURIPrefix + count);
+					graphURI = graphURIPrefix + count;
 					if (!fDataset.containsNamedModel(graphURI)) break;
 				}
 			}

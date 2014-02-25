@@ -12,26 +12,27 @@
  *  Contributors:
  *  
  *     Steve Speicher - Updates for recent LDP spec changes
+ *     Steve Speicher - make root URI configurable 
  *******************************************************************************/
 package org.eclipse.lyo.ldp.server;
 
 public class LDPResource {
 	
-	protected String URI;
-	protected Object model;
+	protected String fURI;
+	protected Object fModel;
 	
 	public LDPResource(String resourceURI, Object model) {
-		this.URI = resourceURI;
-		this.model = model;
+		this.fURI = resourceURI;
+		this.fModel = model;
 	}
 	
-	public String getURI() { return URI; }
+	public String getURI() { return fURI; }
 	
 	public void setURI(String resourceURI)
-	{ this.URI = resourceURI; }
+	{ this.fURI = resourceURI; }
 
-	public Object getModel() { return model; }
+	public Object getModel() { return fModel; }
 	
 	public void setModel(Object model)
-	{ this.model = model; }
+	{ this.fModel = model; }
 }

@@ -15,6 +15,7 @@
  *     Steve Speicher - initial API and implementation
  *     Samuel Padgett - initial API and implementation
  *     Steve Speicher - updates for recent LDP spec changes
+ *     Steve Speicher - make root URI configurable 
  *******************************************************************************/
 package org.eclipse.lyo.ldp.server.jena;
 
@@ -38,8 +39,6 @@ public class JenaLDPService extends LDPService {
 		String stuff="<"+ROOT_CONTAINER_URL+"> a <" + LDP.Container.getURI() + ">.";
 		rootContainer.put(new ByteArrayInputStream( stuff.getBytes() ), LDPConstants.CT_TEXT_TURTLE);
 		resManager = new JenaLDPResourceManager(rootContainer.fGraphStore, rootContainer.fPageStore);
-		
-		
 	}
 
 	private static void reset() {

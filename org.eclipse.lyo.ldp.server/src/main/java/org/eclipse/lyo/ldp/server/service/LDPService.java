@@ -15,6 +15,7 @@
  *     Steve Speicher - initial API and implementation
  *     Samuel Padgett - initial API and implementation
  *     Steve Speicher - updates for recent LDP spec changes
+ *     Steve Speicher - make root URI configurable 
  *******************************************************************************/
 package org.eclipse.lyo.ldp.server.service;
 
@@ -52,9 +53,9 @@ public abstract class LDPService {
 	@Context HttpHeaders fRequestHeaders;
 	@Context UriInfo fRequestUrl;
 	@PathParam("path") String fPath;
+	private String fPublicURI = ROOT_APP_URL;
 	
-	// TODO: Need to properly setup public URL
-	public static final String ROOT_APP_URL = "http://localhost:8080/ldp";
+	public static final String ROOT_APP_URL = (System.getProperty("ldp.rooturi") != null) ? System.getProperty("ldp.rooturi") : "http://localhost:8080/ldp";
 	public static final String ROOT_CONTAINER_URL = ROOT_APP_URL + "/resources/";
 	
 	public static final String[] ACCEPT_POST_CONTENT_TYPES = {
@@ -66,27 +67,16 @@ public abstract class LDPService {
 	
 	public static final String ACCEPT_POST_CONTENT_TYPES_STR = encodeAccept(ACCEPT_POST_CONTENT_TYPES);
 	
-//	static {
-//		// Check to see if we should bootstrap some examples.
-//		if (rootContainer == null) {
-//			resetContainer();
-//			// Create an empty container.
-//			String stuff="<"+ROOT_CONTAINER_URL+"> a <" + LDP.Container.getURI() + ">.";
-//			rootContainer.put(new ByteArrayInputStream( stuff.getBytes() ), LDPConstants.CT_TEXT_TURTLE);
-//		}
-//	}
-
-//	static private void resetContainer() {
-//		rootContainer = LDPContainer.create(ROOT_CONTAINER_URL, new TDBGraphStore(), new TDBGraphStore());
-//	}
-	
 	protected abstract void resetContainer();
 	protected abstract LDPContainer getRootContainer();
-	
 	protected abstract LDPResourceManager getResourceManger();
 	
-    public LDPService() {
-    }
+    public LDPService() { }
+    
+    /**
+     * @return Does NOT include segment for container, use getRootContainer().getURI() for that.
+     */
+	protected String getPublicURI() { return fPublicURI ; }
 
     @GET
     @Produces(LDPConstants.CT_APPLICATION_RDFXML)
