@@ -1,5 +1,23 @@
 <!DOCTYPE html>
 <html lang="en">
+
+<!--
+  Copyright (c) 2013, 2014 IBM Corporation.
+ 
+   All rights reserved. This program and the accompanying materials
+   are made available under the terms of the Eclipse Public License v1.0
+   and Eclipse Distribution License v. 1.0 which accompanies this distribution.
+   
+   The Eclipse Public License is available at http://www.eclipse.org/legal/epl-v10.html
+   and the Eclipse Distribution License is available at
+   http://www.eclipse.org/org/documents/edl-v10.php.
+   
+   Contributors:
+   
+      Samuel Padgett - initial API and implementation
+      Samuel Padgett - work with hosts other than localhost
+-->
+
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 <title>Linked Data Profile Reference Implementation</title>
@@ -23,7 +41,7 @@
 <div id="get" class="tabContent">
 <div>
 <form id="getForm">
-<input type="url" id="getURI" class="urlInput" value="http://localhost:8080/ldp/resources/" required>
+<input type="url" id="getURI" class="urlInput" value="" required>
 <select id="getMediaType">
 	<option>text/turtle</option>
 	<option>application/json</option>
@@ -90,6 +108,20 @@ require([ "dojo/_base/xhr",
           "dojo/query",
           "dojo/ready",
           "dojo/NodeList-dom"], function(xhr, event, dom, on, query, ready) {
+    function updateGetURI() {
+    	// Use an <a> element to go from a relative to an absolute URI.
+    	var a = document.createElement('a');
+	    a.href = '/ldp/resources';
+	    var uri = a.href;
+	    
+	    // Update the input field for GET.
+
+	    // Note: Assumes ldp.rooturi is set to the same base URI used to load this page.
+	    // If it's not, we can't make requests anyway because of the browser same origin policy.
+
+	    dom.byId('getURI').value = uri;
+    }
+ 
 	function showTab(tab, content) {
 		query('.tabs a').style('font-weight', 'normal');
 		query('.tabContent').style('display', 'none');
@@ -116,8 +148,8 @@ require([ "dojo/_base/xhr",
 				n.innerHTML = '';
 				n.appendChild(document.createTextNode(data));
 			},
-			error: function() {
-				alert('Could not get resource.');
+			error: function(error, ioArgs) {
+				alert('Could not get resource (status ' + ioArgs.xhr.status + ')');
 			}
 		})
 	}
@@ -135,9 +167,9 @@ require([ "dojo/_base/xhr",
 				n.style.display = '';
 				refresh();
 			},
-			error: function() {
+			error: function(error, ioArgs) {
 				var n = dom.byId('putResult');
-				n.innerHTML = '<span class="error">Could not update resource.</span>';
+				n.innerHTML = '<span class="error">Could not update resource (' + ioArgs.xhr.status + ')</span>';
 				n.style.display = '';
 			}
 		});
@@ -157,9 +189,9 @@ require([ "dojo/_base/xhr",
 				n.style.display = '';
 				refresh();
 			},
-			error: function() {
+			error: function(error, ioArgs) {
 				var n = dom.byId('postResult');
-				n.innerHTML = '<span class="error">Could not create resource.</span>';
+				n.innerHTML = '<span class="error">Could not create resource (' + ioArgs.xhr.status + ')</span>';
 				n.style.display = '';
 			}
 		});
@@ -177,9 +209,9 @@ require([ "dojo/_base/xhr",
 				n.style.display = '';
 				refresh();
 			},
-			error: function() {
+			error: function(error, ioArgs) {
 				var n = dom.byId('deleteResult');
-				n.innerHTML = '<span class="error">Could not delete resource.</span>';
+				n.innerHTML = '<span class="error">Could not delete resource (' + ioArgs.xhr.status + ')</span>';
 				n.style.display = '';
 				n.innerHTML = '';
 			}
@@ -241,6 +273,8 @@ require([ "dojo/_base/xhr",
 	}
 	
 	ready(function() {
+		updateGetURI();
+
 		on(dom.byId('getTab'), 'click', function(e) {
 			event.stop(e);
 			showTab('getTab', 'get');
