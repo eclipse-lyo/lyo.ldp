@@ -108,28 +108,14 @@ public abstract class LDPService {
     	return null; // TODO fix me
     }
     
-    // TODO: Validate we need both forms of PUT
     @PUT
     @Consumes({ LDPConstants.CT_APPLICATION_RDFXML, LDPConstants.CT_TEXT_TURTLE, LDPConstants.CT_APPLICATION_XTURTLE })
     public Response updateResource(InputStream content) {
     	// Set the initial container representation. Should only be called once.
-    	// TODO only allow if privileged user
-    	resetContainer();
-    	getRootContainer().put(content, stripCharset(fRequestHeaders.getMediaType().toString()));
-        return Response.status(Status.NO_CONTENT).build();
-    }
-
-    @PUT
-    @Path("{id}")
-    @Consumes({ LDPConstants.CT_APPLICATION_RDFXML, LDPConstants.CT_TEXT_TURTLE, LDPConstants.CT_APPLICATION_XTURTLE, LDPConstants.CT_APPLICATION_JSON, LDPConstants.CT_APPLICATION_LD_JSON })
-    public Response updateConfig(InputStream content, @PathParam("id") String id) {
-    	if ("config".equals(id)) {
-    		// This should be called once, immediately after setting the initial container representation (i.e., before POSTing entries)
-    		// TODO only allow if privileged user
-    		getRootContainer().setConfigParameters(content, stripCharset(fRequestHeaders.getMediaType().toString()));
-    	}
-    	else {
-    		getRootContainer().put(getConanicalURL(fRequestUrl.getRequestUri()), content, stripCharset(fRequestHeaders.getMediaType().toString()));
+    	// May be invoked when query params are used, like ?_admin or ?_meta.
+    	getRootContainer().put(fRequestUrl.getRequestUri().toString(),  content, stripCharset(fRequestHeaders.getMediaType().toString()));
+    	if (getRootContainer().getURI().equals(fRequestUrl.getRequestUri())) {
+    		return Response.status(Status.NO_CONTENT).header("Warning", "Overwriting ROOT container contents.").build();
     	}
         return Response.status(Status.NO_CONTENT).build();
     }
@@ -151,9 +137,6 @@ public abstract class LDPService {
     	LDPContainer ldpC = (LDPContainer)ldpR;
     	
     	String slug = fRequestHeaders.getHeaderString(LDPConstants.HDR_SLUG);
-    	
-    	// HACK: Do we need to mint the new resource URI early?
-    	/*String newResURI = ldpC.mintNewResourceName(slug); */
     	
     	//  Look at headers (rel='type') and content to determine kind + interaction model
     	/* List<String> typeHeaders = getLDPTypesFromTypeHeader(fRequestHeaders); */

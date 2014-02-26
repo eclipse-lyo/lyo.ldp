@@ -65,13 +65,15 @@ public class NetWorthTestCase {
 		System.out.println("######## POSTed resource: " + resourceURI);
 		assetContainer.get(resourceURI, System.out, "text/turtle"/*"application/rdf+xml"*/);
 		
+		/* TODO: Fix paging
 		System.out.println("######## Final Container (stage 1): " + ASSET_CONTAINER_URI + "?firstPage");
-		String nextPage = assetContainer.get(ASSET_CONTAINER_URI + "?firstPage", System.out, "text/turtle"/*"application/rdf+xml"*/);
+		String nextPage = assetContainer.get(ASSET_CONTAINER_URI + "?firstPage", System.out, "text/turtle");
 		while (nextPage != null) {
 			System.out.println("######## Page: " + nextPage);
-			nextPage = assetContainer.get(nextPage, System.out, "text/turtle"/*"application/rdf+xml"*/);
-		}
-	/* TODO: Fix non-member props	
+			nextPage = assetContainer.get(nextPage, System.out, "text/turtle");
+		} */
+		
+		/* TODO: Fix non-member props	
 		System.out.println("######## Container non-members-properties: " + ASSET_CONTAINER_URI + "?_meta");
 		assetContainer.get(ASSET_CONTAINER_URI + "?_meta", System.out, "text/turtle");
 		*/

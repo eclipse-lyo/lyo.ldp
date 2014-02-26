@@ -26,7 +26,7 @@ import com.hp.hpl.jena.rdf.model.ResourceFactory;
  */
 public class JenaLDPImpl 
 {
-	protected static final String NS = "http://example.com/ns/LDPImpl#";
+	protected static final String NS = "http://eclipse.org/lyo/ldp#";
 	
 	/**
 	 * The namespace of the vocabulary as a string

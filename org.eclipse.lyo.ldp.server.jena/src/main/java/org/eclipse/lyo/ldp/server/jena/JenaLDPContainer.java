@@ -144,12 +144,22 @@ public class JenaLDPContainer extends LDPContainer
 
         // Get page size int value
 		Statement stmt = containerResource.getProperty(JenaLDPImpl.pageSize);
-        fPageSize = stmt != null ? stmt.getObject().asLiteral().getInt() : DEFAULT_PAGE_SIZE;
+		if (stmt != null) {
+			fPageSize = stmt.getObject().asLiteral().getInt();
+		} else {
+			fPageSize = DEFAULT_PAGE_SIZE;
+			containerResource.addLiteral(JenaLDPImpl.pageSize, fPageSize);
+		}
 
         // Get member info boolean value
         stmt = containerResource.getProperty(JenaLDPImpl.memberInfo);
-        fMemberInfo = stmt != null ? stmt.getObject().asLiteral().getBoolean() : false;
-
+        if (stmt != null) {
+        	fMemberInfo = stmt.getObject().asLiteral().getBoolean();
+        } else {
+        	fMemberInfo = false;
+			containerResource.addLiteral(JenaLDPImpl.memberInfo, fMemberInfo);
+        }
+        
         // Get member filter Property values
         NodeIterator iter = configGraph.listObjectsOfProperty(containerResource, JenaLDPImpl.memberFilter);
         if (iter.hasNext()) {
@@ -168,8 +178,13 @@ public class JenaLDPContainer extends LDPContainer
 
         // Get resource URI prefix string value
 		stmt = containerResource.getProperty(JenaLDPImpl.resourceURIPrefix);
-		fResourceURIPrefix = appendURISegment(fURI, stmt != null ? stmt.getObject().asLiteral().getString() : DEFAULT_RESOURCE_PREFIX);
-		
+		if (stmt != null) {
+			fResourceURIPrefix = stmt.getObject().asLiteral().getString();
+		} else {
+			fResourceURIPrefix = DEFAULT_RESOURCE_PREFIX;
+			containerResource.addLiteral(JenaLDPImpl.resourceURIPrefix, fResourceURIPrefix);
+		}
+		fResourceURIPrefix = appendURISegment(fURI, fResourceURIPrefix);
 		configGraph.close();
 	}
 
@@ -243,12 +258,12 @@ public class JenaLDPContainer extends LDPContainer
 	 */
 	public void put(String resourceURI, InputStream stream, String contentType, String user)
 	{
-		// HACK: Not sure why we are using this baseURI, either web a) add mbr triples or b) we don't.  Also, what container should PUT-created resource go?  For now, no where.
-		String baseURI = resourceURI.equals(fContainerMetaURI) ? fURI : resourceURI;
+		/* TODO: Handle ?_meta updates
+		String baseURI = resourceURI.equals(fContainerMetaURI) ? fURI : resourceURI; */
 		if (fGraphStore.getGraph(resourceURI) == null)
 			addResource(resourceURI, false, stream, contentType, user);
 		else
-			updateResource(resourceURI, baseURI, stream, contentType, user);
+			updateResource(resourceURI, resourceURI, stream, contentType, user);
 	}
 	
 	/* (non-Javadoc)
@@ -408,11 +423,12 @@ public class JenaLDPContainer extends LDPContainer
 	 */
 	public String get(String resourceURI, OutputStream outStream, String contentType)
 	{
+		/* HACK: This is saying if (query param != _meta) then it must be paging, NOT!
 		if (resourceURI.startsWith(fURI)) {
 			String suffix = resourceURI.substring(fURI.length());
 			if (suffix.startsWith("?") && !NON_MEMBER_PROPERTIES.equals(suffix))
 				return getPage(suffix, outStream, contentType);
-		}
+		} */
 		
 		Model graph = null;
 		if (fURI.equals(resourceURI)) {

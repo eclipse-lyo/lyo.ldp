@@ -1,10 +1,10 @@
 # The following is the configuration info for http://example.org/netWorth/nw1/assetContainer
-@prefix ldpimpl: <http://example.com/ns/LDPImpl#> .
+@prefix ldpimpl: <http://eclipse.org/lyo/ldp#> .
 @prefix rdf:    <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 @prefix o:      <http://example.org/ontology/> .
 
-<> ldpimpl:memberInfo true . # Include member info in BPC rep (default: false)
+<?_admin> ldpimpl:memberInfo true . # Include member info in BPC rep (default: false)
 #<> ldpimpl:memberFilter rdf:type, o:value . # Filter for member info (default: include all members)
-<> ldpimpl:pageSize 4 . # Use small value to test paging (default: 100)
-<> ldpimpl:pageSortPredicates ( o:value ) . # Sort predicates for paged representation (default: not sorted)
-<> ldpimpl:resourceURIPrefix "a" . # Prefix (appended to container URI) for POSTed resourced (default: "res")
+<?_admin> ldpimpl:pageSize 4 . # Use small value to test paging (default: 100)
+<?_admin> ldpimpl:pageSortPredicates ( o:value ) . # Sort predicates for paged representation (default: not sorted)
+<?_admin> ldpimpl:resourceURIPrefix "a" . # Prefix (appended to container URI) for POSTed resourced (default: "res")
