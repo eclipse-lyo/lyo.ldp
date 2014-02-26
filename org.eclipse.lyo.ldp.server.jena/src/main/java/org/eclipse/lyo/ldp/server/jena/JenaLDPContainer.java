@@ -20,6 +20,7 @@
  *******************************************************************************/
 package org.eclipse.lyo.ldp.server.jena;
 
+import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintWriter;
@@ -38,6 +39,7 @@ import org.eclipse.lyo.ldp.server.LDPConstants;
 import org.eclipse.lyo.ldp.server.LDPContainer;
 import org.eclipse.lyo.ldp.server.jena.store.GraphStore;
 import org.eclipse.lyo.ldp.server.jena.vocabulary.LDP;
+import org.eclipse.lyo.ldp.server.service.LDPService;
 
 import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.rdf.model.ModelFactory;
@@ -98,7 +100,15 @@ public class JenaLDPContainer extends LDPContainer
 	 */
 	public static JenaLDPContainer create(String containerURI, GraphStore graphStore, GraphStore pageStore)
 	{
-		return create(containerURI, graphStore, pageStore, null);
+		// Order is important here, need to see if the graph store does NOT an instance of the container
+		// then create a bootstrap container.
+		Model graphModel = graphStore.getGraph(containerURI);
+		JenaLDPContainer rootContainer = create(containerURI, graphStore, pageStore, null);
+		if (graphModel == null) {
+			String stuff="<"+LDPService.ROOT_CONTAINER_URL+"> a <" + LDP.Container.getURI() + ">.";
+			rootContainer.put(new ByteArrayInputStream( stuff.getBytes() ), LDPConstants.CT_TEXT_TURTLE);
+		}
+		return rootContainer;
 	}
 
 	protected JenaLDPContainer(String containerURI, GraphStore graphStore, GraphStore pageStore, InputStream config)
@@ -116,20 +126,21 @@ public class JenaLDPContainer extends LDPContainer
 	 */
 	public void setConfigParameters(InputStream config, String contentType)
 	{
+		Model configGraph = null;
 		if (config != null) {
-	        Model model = ModelFactory.createDefaultModel();
+	        configGraph = ModelFactory.createDefaultModel();
 			String lang = WebContent.contentTypeToLang(contentType).getName();
-	        model.read(config, fURI, lang);
-			fGraphStore.putGraph(fConfigGraphURI, model); // store config info with special side graph.
-			model.close();
+			configGraph.read(config, fURI, lang);
+			fGraphStore.putGraph(fConfigGraphURI, configGraph); // store config info with special side graph.
 		} else {
-	        Model model = ModelFactory.createDefaultModel();
-	        fGraphStore.putGraph(fConfigGraphURI, model);
+			configGraph = fGraphStore.getGraph(fConfigGraphURI);
+			if (configGraph == null) {
+				configGraph = ModelFactory.createDefaultModel();  
+				fGraphStore.putGraph(fConfigGraphURI, configGraph);
+			}
 		}
 
-		Model configGraph = fGraphStore.getGraph(fConfigGraphURI);
-		if (configGraph == null) return; // TODO: Handle error
-        Resource containerResource = configGraph.getResource(fURI);
+        Resource containerResource = configGraph.getResource(fConfigGraphURI);
 
         // Get page size int value
 		Statement stmt = containerResource.getProperty(JenaLDPImpl.pageSize);
@@ -158,6 +169,8 @@ public class JenaLDPContainer extends LDPContainer
         // Get resource URI prefix string value
 		stmt = containerResource.getProperty(JenaLDPImpl.resourceURIPrefix);
 		fResourceURIPrefix = appendURISegment(fURI, stmt != null ? stmt.getObject().asLiteral().getString() : DEFAULT_RESOURCE_PREFIX);
+		
+		configGraph.close();
 	}
 
 	/* (non-Javadoc)
