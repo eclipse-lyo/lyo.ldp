@@ -46,29 +46,16 @@
                             <name>jetty.port</name>
                             <value>8080</value>
                         </systemProperty>
-                    </systemProperties>
-                </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.mortbay.jetty</groupId>
-                <artifactId>jetty-maven-plugin</artifactId>
-                <configuration>
-                    <webAppConfig>
-                        <contextPath>/ldp</contextPath>
-                    </webAppConfig>
-
-                    <!-- enable hot deploy -->
-                    <reload>automatic</reload>
-                    <scanIntervalSeconds>5</scanIntervalSeconds>
-                    <scanTargets>
-                        <scanTarget>src/main/webapp</scanTarget>
-                    </scanTargets>
-
-                    <systemProperties>
+                        <!--Set different root URI, default http://localhost:8080/ldp
                         <systemProperty>
-                            <name>jetty.port</name>
-                            <value>8080</value>
-                        </systemProperty>
+                            <name>ldp.rooturi</name>
+                            <value>http://ldphost:8080/ldp</value>
+                        </systemProperty>  -->
+                         <!-- Directory location for Jena TDB, defaults to in-member 
+                        <systemProperty>
+                            <name>ldp.dataset.dir</name>
+                            <value>/var/db/TDB</value>
+                        </systemProperty> -->
                     </systemProperties>
                 </configuration>
             </plugin>

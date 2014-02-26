@@ -28,6 +28,7 @@ import com.hp.hpl.jena.query.Query;
 import com.hp.hpl.jena.query.QueryExecution;
 import com.hp.hpl.jena.query.QueryExecutionFactory;
 import com.hp.hpl.jena.query.QueryFactory;
+import com.hp.hpl.jena.query.ReadWrite;
 import com.hp.hpl.jena.query.ResultSet;
 import com.hp.hpl.jena.query.ResultSetFormatter;
 import com.hp.hpl.jena.rdf.model.Model;
@@ -44,7 +45,9 @@ import com.hp.hpl.jena.vocabulary.DCTerms;
  */
 public class TDBGraphStore implements GraphStore
 {
+	static String fDatasetDir=null;
 	static {
+		fDatasetDir = System.getProperty("ldp.dataset.dir");
 		TDB.getContext().set(TDB.symUnionDefaultGraph, true);
 		TDB.setOptimizerWarningFlag(false);
         SystemTDB.setFileMode(FileMode.direct) ;
@@ -60,6 +63,24 @@ public class TDBGraphStore implements GraphStore
 	public TDBGraphStore() // Use in-memory Dataset. For testing.
 	{
 		fDataset = TDBFactory.createDataset();
+	}
+	
+	public TDBGraphStore(boolean inMemory) {
+		if (inMemory || fDatasetDir == null) {
+			fDataset = TDBFactory.createDataset();
+		} else {
+			fDataset = TDBFactory.createDataset(fDatasetDir);
+			if (fDatasetDir == null) {
+				System.err.println("Jena TDB failed to create dataset for directory: "+fDatasetDir+", switching to inmemory dataset.");
+			}
+		}		
+	}
+	
+	public Model getDefaultModel() {
+		fDataset.begin(ReadWrite.READ);
+		Model model = fDataset.getDefaultModel();
+		fDataset.end();
+		return model;
 	}
 
 	public void putGraph(String graphURI, Model model)

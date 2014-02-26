@@ -19,15 +19,10 @@
  *******************************************************************************/
 package org.eclipse.lyo.ldp.server.jena;
 
-import java.io.ByteArrayInputStream;
-
-import org.eclipse.lyo.ldp.server.LDPConstants;
 import org.eclipse.lyo.ldp.server.LDPContainer;
 import org.eclipse.lyo.ldp.server.LDPResourceManager;
 import org.eclipse.lyo.ldp.server.jena.store.TDBGraphStore;
-import org.eclipse.lyo.ldp.server.jena.vocabulary.LDP;
 import org.eclipse.lyo.ldp.server.service.LDPService;
-import org.eclipse.lyo.ldp.server.jena.JenaLDPResourceManager;
 
 public class JenaLDPService extends LDPService {
 	private static JenaLDPContainer rootContainer;
@@ -35,14 +30,11 @@ public class JenaLDPService extends LDPService {
 	
 	static {
 		reset();
-		// Create an empty container.
-		String stuff="<"+ROOT_CONTAINER_URL+"> a <" + LDP.Container.getURI() + ">.";
-		rootContainer.put(new ByteArrayInputStream( stuff.getBytes() ), LDPConstants.CT_TEXT_TURTLE);
-		resManager = new JenaLDPResourceManager(rootContainer.fGraphStore, rootContainer.fPageStore);
 	}
 
 	private static void reset() {
-		rootContainer = JenaLDPContainer.create(ROOT_CONTAINER_URL, new TDBGraphStore(), new TDBGraphStore());
+		rootContainer = JenaLDPContainer.create(ROOT_CONTAINER_URL, new TDBGraphStore(false), new TDBGraphStore());
+		resManager = new JenaLDPResourceManager(rootContainer.fGraphStore, rootContainer.fPageStore);
 	}
 	
 	public static JenaLDPContainer getJenaRootContainer() {
