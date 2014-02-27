@@ -45,13 +45,11 @@ import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.rdf.model.ModelFactory;
 import com.hp.hpl.jena.rdf.model.NodeIterator;
 import com.hp.hpl.jena.rdf.model.Property;
-import com.hp.hpl.jena.rdf.model.RDFList;
 import com.hp.hpl.jena.rdf.model.Resource;
 import com.hp.hpl.jena.rdf.model.ResourceFactory;
 import com.hp.hpl.jena.rdf.model.Statement;
 import com.hp.hpl.jena.rdf.model.StmtIterator;
 import com.hp.hpl.jena.vocabulary.DCTerms;
-import com.hp.hpl.jena.vocabulary.RDF;
 import com.hp.hpl.jena.vocabulary.RDFS;
 
 /**
@@ -61,26 +59,17 @@ import com.hp.hpl.jena.vocabulary.RDFS;
 public class JenaLDPContainer extends LDPContainer
 {
 	protected String fResourceURIPrefix; // New resource name template, default is "res" + N
-	protected int fPageSize; // members per LDP-C page
 	protected boolean fMemberInfo; // include member info in container representation
 	protected Set<Property> fMemberFilter; // filtered list of members to include
-	protected RDFList fSortPredicates; // sort predicates for paged representation
 	protected String fConfigGraphURI;
 	protected String fContainerMetaURI;
 	
     public static final String NON_MEMBER_PROPERTIES = "?_meta";
     public static final String ADMIN = "?_admin";
-    public static final String FIRST_PAGE = "?firstPage";
-    public static final String NTH_PAGE = "?p=";
-	public static final int DEFAULT_PAGE_SIZE = 100;
-	public static final String DEFAULT_RESOURCE_PREFIX = "res";
+    public static final String DEFAULT_RESOURCE_PREFIX = "res";
 
 
 	protected final GraphStore fGraphStore; // GraphStore in which to store the container and member resources
-	protected final GraphStore fPageStore; // GraphStore for page graphs
-
-	protected boolean fComputePages = true; // true when paged representation needs to be recomputed.
-
 	/**
 	 * Create a LDPContainer instance for the specified URI.
 	 * @param containerURI the URI of the BPC.
@@ -115,7 +104,6 @@ public class JenaLDPContainer extends LDPContainer
 	{
 		super(containerURI, graphStore);
 		fGraphStore = graphStore;
-		fPageStore = pageStore;
 		fConfigGraphURI = fURI + ADMIN;
 		fContainerMetaURI = fURI + NON_MEMBER_PROPERTIES;
 		setConfigParameters(config, "text/turtle");
@@ -142,17 +130,8 @@ public class JenaLDPContainer extends LDPContainer
 
         Resource containerResource = configGraph.getResource(fConfigGraphURI);
 
-        // Get page size int value
-		Statement stmt = containerResource.getProperty(JenaLDPImpl.pageSize);
-		if (stmt != null) {
-			fPageSize = stmt.getObject().asLiteral().getInt();
-		} else {
-			fPageSize = DEFAULT_PAGE_SIZE;
-			containerResource.addLiteral(JenaLDPImpl.pageSize, fPageSize);
-		}
-
         // Get member info boolean value
-        stmt = containerResource.getProperty(JenaLDPImpl.memberInfo);
+        Statement stmt = containerResource.getProperty(JenaLDPImpl.memberInfo);
         if (stmt != null) {
         	fMemberInfo = stmt.getObject().asLiteral().getBoolean();
         } else {
@@ -171,10 +150,6 @@ public class JenaLDPContainer extends LDPContainer
         }
         else
         	fMemberFilter = null;
-
-        // Get sort predicate values
-        stmt = containerResource.getProperty(JenaLDPImpl.pageSortPredicates);
-        fSortPredicates = stmt != null ? stmt.getObject().as(RDFList.class) : null;
 
         // Get resource URI prefix string value
 		stmt = containerResource.getProperty(JenaLDPImpl.resourceURIPrefix);
@@ -286,7 +261,7 @@ public class JenaLDPContainer extends LDPContainer
 			patchResource(resourceURI, baseURI, stream, contentType, user);
 	}
 
-	private static String UNSPECIFIED_USER = "http://unspecified.user"; // TODO: How to handle this properly?
+	protected static String UNSPECIFIED_USER = "http://unspecified.user"; // TODO: How to handle this properly?
 	
 	/**
 	 * Create resource and add membership triples
@@ -297,7 +272,7 @@ public class JenaLDPContainer extends LDPContainer
 	 * @param user dcterms:creator name
 	 * @return
 	 */
-	private String addResource(String resourceURI, boolean addMembership, InputStream stream, String contentType, String user)
+	protected String addResource(String resourceURI, boolean addMembership, InputStream stream, String contentType, String user)
 	{
         Model model = readModel(resourceURI, stream, contentType);
         Resource subject = model.getResource(resourceURI);
@@ -339,7 +314,6 @@ public class JenaLDPContainer extends LDPContainer
         	model.add(subject, DCTerms.modified, model.createTypedLiteral(time));
 
         fGraphStore.putGraph(resourceURI, model);
-        fComputePages = true;
 		return resourceURI;	
 	}
 
@@ -375,7 +349,7 @@ public class JenaLDPContainer extends LDPContainer
 		return model;
 	}
 	
-	private void updateResource(String resourceURI, String baseURI, InputStream stream, String contentType, String user)
+	protected void updateResource(String resourceURI, String baseURI, InputStream stream, String contentType, String user)
 	{
 		Model model = readModel(baseURI, stream, contentType);
         Resource subject = model.getResource(resourceURI);
@@ -388,10 +362,9 @@ public class JenaLDPContainer extends LDPContainer
 
 		fGraphStore.putGraph(resourceURI, model);
 		model.close();
-		fComputePages = true;
 	}
 	
-	private void patchResource(String resourceURI, String baseURI, InputStream stream, String contentType, String user)
+	protected void patchResource(String resourceURI, String baseURI, InputStream stream, String contentType, String user)
 	{
 		Model model = readModel(baseURI, stream, contentType);
         Resource subject = model.getResource(resourceURI);
@@ -405,8 +378,7 @@ public class JenaLDPContainer extends LDPContainer
 		// TODO: Process patch contents
        
         /*fGraphStore.putGraph(resourceURI, model);
-		model.close();
-		fComputePages = true; */
+		model.close(); */
 	}
 	
 	/* (non-Javadoc)
@@ -415,7 +387,6 @@ public class JenaLDPContainer extends LDPContainer
 	public void delete(String resourceURI)
 	{
 		fGraphStore.deleteGraph(resourceURI);
-		fComputePages = true;
 	}
 
 	/* (non-Javadoc)
@@ -423,13 +394,6 @@ public class JenaLDPContainer extends LDPContainer
 	 */
 	public String get(String resourceURI, OutputStream outStream, String contentType)
 	{
-		/* HACK: This is saying if (query param != _meta) then it must be paging, NOT!
-		if (resourceURI.startsWith(fURI)) {
-			String suffix = resourceURI.substring(fURI.length());
-			if (suffix.startsWith("?") && !NON_MEMBER_PROPERTIES.equals(suffix))
-				return getPage(suffix, outStream, contentType);
-		} */
-		
 		Model graph = null;
 		if (fURI.equals(resourceURI)) {
 			graph = ModelFactory.createDefaultModel();
@@ -492,91 +456,7 @@ public class JenaLDPContainer extends LDPContainer
 		return fGraphStore;
 	}
 
-	private synchronized String getPage(String page, OutputStream outStream, String contentType)
-	{
-		if (fComputePages && FIRST_PAGE.equals(page)) {
-			fComputePages = false;
-			computePages();
-		}
-
-		String pageURI = fURI + page;
-		Model pageModel = fPageStore.getGraph(pageURI);
-		if (pageModel == null)
-			throw new IllegalArgumentException();
-
-		Model resultModel;
-		String nextPage = null;
-		Resource pageResource = pageModel.getResource(pageURI);
-		Resource nextPageResource = pageResource.getPropertyResourceValue(LDP.nextPage);
-		if (!RDF.nil.equals(nextPageResource))
-			nextPage = nextPageResource.getURI();
-		resultModel = ModelFactory.createDefaultModel();
-		resultModel.add(pageModel);
-		resultModel.add(fGraphStore.getGraph(fURI));
-
-		if (fMemberInfo)
-			resultModel = addMemberInformation(resultModel);
-
-		String lang = WebContent.contentTypeToLang(contentType).getName();
-		resultModel.write(outStream, lang);
-		return nextPage;
-	}
-
-	private void computePages()
-	{
-        String currentPageURI = fURI + FIRST_PAGE;
-		Model currentPageModel = ModelFactory.createDefaultModel();
-        Resource containerResource = currentPageModel.getResource(fURI);
-		String memberQuery = fSortPredicates != null ? getSortedMembersQuery() : getMembersQuery();
-		String previousPageURI = null;
-		Model previousPageModel = null;
-
-		for (long memberOffset = 0; true; memberOffset += fPageSize) {
-			String pageQuery = getPagingQuery(memberQuery, memberOffset, fPageSize);
-			Model pageMembers = fGraphStore.construct(pageQuery);
-			currentPageModel.add(pageMembers);
-			
-			String nextPageURI;
-			long memberCount = pageMembers.size();
-			if (memberCount < fPageSize) {
-				if (memberCount == 0 && memberOffset != 0) {
-					fGraphStore.deleteGraph(currentPageURI);
-					Resource previousPageResource = previousPageModel.getResource(previousPageURI);
-					previousPageModel.removeAll(previousPageResource, LDP.nextPage, null);
-					previousPageModel.add(previousPageResource, LDP.nextPage, RDF.nil);
-					fPageStore.putGraph(previousPageURI, previousPageModel);
-					return;
-				}
-				nextPageURI = null;
-			}
-			else {
-				nextPageURI = fPageStore.createGraph(fURI + NTH_PAGE, null, null);
-			}
-
-			// Add bp:nextPage triple
-			Resource pageResource = currentPageModel.getResource(currentPageURI);
-			currentPageModel.add(pageResource, RDF.type, LDP.Page);
-			currentPageModel.add(pageResource, LDP.pageOf, containerResource);
-			currentPageModel.add(pageResource, LDP.nextPage, nextPageURI != null ? currentPageModel.getResource(nextPageURI) : RDF.nil);
-			
-			if (fSortPredicates != null) {
-				RDFList list = currentPageModel.createList(fSortPredicates.iterator());
-				currentPageModel.add(pageResource, LDP.containerSortPredicates, list);
-			}
-
-			fPageStore.putGraph(currentPageURI, currentPageModel);
-			if (nextPageURI == null)
-				return;
-			
-			// Move to next page
-			previousPageModel = currentPageModel;
-			previousPageURI = currentPageURI;
-			currentPageModel = ModelFactory.createDefaultModel();
-			currentPageURI = nextPageURI;
-		}
-	}
-
-	private Model addMemberInformation(Model container)
+	protected Model addMemberInformation(Model container)
 	{
 		Model result = ModelFactory.createDefaultModel();
 		result.add(container);
@@ -604,68 +484,8 @@ public class JenaLDPContainer extends LDPContainer
 		return result;
 	}
 
-	/**
-	 * Create the SPARQL query string that will be used to retrieve the container members for generated pages.
-	 * The query has the following form:
-	 * <pre>
-	 *   CONSTRUCT {
-	 *     <$MEMBER_SUBJECT> <$MEMBER_PREDICATE> ?m .
-	 *   }
-	 *   WHERE {
-	 *     <$MEMBER_SUBJECT> <$MEMBER_PREDICATE> ?m .
-	 *     ?m <$SORT_PREDICATE_1> ?p1 .
-	 *     ?m <$SORT_PREDICATE_2> ?p2 .
-	 *     ...
-	 *     ?m <$SORT_PREDICATE_N> ?pN .
-	 *   }
-	 *   ORDER BY ?p1 ?p2 ... ?pN
-	 *   OFFSET $PAGE_START LIMIT $PAGE_SIZE
-	 * </pre>
-	 * @param pageStart the starting offset of the page of members.
-	 * @param pageSize the number of members per page.
-	 * @return a SPARQL CONSTRUCT query.
-	 */
-	private String getPagingQuery(String baseQuery, long pageStart, long pageSize)
-	{
-    	StringBuffer sb = new StringBuffer(baseQuery);
-    	sb.append(" OFFSET ");
-    	sb.append(pageStart);
-    	sb.append(" LIMIT ");
-    	sb.append(pageSize);
-		return sb.toString();
-	}
-
-	private String fSortedMembersQuery = null;
-	private String getSortedMembersQuery()
-	{
-		if (fSortedMembersQuery == null) {
-	        StringBuffer sb = getBaseMembersQuery();
-	    	//sb.append("GRAPH ?m { ");
-	    	int listSize = fSortPredicates.size();
-	    	for (int i = 0; i < listSize; i++) {
-	    		sb.append("?m");
-	    		//sb.append("?s");
-	    		//sb.append(i);
-	    		sb.append(" <");
-	    		sb.append(fSortPredicates.get(i).asResource().getURI());
-	    		sb.append("> ?p");
-	    		sb.append(i);
-	    		sb.append(" . ");
-	    	}
-	    	//sb.append("} ");
-	    	sb.append("} ORDER BY");
-	    	for (int i = 0; i < listSize; i++) {
-	    		sb.append(" ?p");
-	    		sb.append(i);
-	    	}
-	    	fSortedMembersQuery = sb.toString();
-	    	//System.out.println("sorted construct query:\n" + fSortedConstructQuery);
-		}
-		return fSortedMembersQuery;
-	}
-
-	private String fMembersQuery = null;
-	private String getMembersQuery()
+	protected String fMembersQuery = null;
+	protected String getMembersQuery()
 	{
 		if (fMembersQuery == null) {
 	        StringBuffer sb = getBaseMembersQuery();
@@ -676,7 +496,7 @@ public class JenaLDPContainer extends LDPContainer
 		return fMembersQuery;
 	}
 	
-	private StringBuffer getBaseMembersQuery()
+	protected StringBuffer getBaseMembersQuery()
 	{
 		Model containerGraph = fGraphStore.getGraph(fURI);
 		Property membershipPredicate = getMembershipPredicate(containerGraph);
@@ -693,21 +513,21 @@ public class JenaLDPContainer extends LDPContainer
     	return sb;		
 	}
 	
-	private Property getMembershipPredicate(Model containerGraph)
+	protected Property getMembershipPredicate(Model containerGraph)
 	{
         Resource containerResource = containerGraph.getResource(fURI);
 		Statement stmt = containerResource.getProperty(LDP.membershipPredicate);
 		return stmt != null ? containerGraph.getProperty(stmt.getObject().asResource().getURI()) : RDFS.member;
 	}
 
-	private Resource getMembershipSubject(Model containerGraph)
+	protected Resource getMembershipSubject(Model containerGraph)
 	{
         Resource containerResource = containerGraph.getResource(fURI);
         Statement stmt = containerResource.getProperty(LDP.membershipSubject);
         return stmt != null ? stmt.getObject().asResource() : containerResource;
 	}
 
-	private String appendURISegment(String base, String append)
+	public static String appendURISegment(String base, String append)
 	{
 		return base.endsWith("/") ? base + append : base + "/" + append;
 	}
@@ -715,7 +535,7 @@ public class JenaLDPContainer extends LDPContainer
 	/*
 	 * Check if the jsonld-java library is present.
 	 */
-	private boolean isJSONLDPresent() {
+	protected boolean isJSONLDPresent() {
 		try {
 			Class.forName("com.github.jsonldjava.core.JSONLD");
 			Class.forName("com.github.jsonldjava.impl.JenaRDFParser");
@@ -723,5 +543,9 @@ public class JenaLDPContainer extends LDPContainer
 		} catch (Throwable t) {
 			return false;
 		}
+	}
+	
+	public GraphStore getPagingGraphStore() {
+		return null;
 	}
 }

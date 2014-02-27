@@ -34,7 +34,7 @@ public class JenaLDPService extends LDPService {
 
 	private static void reset() {
 		rootContainer = JenaLDPContainer.create(ROOT_CONTAINER_URL, new TDBGraphStore(false), new TDBGraphStore());
-		resManager = new JenaLDPResourceManager(rootContainer.fGraphStore, rootContainer.fPageStore);
+		resManager = new JenaLDPResourceManager(rootContainer.getGraphStore(), rootContainer.getPagingGraphStore());
 	}
 	
 	public static JenaLDPContainer getJenaRootContainer() {
