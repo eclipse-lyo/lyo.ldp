@@ -16,6 +16,7 @@
  *     Samuel Padgett - initial API and implementation
  *     Steve Speicher - updates for recent LDP spec changes
  *     Steve Speicher - make root URI configurable 
+ *     Samuel Padgett - add LDP-RS Link header to responses
  *******************************************************************************/
 package org.eclipse.lyo.ldp.server.service;
 
@@ -25,6 +26,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URI;
 
+import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
@@ -52,6 +54,7 @@ public abstract class LDPService {
 	
 	@Context HttpHeaders fRequestHeaders;
 	@Context UriInfo fRequestUrl;
+	@Context HttpServletResponse fResponse;
 	@PathParam("path") String fPath;
 	private String fPublicURI = ROOT_APP_URL;
 	
@@ -153,8 +156,7 @@ public abstract class LDPService {
     	String loc = ldpC.post(content, stripCharset(fRequestHeaders.getMediaType().toString()), null, slug);
     	if (loc != null)
     		return Response.status(Status.CREATED).header(HttpHeaders.LOCATION, loc).
-    				header(LDPConstants.HDR_LINK_TYPE, "href='"+LDPConstants.CLASS_RESOURCE+"'").build();
-    		// TODO: Send back right Link: rel='type'
+    				header(LDPConstants.HDR_LINK, "<"+LDPConstants.CLASS_RESOURCE+">; " + LDPConstants.HDR_LINK_TYPE).build();
     	else
     		return Response.status(Status.CONFLICT).build();
     }
@@ -198,11 +200,13 @@ public abstract class LDPService {
     }
     
     private StreamingOutput getResourceRDF(final String type) {	
+    	fResponse.addHeader(LDPConstants.HDR_LINK, "<"+LDPConstants.CLASS_RESOURCE+">; " + LDPConstants.HDR_LINK_TYPE);
         return new StreamingOutput() {
             public void write(OutputStream output) throws IOException, WebApplicationException {
         		try {
         			getRootContainer().get(getConanicalURL(fRequestUrl.getRequestUri()), output, type);
         		} catch (IllegalArgumentException e) { 
+        			fResponse.reset();
         			throw new WebApplicationException(Response.status(Status.NOT_FOUND).build()); 
         		}
             }
