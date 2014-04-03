@@ -15,6 +15,7 @@
  *     Steve Speicher - initial API and implementation
  *     Samuel Padgett - initial API and implementation
  *     Steve Speicher - updates for recent LDP spec changes
+ *     Samuel Padgett - add constants for different LDP container types
  *******************************************************************************/
 package org.eclipse.lyo.ldp.server;
 
@@ -54,12 +55,10 @@ public class LDPConstants
 	
 	
 	// RDF Property names both namespace and local
-	public static final String PROP_LNAME_MEMBERSHIP_SUBJECT = "membershipSubject";
-	public static final String PROP_MEMBERSHIP_SUBJECT = nsName(PROP_LNAME_MEMBERSHIP_SUBJECT);
-	public static final String PROP_LNAME_MEMBERSHIP_PREDICATE = "membershipPredicate";
-	public static final String PROP_MEMBERSHIP_PREDICATE = nsName(PROP_LNAME_MEMBERSHIP_PREDICATE);
-	public static final String PROP_LNAME_MEMBERSHIP_OBJECT = "membershipObject";
-	public static final String PROP_MEMBERSHIP_OBJECT = nsName(PROP_LNAME_MEMBERSHIP_OBJECT);
+	public static final String PROP_LNAME_MEMBERSHIP_RESOURCE = "membershipResource";
+	public static final String PROP_MEMBERSHIP_RESOURCE = nsName(PROP_LNAME_MEMBERSHIP_RESOURCE);
+	public static final String PROP_LNAME_HAS_MEMBER_RELATION = "hasMemberRelation";
+	public static final String PROP_HAS_MEMBER_RELATION = nsName(PROP_LNAME_HAS_MEMBER_RELATION);
 	public static final String PROP_LNAME_MEMBER = "member";
 	public static final String PROP_MEMBER = nsName(PROP_LNAME_MEMBER);
 	public static final String PROP_LNAME_CONTAINS = "contains";
@@ -76,6 +75,12 @@ public class LDPConstants
 	public static final String CLASS_PAGE = nsName(CLASS_LNAME_PAGE);
 	public static final String CLASS_LNAME_CONTAINER = "Container";
 	public static final String CLASS_CONTAINER = nsName(CLASS_LNAME_CONTAINER);
+	public static final String CLASS_LNAME_BASIC_CONTAINER = "BasicContainer";
+	public static final String CLASS_BASIC_CONTAINER = nsName(CLASS_LNAME_BASIC_CONTAINER);
+	public static final String CLASS_LNAME_DIRECT_CONTAINER = "DirectContainer";
+	public static final String CLASS_DIRECT_CONTAINER = nsName(CLASS_LNAME_DIRECT_CONTAINER);
+	public static final String CLASS_LNAME_INDIRECT_CONTAINER = "IndirectContainer";
+	public static final String CLASS_INDIRECT_CONTAINER = nsName(CLASS_LNAME_INDIRECT_CONTAINER);
 	public static final String CLASS_LNAME_RESOURCE = "Resource";
 	public static final String CLASS_RESOURCE = nsName(CLASS_LNAME_RESOURCE);
 	

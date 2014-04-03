@@ -12,22 +12,19 @@
  *  Contributors:
  *  
  *     Steve Speicher - Updates for recent LDP spec changes
+ *     Samuel Padgett - Look for all LDP container types
  *******************************************************************************/
 package org.eclipse.lyo.ldp.server.jena;
 
-import org.eclipse.lyo.ldp.server.LDPConstants;
 import org.eclipse.lyo.ldp.server.LDPRDFResource;
 import org.eclipse.lyo.ldp.server.LDPResource;
 import org.eclipse.lyo.ldp.server.LDPResourceManager;
 import org.eclipse.lyo.ldp.server.jena.store.GraphStore;
+import org.eclipse.lyo.ldp.server.jena.vocabulary.LDP;
 
 import com.hp.hpl.jena.rdf.model.Model;
-import com.hp.hpl.jena.rdf.model.Property;
-import com.hp.hpl.jena.rdf.model.RDFNode;
 import com.hp.hpl.jena.rdf.model.Resource;
-import com.hp.hpl.jena.rdf.model.Selector;
-import com.hp.hpl.jena.rdf.model.SimpleSelector;
-import com.hp.hpl.jena.rdf.model.Statement;
+import com.hp.hpl.jena.vocabulary.RDF;
 
 public class JenaLDPResourceManager implements LDPResourceManager {
 	
@@ -48,15 +45,16 @@ public class JenaLDPResourceManager implements LDPResourceManager {
 		Model graph = gs.getGraph(resourceURI);
 		if (graph == null) return null;
 		Resource r = graph.getResource(resourceURI);
-		Property prop = graph.getProperty("http://www.w3.org/1999/02/22-rdf-syntax-ns#type");
-		Selector select = new SimpleSelector(r, prop, (RDFNode)null);
-		for (Statement stmt = graph.listStatements(select).next();
-			 graph.listStatements(select).hasNext();
-			 stmt = graph.listStatements(select).next()) {
-			if (stmt.getResource().toString().equals(LDPConstants.CLASS_CONTAINER))
-				return new JenaLDPContainer(resourceURI, gs, ps, null);
+		if (isContainer(r)) {
+			return new JenaLDPContainer(resourceURI, gs, ps, null);
 		}
 		return new LDPRDFResource(resourceURI, graph);
 	}
 
+	public boolean isContainer(Resource r) {
+	    return r.hasProperty(RDF.type, LDP.Container) ||
+				r.hasProperty(RDF.type, LDP.BasicContainer) ||
+				r.hasProperty(RDF.type, LDP.DirectContainer) ||
+				r.hasProperty(RDF.type, LDP.IndirectContainer);
+    }
 }

@@ -34,6 +34,7 @@ import java.util.Set;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response.Status;
 
+import org.apache.commons.io.output.ByteArrayOutputStream;
 import org.apache.jena.riot.WebContent;
 import org.eclipse.lyo.ldp.server.LDPConstants;
 import org.eclipse.lyo.ldp.server.LDPContainer;
@@ -50,7 +51,7 @@ import com.hp.hpl.jena.rdf.model.ResourceFactory;
 import com.hp.hpl.jena.rdf.model.Statement;
 import com.hp.hpl.jena.rdf.model.StmtIterator;
 import com.hp.hpl.jena.vocabulary.DCTerms;
-import com.hp.hpl.jena.vocabulary.RDFS;
+import com.hp.hpl.jena.vocabulary.RDF;
 
 /**
  * This class implements a Linked Data Profile Container (LDP-C) using an RDF Graph Store.
@@ -94,8 +95,14 @@ public class JenaLDPContainer extends LDPContainer
 		Model graphModel = graphStore.getGraph(containerURI);
 		JenaLDPContainer rootContainer = create(containerURI, graphStore, pageStore, null);
 		if (graphModel == null) {
-			String stuff="<"+LDPService.ROOT_CONTAINER_URL+"> a <" + LDP.Container.getURI() + ">.";
-			rootContainer.put(new ByteArrayInputStream( stuff.getBytes() ), LDPConstants.CT_TEXT_TURTLE);
+			Model containerModel = ModelFactory.createDefaultModel();
+			Resource containerResource = containerModel.createResource(LDPService.ROOT_CONTAINER_URL);
+			containerResource.addProperty(RDF.type, LDP.DirectContainer);
+			containerResource.addProperty(LDP.membershipResource, containerResource);
+			containerResource.addProperty(LDP.hasMemberRelation, LDP.member);
+			ByteArrayOutputStream out = new ByteArrayOutputStream();
+			containerModel.write(out, "TURTLE");
+			rootContainer.put(new ByteArrayInputStream(out.toByteArray()), LDPConstants.CT_TEXT_TURTLE);
 		}
 		return rootContainer;
 	}
@@ -281,8 +288,8 @@ public class JenaLDPContainer extends LDPContainer
        if (addMembership) {
         	Model container = fGraphStore.getGraph(fURI);
         	Model ldpSR = container;
-        	Property membershipPredicate = getMembershipPredicate(container);
-        	Resource membershipSubject = getMembershipSubject(container);
+        	Property membershipPredicate = getMemberRelation(container);
+        	Resource membershipSubject = getMembershipResource(container);
         	
         	// Put membership triples in LDP-SR
         	if (!membershipSubject.asResource().getURI().equals(fURI)) {
@@ -461,8 +468,8 @@ public class JenaLDPContainer extends LDPContainer
 		Model result = ModelFactory.createDefaultModel();
 		result.add(container);
 
-		Property membershipPredicate = getMembershipPredicate(container);
-        Resource membershipSubject = getMembershipSubject(container);
+		Property membershipPredicate = getMemberRelation(container);
+        Resource membershipSubject = getMembershipResource(container);
 
 		for (NodeIterator iter = container.listObjectsOfProperty(membershipSubject, membershipPredicate); iter.hasNext(); ) {
 			Resource member = iter.next().asResource();
@@ -499,8 +506,8 @@ public class JenaLDPContainer extends LDPContainer
 	protected StringBuffer getBaseMembersQuery()
 	{
 		Model containerGraph = fGraphStore.getGraph(fURI);
-		Property membershipPredicate = getMembershipPredicate(containerGraph);
-        Resource membershipSubject = getMembershipSubject(containerGraph);
+		Property membershipPredicate = getMemberRelation(containerGraph);
+        Resource membershipSubject = getMembershipResource(containerGraph);
         StringBuffer sb = new StringBuffer("CONSTRUCT { <");
     	sb.append(membershipSubject);
     	sb.append("> <");
@@ -513,18 +520,18 @@ public class JenaLDPContainer extends LDPContainer
     	return sb;		
 	}
 	
-	protected Property getMembershipPredicate(Model containerGraph)
+	protected Property getMemberRelation(Model containerGraph)
 	{
         Resource containerResource = containerGraph.getResource(fURI);
-		Statement stmt = containerResource.getProperty(LDP.membershipPredicate);
-		return stmt != null ? containerGraph.getProperty(stmt.getObject().asResource().getURI()) : RDFS.member;
+		Statement stmt = containerResource.getProperty(LDP.hasMemberRelation);
+		return stmt != null ? containerGraph.getProperty(stmt.getObject().asResource().getURI()) : LDP.member;
 	}
 
-	protected Resource getMembershipSubject(Model containerGraph)
+	protected Resource getMembershipResource(Model containerGraph)
 	{
         Resource containerResource = containerGraph.getResource(fURI);
-        Statement stmt = containerResource.getProperty(LDP.membershipSubject);
-        return stmt != null ? stmt.getObject().asResource() : containerResource;
+        Resource membershipResource = containerResource.getPropertyResourceValue(LDP.membershipResource);
+        return membershipResource != null ? membershipResource : containerResource;
 	}
 
 	public static String appendURISegment(String base, String append)
