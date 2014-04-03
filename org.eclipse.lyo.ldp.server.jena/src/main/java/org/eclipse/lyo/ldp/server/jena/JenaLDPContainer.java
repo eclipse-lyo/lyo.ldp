@@ -17,6 +17,7 @@
  *     Samuel Padgett - make jsonld-java dependency optional
  *     Steve Speicher - updates for recent LDP spec changes
  *     Steve Speicher - make root URI configurable 
+ *     Samuel Padgett - remove membership and containment triples on delete and update dcterms:modified
  *******************************************************************************/
 package org.eclipse.lyo.ldp.server.jena;
 
@@ -283,45 +284,48 @@ public class JenaLDPContainer extends LDPContainer
 	{
         Model model = readModel(resourceURI, stream, contentType);
         Resource subject = model.getResource(resourceURI);
+        Calendar time = Calendar.getInstance(); // to update dcterms:modified
 
        // Add membership triple
        if (addMembership) {
-        	Model container = fGraphStore.getGraph(fURI);
-        	Model ldpSR = container;
-        	Property membershipPredicate = getMemberRelation(container);
-        	Resource membershipSubject = getMembershipResource(container);
+        	Model containerModel = fGraphStore.getGraph(fURI);
+        	Property memberRelation = getMemberRelation(containerModel);
+        	Resource membershipResource = getMembershipResource(containerModel);
         	
-        	// Put membership triples in LDP-SR
-        	if (!membershipSubject.asResource().getURI().equals(fURI)) {
-        		ldpSR = fGraphStore.getGraph(membershipSubject.asResource().getURI());
-        		if (ldpSR == null) {
-        			ldpSR = container;
+        	if (!membershipResource.asResource().getURI().equals(fURI)) {
+        		Model membershipResourceModel = fGraphStore.getGraph(membershipResource.asResource().getURI());
+        		if (membershipResourceModel == null) {
+        			membershipResourceModel = containerModel;
         		} else {
-        			// Need to move to LDP-SR's model
-        			membershipSubject = ldpSR.getResource(membershipSubject.asResource().getURI());
-        			membershipPredicate = ldpSR.getProperty(membershipPredicate.asResource().getURI());        			
+        			membershipResource = membershipResourceModel.getResource(membershipResource.asResource().getURI());
+        			memberRelation = membershipResourceModel.getProperty(memberRelation.asResource().getURI());        			
+        			// Update dcterms:modified
+        			membershipResource.removeAll(DCTerms.modified);
+        			membershipResource.addLiteral(DCTerms.modified, membershipResourceModel.createTypedLiteral(time));
         		}
         	}
-        	ldpSR.add(membershipSubject, membershipPredicate, subject);
+        	membershipResource.addProperty(memberRelation, subject);
         	
         	// Put containment triples in container
-        	container.add(container.getResource(fURI), container.getProperty(LDPConstants.PROP_CONTAINS), subject);
+        	Resource containerResource = containerModel.getResource(fURI);
+        	containerResource.addProperty(LDP.contains, subject);
+        	containerResource.removeAll(DCTerms.modified);
+        	containerResource.addLiteral(DCTerms.modified, containerModel.createTypedLiteral(time));
        }
-        
-        // Add dcterms:creator, dcterms:created, dcterms:contributor, and dcterms:modified
-        if (user == null) user = UNSPECIFIED_USER;
-        if (!model.contains(subject, DCTerms.creator))
-        	model.add(subject, DCTerms.creator, model.createResource(user));
-        if (!model.contains(subject, DCTerms.contributor))
-        	model.add(subject, DCTerms.contributor, model.createResource(user));
-        Calendar time = Calendar.getInstance();
-        if (!model.contains(subject, DCTerms.created))
-        	model.add(subject, DCTerms.created, model.createTypedLiteral(time));
-        if (!model.contains(subject, DCTerms.modified))
-        	model.add(subject, DCTerms.modified, model.createTypedLiteral(time));
 
-        fGraphStore.putGraph(resourceURI, model);
-		return resourceURI;	
+       // Add dcterms:creator, dcterms:created, dcterms:contributor, and dcterms:modified
+       if (user == null) user = UNSPECIFIED_USER;
+       if (!model.contains(subject, DCTerms.creator))
+    	   model.add(subject, DCTerms.creator, model.createResource(user));
+       if (!model.contains(subject, DCTerms.contributor))
+    	   model.add(subject, DCTerms.contributor, model.createResource(user));
+       if (!model.contains(subject, DCTerms.created))
+    	   model.add(subject, DCTerms.created, model.createTypedLiteral(time));
+       if (!model.contains(subject, DCTerms.modified))
+    	   model.add(subject, DCTerms.modified, model.createTypedLiteral(time));
+
+       fGraphStore.putGraph(resourceURI, model);
+       return resourceURI;	
 	}
 
 	private Model readModel(String baseURI, InputStream stream, String contentType) {
@@ -361,8 +365,10 @@ public class JenaLDPContainer extends LDPContainer
 		Model model = readModel(baseURI, stream, contentType);
         Resource subject = model.getResource(resourceURI);
 		
-        // Update dcterms:modified
+        // FIXME: Never used?
         if (user == null) user = UNSPECIFIED_USER;
+
+        // Update dcterms:modified
         Calendar time = Calendar.getInstance();
 		model.removeAll(subject, DCTerms.modified, null);
         model.add(subject, DCTerms.modified, model.createTypedLiteral(time));
@@ -379,8 +385,8 @@ public class JenaLDPContainer extends LDPContainer
         // Update dcterms:modified
 
         Calendar time = Calendar.getInstance();
-		model.removeAll(subject, DCTerms.modified, null);
-        model.add(subject, DCTerms.modified, model.createTypedLiteral(time));
+        subject.removeAll(DCTerms.modified);
+        subject.addLiteral(DCTerms.modified, model.createTypedLiteral(time));
 
 		// TODO: Process patch contents
        
@@ -393,6 +399,33 @@ public class JenaLDPContainer extends LDPContainer
 	 */
 	public void delete(String resourceURI)
 	{
+		// Remove the resource from the container
+		Model containerModel = fGraphStore.getGraph(fURI);
+		Model membershipResourceModel = containerModel;
+		Property memberRelation = getMemberRelation(containerModel);
+		Resource membershipResource = getMembershipResource(containerModel);
+        Calendar time = Calendar.getInstance();
+
+		if (!membershipResource.asResource().getURI().equals(fURI)) {
+			membershipResourceModel = fGraphStore.getGraph(membershipResource.asResource().getURI());
+			if (membershipResourceModel == null) {
+				membershipResourceModel = containerModel;
+			} else {
+				membershipResource = membershipResourceModel.getResource(membershipResource.asResource().getURI());
+				memberRelation = membershipResourceModel.getProperty(memberRelation.asResource().getURI());        			
+				// Update dcterms:modified
+			}
+			membershipResource.removeAll(DCTerms.modified);
+			membershipResource.addLiteral(DCTerms.modified, membershipResourceModel.createTypedLiteral(time));
+		}
+		membershipResourceModel.remove(membershipResource, memberRelation, membershipResourceModel.getResource(resourceURI));
+
+		Resource containerResource = containerModel.getResource(fURI);
+		containerModel.remove(containerResource, LDP.contains, containerModel.getResource(resourceURI));
+		containerResource.removeAll(DCTerms.modified);
+		containerResource.addLiteral(DCTerms.modified, containerModel.createTypedLiteral(time));
+
+		// Delete the resource itself
 		fGraphStore.deleteGraph(resourceURI);
 	}
 
@@ -468,10 +501,10 @@ public class JenaLDPContainer extends LDPContainer
 		Model result = ModelFactory.createDefaultModel();
 		result.add(container);
 
-		Property membershipPredicate = getMemberRelation(container);
-        Resource membershipSubject = getMembershipResource(container);
+		Property memberRelation = getMemberRelation(container);
+        Resource membershipResource = getMembershipResource(container);
 
-		for (NodeIterator iter = container.listObjectsOfProperty(membershipSubject, membershipPredicate); iter.hasNext(); ) {
+		for (NodeIterator iter = container.listObjectsOfProperty(membershipResource, memberRelation); iter.hasNext(); ) {
 			Resource member = iter.next().asResource();
 			if (fMemberFilter == null) {
 				// Add all the triples from the member

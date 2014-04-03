@@ -15,6 +15,7 @@
  *     Steve Speicher - initial API and implementation
  *     Samuel Padgett - initial API and implementation
  *     Samuel Padgett - add different LDP container types
+ *     Samuel Padgett - add ldp:contains property
  *******************************************************************************/
 package org.eclipse.lyo.ldp.server.jena.vocabulary;
 
@@ -34,6 +35,7 @@ public class LDP
 	 */
 	public static final Resource NAMESPACE = ResourceFactory.createResource(LDPConstants.getNSURI());
 	
+	public static final Property contains = property(LDPConstants.PROP_CONTAINS);
 	public static final Property member = property(LDPConstants.PROP_MEMBER);
 	public static final Property membershipResource = property(LDPConstants.PROP_MEMBERSHIP_RESOURCE);
 	public static final Property hasMemberRelation = property(LDPConstants.PROP_HAS_MEMBER_RELATION);
