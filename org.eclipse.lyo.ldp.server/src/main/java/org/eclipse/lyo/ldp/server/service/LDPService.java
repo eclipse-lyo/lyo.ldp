@@ -59,7 +59,8 @@ public abstract class LDPService {
 	private String fPublicURI = ROOT_APP_URL;
 	
 	public static final String ROOT_APP_URL = (System.getProperty("ldp.rooturi") != null) ? System.getProperty("ldp.rooturi") : "http://localhost:8080/ldp";
-	public static final String ROOT_CONTAINER_URL = ROOT_APP_URL + "/resources/";
+	public static final String ROOT_PATH_SEG = (System.getProperty("ldp.contseg") != null) ? wrapPathSeg(System.getProperty("ldp.contseg")) : "/resources/";
+	public static final String ROOT_CONTAINER_URL = ROOT_APP_URL + ROOT_PATH_SEG;
 	
 	public static final String[] ACCEPT_POST_CONTENT_TYPES = {
 			LDPConstants.CT_APPLICATION_RDFXML, 
@@ -236,6 +237,36 @@ public abstract class LDPService {
     
     public static String parseSlug(String header) {
     	return header;
+    }
+    
+    /**
+     * Make sure path segment, begins and ends with /
+    */		
+    static public String wrapPathSeg(String pathSeg) {
+    	String str;
+    	if (pathSeg.startsWith("//")) {
+    		int i=0;
+    		for(;i<pathSeg.length(); i++) {
+    			if (pathSeg.charAt(i) != '/') break;
+    		}
+    		str = pathSeg.substring(i-1);
+    	} else if (pathSeg.charAt(0)=='/')
+    		str = pathSeg;
+    	else 
+   			str = "/"+pathSeg;
+
+    	if (str.endsWith("//"))  {
+    		int i=str.length()-1;
+    		for (;i>0;i--){
+    			if (str.charAt(i) != '/') break;
+    		}
+    		str = str.substring(0, i+2);
+    	} else if (!str.endsWith("/")) {
+    		str = str +"/";
+    	} else if (str.length() == 1)
+    		str = "";
+    	
+    	return str;
     }
     
 }

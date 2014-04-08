@@ -114,7 +114,7 @@ public class JenaLDPContainer extends LDPContainer
 		fGraphStore = graphStore;
 		fConfigGraphURI = fURI + ADMIN;
 		fContainerMetaURI = fURI + NON_MEMBER_PROPERTIES;
-		setConfigParameters(config, "text/turtle");
+		setConfigParameters(config, LDPConstants.CT_TEXT_TURTLE);
 	}
 
 	/* (non-Javadoc)
