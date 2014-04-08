@@ -18,10 +18,12 @@
  *     Steve Speicher - updates for recent LDP spec changes
  *     Steve Speicher - make root URI configurable 
  *     Samuel Padgett - remove membership and containment triples on delete and update dcterms:modified
+ *     Samuel Padgett - add ETag and Link headers with correct types on GET requests
  *******************************************************************************/
 package org.eclipse.lyo.ldp.server.jena;
 
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintWriter;
@@ -33,7 +35,9 @@ import java.util.HashSet;
 import java.util.Set;
 
 import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
+import javax.ws.rs.core.StreamingOutput;
 
 import org.apache.commons.io.output.ByteArrayOutputStream;
 import org.apache.jena.riot.WebContent;
@@ -43,6 +47,7 @@ import org.eclipse.lyo.ldp.server.jena.store.GraphStore;
 import org.eclipse.lyo.ldp.server.jena.vocabulary.LDP;
 import org.eclipse.lyo.ldp.server.service.LDPService;
 
+import com.hp.hpl.jena.rdf.model.Literal;
 import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.rdf.model.ModelFactory;
 import com.hp.hpl.jena.rdf.model.NodeIterator;
@@ -169,14 +174,6 @@ public class JenaLDPContainer extends LDPContainer
 		}
 		fResourceURIPrefix = appendURISegment(fURI, fResourceURIPrefix);
 		configGraph.close();
-	}
-
-	/* (non-Javadoc)
-	 * @see org.eclipse.lyo.ldp.server.impl.ILDPContainer#get(java.io.OutputStream, java.lang.String)
-	 */
-	public void get(OutputStream outStream, String contentType)
-	{
-		get(fURI, outStream, contentType);
 	}
 
 	/* (non-Javadoc)
@@ -432,7 +429,7 @@ public class JenaLDPContainer extends LDPContainer
 	/* (non-Javadoc)
 	 * @see org.eclipse.lyo.ldp.server.impl.ILDPContainer#get(java.lang.String, java.io.OutputStream, java.lang.String)
 	 */
-	public String get(String resourceURI, OutputStream outStream, String contentType)
+	public Response get(String resourceURI, String contentType)
 	{
 		Model graph = null;
 		if (fURI.equals(resourceURI)) {
@@ -443,54 +440,97 @@ public class JenaLDPContainer extends LDPContainer
 		else {
 			graph = fGraphStore.getGraph(resourceURI);
 			if (graph == null)
-				throw new IllegalArgumentException();
+				throw new WebApplicationException(Status.NOT_FOUND);
 		}
 		
 		if (fMemberInfo)
 			graph = addMemberInformation(graph);
-		
-		if (LDPConstants.CT_APPLICATION_JSON.equals(contentType)) {
-			if (!isJSONLDPresent()) {
-				throw new WebApplicationException(Status.UNSUPPORTED_MEDIA_TYPE);
-			}
 
-			try {
-				// Use Java reflection for the optional jsonld-java depedency.
-				Class<?> jsonldClass = Class.forName("com.github.jsonldjava.core.JSONLD");
-				Class<?> rdfParserClass = Class.forName("com.github.jsonldjava.core.RDFParser");
-				Class<?> jsonldUtilsClass = Class.forName("com.github.jsonldjava.utils.JSONUtils");
-				Class<?> jenaRDFParserClass = Class.forName("com.github.jsonldjava.impl.JenaRDFParser");
-				Class<?> optionsClass = Class.forName("com.github.jsonldjava.core.Options");
-
-				//Object json = JSONLD.fromRDF(graph, new JenaRDFParser());
-				Method fromRDFMethod = jsonldClass.getMethod("fromRDF", Object.class, rdfParserClass);
-				Object json = fromRDFMethod.invoke(null, graph, jenaRDFParserClass.newInstance());
-
-				InputStream is = getClass().getClassLoader().getResourceAsStream("context.jsonld");
-
-				//Object context = JSONUtils.fromInputStream(is);
-				Method fromInputStreamMethod = jsonldUtilsClass.getMethod("fromInputStream", InputStream.class);
-				Object context = fromInputStreamMethod.invoke(null, is);
-				
-				//json = JSONLD.compact(json, context, new Options("", true));
-				Method compactMethod = jsonldClass.getMethod("compact", Object.class, Object.class, optionsClass);
-				Constructor<?> optionsContructor = optionsClass.getDeclaredConstructor(String.class, Boolean.class);
-				Object options = optionsContructor.newInstance("", true);
-				json = compactMethod.invoke(null, json, context, options);
-
-				//JSONUtils.writePrettyPrint(new PrintWriter(outStream), json);
-				Method writePrettyPrintMethod = jsonldUtilsClass.getMethod("writePrettyPrint", Writer.class, Object.class);
-				writePrettyPrintMethod.invoke(null, new PrintWriter(outStream), json);
-			} catch (Exception e) {
-				e.printStackTrace();
-				throw new RuntimeException(e);
-			}
+		Resource r = graph.getResource(resourceURI);
+		Statement s = r.getProperty(DCTerms.modified);
+		final String eTag;
+		if (s == null) {
+			// uh oh. this should never be null.
+			System.err.println("WARNING: Last modified is null for resource! <" + resourceURI + ">");
+			Literal modified = graph.createTypedLiteral(Calendar.getInstance());
+			r.addLiteral(DCTerms.modified, modified);
+			eTag = modified.getLexicalForm();
 		} else {
-			String lang = WebContent.contentTypeToLang(contentType).getName();
-			graph.write(outStream, lang);
+			eTag = s.getLiteral().getLexicalForm();
 		}
-		return null;
+	
+		StreamingOutput out;
+		if (LDPConstants.CT_APPLICATION_JSON.equals(contentType)) {
+			out = getJSONLD(graph);
+		} else {
+			final String lang = WebContent.contentTypeToLang(contentType).getName();
+			final Model responseModel = graph;
+			out = new StreamingOutput() {
+				@Override
+				public void write(OutputStream output) throws IOException, WebApplicationException {
+					responseModel.write(output, lang);
+				}
+			};
+		}
+		
+		// Determine the right type for the Link response header.
+		String type;
+		if (r.hasProperty(RDF.type, LDP.DirectContainer)) {
+			type = LDPConstants.CLASS_DIRECT_CONTAINER;
+		} else {
+			type = LDPConstants.CLASS_RESOURCE;
+		}
+	
+		return Response.ok(out).header(LDPConstants.HDR_ETAG, eTag).header(LDPConstants.HDR_LINK, "<" + type + ">; " + LDPConstants.HDR_LINK_TYPE).build();
 	}
+
+	private StreamingOutput getJSONLD(Model graph) {
+	    if (!isJSONLDPresent()) {
+	    	throw new WebApplicationException(Status.UNSUPPORTED_MEDIA_TYPE);
+	    }
+
+	    try {
+	    	// Use Java reflection for the optional jsonld-java depedency.
+	    	Class<?> jsonldClass = Class.forName("com.github.jsonldjava.core.JSONLD");
+	    	Class<?> rdfParserClass = Class.forName("com.github.jsonldjava.core.RDFParser");
+	    	Class<?> jsonldUtilsClass = Class.forName("com.github.jsonldjava.utils.JSONUtils");
+	    	Class<?> jenaRDFParserClass = Class.forName("com.github.jsonldjava.impl.JenaRDFParser");
+	    	Class<?> optionsClass = Class.forName("com.github.jsonldjava.core.Options");
+
+	    	//Object json = JSONLD.fromRDF(graph, new JenaRDFParser());
+	    	Method fromRDFMethod = jsonldClass.getMethod("fromRDF", Object.class, rdfParserClass);
+	    	Object json = fromRDFMethod.invoke(null, graph, jenaRDFParserClass.newInstance());
+
+	    	InputStream is = getClass().getClassLoader().getResourceAsStream("context.jsonld");
+
+	    	//Object context = JSONUtils.fromInputStream(is);
+	    	Method fromInputStreamMethod = jsonldUtilsClass.getMethod("fromInputStream", InputStream.class);
+	    	Object context = fromInputStreamMethod.invoke(null, is);
+	    	
+	    	//json = JSONLD.compact(json, context, new Options("", true));
+	    	Method compactMethod = jsonldClass.getMethod("compact", Object.class, Object.class, optionsClass);
+	    	Constructor<?> optionsContructor = optionsClass.getDeclaredConstructor(String.class, Boolean.class);
+	    	Object options = optionsContructor.newInstance("", true);
+	    	final Object compactedJson = compactMethod.invoke(null, json, context, options);
+
+	    	//JSONUtils.writePrettyPrint(new PrintWriter(outStream), json);
+	    	final Method writePrettyPrintMethod = jsonldUtilsClass.getMethod("writePrettyPrint", Writer.class, Object.class);
+	    	StreamingOutput out = new StreamingOutput() {
+	    		@Override
+	            public void write(OutputStream output) throws IOException, WebApplicationException {
+	    			try {
+	                    writePrettyPrintMethod.invoke(null, new PrintWriter(output), compactedJson);
+	                } catch (Exception e) {
+	        			throw new WebApplicationException(e, Response.status(Status.INTERNAL_SERVER_ERROR).build()); 
+	                }
+	            }
+	        };
+	        
+	        return out;
+	    } catch (Exception e) {
+	    	throw new WebApplicationException(e, Response.status(Status.INTERNAL_SERVER_ERROR).build()); 
+	    }
+    }
 	
 	public GraphStore getGraphStore() {
 		return fGraphStore;
@@ -539,16 +579,16 @@ public class JenaLDPContainer extends LDPContainer
 	protected StringBuffer getBaseMembersQuery()
 	{
 		Model containerGraph = fGraphStore.getGraph(fURI);
-		Property membershipPredicate = getMemberRelation(containerGraph);
-        Resource membershipSubject = getMembershipResource(containerGraph);
+		Property memberRelation = getMemberRelation(containerGraph);
+        Resource membershipResource = getMembershipResource(containerGraph);
         StringBuffer sb = new StringBuffer("CONSTRUCT { <");
-    	sb.append(membershipSubject);
+    	sb.append(membershipResource);
     	sb.append("> <");
-    	sb.append(membershipPredicate);
+    	sb.append(memberRelation);
     	sb.append("> ?m . } WHERE { <");
-    	sb.append(membershipSubject);
+    	sb.append(membershipResource);
     	sb.append("> <");
-    	sb.append(membershipPredicate);
+    	sb.append(memberRelation);
     	sb.append("> ?m . ");
     	return sb;		
 	}

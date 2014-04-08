@@ -17,11 +17,17 @@
  *     Samuel Padgett - make jsonld-java dependency optional
  *     Steve Speicher - updates for recent LDP spec changes
  *     Steve Speicher - factored out paging into this class from JenaLDPContainer 
+ *     Samuel Padgett - update for new container interface
  *******************************************************************************/
 package org.eclipse.lyo.ldp.server.jena;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+
+import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.core.Response;
+import javax.ws.rs.core.StreamingOutput;
 
 import org.apache.jena.riot.WebContent;
 import org.eclipse.lyo.ldp.server.jena.store.GraphStore;
@@ -106,7 +112,7 @@ public class JenaLDPPagingContainer extends JenaLDPContainer {
 		}
 	}
 
-	private synchronized String getPage(String page, OutputStream outStream, String contentType)
+	private synchronized Response getPage(String page, String contentType)
 	{
 		if (fComputePages && FIRST_PAGE.equals(page)) {
 			fComputePages = false;
@@ -119,11 +125,6 @@ public class JenaLDPPagingContainer extends JenaLDPContainer {
 			throw new IllegalArgumentException();
 	
 		Model resultModel;
-		String nextPage = null;
-		Resource pageResource = pageModel.getResource(pageURI);
-		Resource nextPageResource = pageResource.getPropertyResourceValue(LDP.nextPage);
-		if (!RDF.nil.equals(nextPageResource))
-			nextPage = nextPageResource.getURI();
 		resultModel = ModelFactory.createDefaultModel();
 		resultModel.add(pageModel);
 		resultModel.add(fGraphStore.getGraph(fURI));
@@ -131,9 +132,16 @@ public class JenaLDPPagingContainer extends JenaLDPContainer {
 		if (fMemberInfo)
 			resultModel = addMemberInformation(resultModel);
 	
-		String lang = WebContent.contentTypeToLang(contentType).getName();
-		resultModel.write(outStream, lang);
-		return nextPage;
+		final String lang = WebContent.contentTypeToLang(contentType).getName();
+		final Model responseModel = resultModel;
+		StreamingOutput out = new StreamingOutput() {
+			@Override
+			public void write(OutputStream output) throws IOException, WebApplicationException {
+				responseModel.write(output, lang);
+			}
+		};
+
+		return Response.ok(out).build();
 	}
 
 	/**
@@ -182,16 +190,15 @@ public class JenaLDPPagingContainer extends JenaLDPContainer {
 	}
 	
 	@Override
-	public String get(String resourceURI, OutputStream outStream,
-			String contentType) {
+	public Response get(String resourceURI, String contentType) {
 		// TODO: This is saying if (query param != _meta) then it must be paging, NOT!?!?
 		if (resourceURI.startsWith(fURI)) {
 			String suffix = resourceURI.substring(fURI.length());
 			if (suffix.startsWith("?") && !NON_MEMBER_PROPERTIES.equals(suffix))
-				return getPage(suffix, outStream, contentType);
+				return getPage(suffix, contentType);
 		} 
 		
-		return super.get(resourceURI, outStream, contentType);
+		return super.get(resourceURI, contentType);
 	}
 	
 	@Override

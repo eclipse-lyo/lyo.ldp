@@ -17,6 +17,7 @@
  *     Steve Speicher - updates for recent LDP spec changes
  *     Steve Speicher - make root URI configurable 
  *     Samuel Padgett - add LDP-RS Link header to responses
+ *     Samuel Padgett - allow implementations to set response headers using Response
  *******************************************************************************/
 package org.eclipse.lyo.ldp.server.service;
 
@@ -26,7 +27,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URI;
 
-import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
@@ -54,7 +54,6 @@ public abstract class LDPService {
 	
 	@Context HttpHeaders fRequestHeaders;
 	@Context UriInfo fRequestUrl;
-	@Context HttpServletResponse fResponse;
 	@PathParam("path") String fPath;
 	private String fPublicURI = ROOT_APP_URL;
 	
@@ -84,25 +83,25 @@ public abstract class LDPService {
 
     @GET
     @Produces(LDPConstants.CT_APPLICATION_RDFXML)
-    public StreamingOutput getContainerApplicationRDFXML() {	
+    public Response getContainerApplicationRDFXML() {	
         return getResourceRDF(LDPConstants.CT_APPLICATION_RDFXML);
     }
   
     @GET
     @Produces(LDPConstants.CT_TEXT_TURTLE)
-    public StreamingOutput getContainerTextTurtle() {	
+    public Response getContainerTextTurtle() {	
         return getResourceRDF(LDPConstants.CT_TEXT_TURTLE);
     }
     
     @GET
     @Produces(LDPConstants.CT_APPLICATION_XTURTLE)
-    public StreamingOutput getContainerApplicationXTurtle() {	
+    public Response getContainerApplicationXTurtle() {	
         return getResourceRDF(LDPConstants.CT_APPLICATION_XTURTLE);
     }
 
     @GET
     @Produces({ LDPConstants.CT_APPLICATION_JSON, LDPConstants.CT_APPLICATION_LD_JSON })
-    public StreamingOutput getContainerJSON() {	
+    public Response getContainerJSON() {	
         return getResourceRDF(LDPConstants.CT_APPLICATION_JSON);
     }
 
@@ -200,18 +199,8 @@ public abstract class LDPService {
       	return Response.status(Status.OK).build();
     }
     
-    private StreamingOutput getResourceRDF(final String type) {	
-    	fResponse.addHeader(LDPConstants.HDR_LINK, "<"+LDPConstants.CLASS_RESOURCE+">; " + LDPConstants.HDR_LINK_TYPE);
-        return new StreamingOutput() {
-            public void write(OutputStream output) throws IOException, WebApplicationException {
-        		try {
-        			getRootContainer().get(getConanicalURL(fRequestUrl.getRequestUri()), output, type);
-        		} catch (IllegalArgumentException e) { 
-        			fResponse.reset();
-        			throw new WebApplicationException(Response.status(Status.NOT_FOUND).build()); 
-        		}
-            }
-        };
+    private Response getResourceRDF(final String type) {	
+    	return getRootContainer().get(getConanicalURL(fRequestUrl.getRequestUri()), type);
     }
     
     String stripCharset(String contentType) {

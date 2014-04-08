@@ -46,24 +46,16 @@ public class NetWorthTestCase {
 				NetWorthSample.class.getClassLoader().getResourceAsStream(ASSET_CONTAINER_CONFIG));
 		
 		assetContainer.put(NetWorthTestCase.class.getClassLoader().getResourceAsStream(ASSET_CONTAINER_REP), "text/turtle");
-		System.out.println("######## Initial Container: " + ASSET_CONTAINER_URI);
-		assetContainer.get(System.out, "text/turtle"/*"application/rdf+xml"*/);
 
 		assetContainer.put(NW_URI, NetWorthTestCase.class.getClassLoader().getResourceAsStream(NW1_REP), "text/turtle");
 		
 		System.out.println("######## Net Worth resource added: " + NW_URI);
-		assetContainer.get(NW_URI, System.out, "text/turtle"/*"application/rdf+xml"*/);
+		assetContainer.get(NW_URI, "text/turtle"/*"application/rdf+xml"*/);
 		
 		String resourceURI;
 		resourceURI = assetContainer.post(NetWorthTestCase.class.getClassLoader().getResourceAsStream(A1_REP), "text/turtle");
-		System.out.println("######## POSTed resource: " + resourceURI);
-		assetContainer.get(resourceURI, System.out, "text/turtle"/*"application/rdf+xml"*/);
 		resourceURI = assetContainer.post(NetWorthTestCase.class.getClassLoader().getResourceAsStream(A2_REP), "text/turtle");
-		System.out.println("######## POSTed resource: " + resourceURI);
-		assetContainer.get(resourceURI, System.out, "text/turtle"/*"application/rdf+xml"*/);
 		resourceURI = assetContainer.post(NetWorthTestCase.class.getClassLoader().getResourceAsStream(A3_REP), "text/turtle");
-		System.out.println("######## POSTed resource: " + resourceURI);
-		assetContainer.get(resourceURI, System.out, "text/turtle"/*"application/rdf+xml"*/);
 		
 		/* TODO: Fix paging
 		System.out.println("######## Final Container (stage 1): " + ASSET_CONTAINER_URI + "?firstPage");
@@ -79,11 +71,7 @@ public class NetWorthTestCase {
 		*/
 		
 		resourceURI = assetContainer.post(NetWorthTestCase.class.getClassLoader().getResourceAsStream(A4_REP), "text/turtle");
-		System.out.println("######## POSTed resource (stage 2): " + resourceURI);
-		assetContainer.get(resourceURI, System.out, "text/turtle"/*"application/rdf+xml"*/);
 		resourceURI = assetContainer.post(NetWorthTestCase.class.getClassLoader().getResourceAsStream(A5_REP), "text/turtle");
-		System.out.println("######## POSTed resource (stage 2): " + resourceURI);
-		assetContainer.get(resourceURI, System.out, "text/turtle"/*"application/rdf+xml"*/);
 
 		/* TODO: Added back paging tests when paging is working
 		System.out.println("######## Final Container (stage 2): " + ASSET_CONTAINER_URI + "?firstPage");
@@ -93,16 +81,7 @@ public class NetWorthTestCase {
 			nextPage = assetContainer.get(nextPage, System.out, "text/turtle");
 		} */
 		
-		System.out.println("######## Delete resource: " + resourceURI);
 		assetContainer.delete(resourceURI);
-		try {
-			assetContainer.get(resourceURI, System.out, "text/turtle"/*"application/rdf+xml"*/);
-			System.out.println("ERROR: shouldn't get here!");
-		} catch (IllegalArgumentException e) { System.out.println("Deleted resource not found."); }
-
-		System.out.println("######## Final NW1 (no paging): " + NW_URI);
-		//assetContainer.get(System.out, "text/turtle"/*"application/rdf+xml"*/);
-		assetContainer.get(NW_URI, System.out, "text/turtle"/*"application/rdf+xml"*/);
 	}
 	
 }

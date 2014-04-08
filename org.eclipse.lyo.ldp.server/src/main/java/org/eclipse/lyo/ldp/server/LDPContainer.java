@@ -15,12 +15,15 @@
  *     Steve Speicher - initial API and implementation
  *     Samuel Padgett - initial API and implementation
  *     Steve Speicher - updates for recent LDP spec changes
+ *     Samuel Padgett - allow implementations to set response headers using Response
  *******************************************************************************/
 package org.eclipse.lyo.ldp.server;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+
+import javax.ws.rs.core.Response;
 
 public abstract class LDPContainer extends LDPRDFResource{
 	
@@ -41,12 +44,6 @@ public abstract class LDPContainer extends LDPRDFResource{
 	 */
 	public abstract void setConfigParameters(InputStream config,
 			String contentType);
-
-	/**
-	 * Get the value of the container.
-	 * @see #get(String, OutputStream, String)
-	 */
-	public abstract void get(OutputStream outStream, String contentType);
 
 	/**
 	 * Set the value of the container.
@@ -117,14 +114,11 @@ public abstract class LDPContainer extends LDPRDFResource{
 	 * <code>contentType</code> argument. Supported values are "application/rdf+xml",
 	 * "text/turtle", and "application/x-turtle".</p>
 	 * @param resourceURI the URI of the BPC (or one of its pages) or a member resource.
-	 * @param outStream the output stream in which to write the resource representation.
 	 * @param contentType the Content-Type of which to write the model.
-	 * @return the resource URI of a following page or null if the representation has no following page.
+	 * @return the HTTP response
 	 * @throws IOException 
 	 * @throws JsonMappingException 
 	 * @throws JsonGenerationException 
 	 */
-	public abstract String get(String resourceURI, OutputStream outStream,
-			String contentType);
-
+	public abstract Response get(String resourceURI, String contentType);
 }

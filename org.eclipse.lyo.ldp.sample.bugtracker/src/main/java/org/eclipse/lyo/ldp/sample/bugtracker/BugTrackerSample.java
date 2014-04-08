@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2013 IBM Corporation.
+ * Copyright (c) 2013, 2014 IBM Corporation.
  *
  *  All rights reserved. This program and the accompanying materials
  *  are made available under the terms of the Eclipse Public License v1.0
@@ -52,19 +52,19 @@ public class BugTrackerSample {
 		return new ByteArrayInputStream(data);
 	}
 	
-	private static Model toModel(LDPContainer container, String uri) {
-		ByteArrayOutputStream out = new ByteArrayOutputStream();
-		container.get(uri, out, LDPConstants.CT_TEXT_TURTLE);
-
-		byte[] data = out.toByteArray();
-		ByteArrayInputStream in = new ByteArrayInputStream(data);
-		
-		Model m = ModelFactory.createDefaultModel();
-		m.read(in, null, "TURTLE");
-		
-		return m;
-	}
-	
+//	private static Model toModel(LDPContainer container, String uri) {
+//		ByteArrayOutputStream out = new ByteArrayOutputStream();
+//		container.get(uri, out, LDPConstants.CT_TEXT_TURTLE);
+//
+//		byte[] data = out.toByteArray();
+//		ByteArrayInputStream in = new ByteArrayInputStream(data);
+//		
+//		Model m = ModelFactory.createDefaultModel();
+//		m.read(in, null, "TURTLE");
+//		
+//		return m;
+//	}
+//	
 	private static void put(LDPContainer container, String uri, Model m) {
 		InputStream in = asTurtleStream(m);
 		container.put(uri, in, LDPConstants.CT_TEXT_TURTLE);
@@ -79,44 +79,44 @@ public class BugTrackerSample {
 		String jane = container.post(asStream("janeroe.ttl"), LDPConstants.CT_TEXT_TURTLE);
 		
 		String bug1 = container.post(asStream("bug1.ttl"), LDPConstants.CT_TEXT_TURTLE);
-		Model bug1Model = toModel(container, bug1);
-		Resource bug1Resource = bug1Model.createResource(bug1);
-		bug1Resource.removeAll(DCTerms.creator);
-		bug1Resource.addProperty(DCTerms.creator, bug1Model.createResource(john));
-		put(container, bug1, bug1Model);
+//		Model bug1Model = toModel(container, bug1);
+//		Resource bug1Resource = bug1Model.createResource(bug1);
+//		bug1Resource.removeAll(DCTerms.creator);
+//		bug1Resource.addProperty(DCTerms.creator, bug1Model.createResource(john));
+//		put(container, bug1, bug1Model);
 
 		String bug2 = container.post(asStream("bug2.ttl"), LDPConstants.CT_TEXT_TURTLE);
-		Model bug2Model = toModel(container, bug2);
-		Resource bug2Resource = bug2Model.createResource(bug2);
-		bug2Resource.removeAll(DCTerms.creator);
-		bug2Resource.addProperty(DCTerms.creator, bug2Model.createResource(john));
-		bug2Resource.addProperty(bug2Model.createProperty(RELATED_BUG), bug2Model.createResource(bug1));
-		put(container, bug2, bug2Model);
+//		Model bug2Model = toModel(container, bug2);
+//		Resource bug2Resource = bug2Model.createResource(bug2);
+//		bug2Resource.removeAll(DCTerms.creator);
+//		bug2Resource.addProperty(DCTerms.creator, bug2Model.createResource(john));
+//		bug2Resource.addProperty(bug2Model.createProperty(RELATED_BUG), bug2Model.createResource(bug1));
+//		put(container, bug2, bug2Model);
 
 		String bug10 = container.post(asStream("bug10.ttl"), LDPConstants.CT_TEXT_TURTLE);
-		Model bug10Model = toModel(container, bug10);
-		Resource bug10Resource = bug10Model.createResource(bug10);
-		bug10Resource.removeAll(DCTerms.creator);
-		bug10Resource.addProperty(DCTerms.creator, bug10Model.createResource(jane));
-		bug10Resource.removeAll(DCTerms.contributor);
-		bug10Resource.addProperty(DCTerms.contributor, bug10Model.createResource(john));
-		put(container, bug10, bug10Model);
+//		Model bug10Model = toModel(container, bug10);
+//		Resource bug10Resource = bug10Model.createResource(bug10);
+//		bug10Resource.removeAll(DCTerms.creator);
+//		bug10Resource.addProperty(DCTerms.creator, bug10Model.createResource(jane));
+//		bug10Resource.removeAll(DCTerms.contributor);
+//		bug10Resource.addProperty(DCTerms.contributor, bug10Model.createResource(john));
+//		put(container, bug10, bug10Model);
 
 		String bug11 = container.post(asStream("bug11.ttl"), LDPConstants.CT_TEXT_TURTLE);
 		String bug12 = container.post(asStream("bug12.ttl"), LDPConstants.CT_TEXT_TURTLE);
 
 		// TODO: Make Product A and Product B LDP containers.
-		Model aModel = toModel(container, productA);
-		Resource aResource = aModel.createResource(productA);
-		aResource.addProperty(aModel.createProperty(HAS_BUG), aModel.createResource(bug1));
-		aResource.addProperty(aModel.createProperty(HAS_BUG), aModel.createResource(bug2));
-		put(container, productA, aModel);
-		
-		Model bModel = toModel(container, productB);
-		Resource bResource = bModel.createResource(productB);
-		bResource.addProperty(bModel.createProperty(HAS_BUG), bModel.createResource(bug10));
-		bResource.addProperty(bModel.createProperty(HAS_BUG), bModel.createResource(bug11));
-		bResource.addProperty(bModel.createProperty(HAS_BUG), bModel.createResource(bug12));
-		put(container, productB, bModel);
+//		Model aModel = toModel(container, productA);
+//		Resource aResource = aModel.createResource(productA);
+//		aResource.addProperty(aModel.createProperty(HAS_BUG), aModel.createResource(bug1));
+//		aResource.addProperty(aModel.createProperty(HAS_BUG), aModel.createResource(bug2));
+//		put(container, productA, aModel);
+//		
+//		Model bModel = toModel(container, productB);
+//		Resource bResource = bModel.createResource(productB);
+//		bResource.addProperty(bModel.createProperty(HAS_BUG), bModel.createResource(bug10));
+//		bResource.addProperty(bModel.createProperty(HAS_BUG), bModel.createResource(bug11));
+//		bResource.addProperty(bModel.createProperty(HAS_BUG), bModel.createResource(bug12));
+//		put(container, productB, bModel);
 	}
 }
