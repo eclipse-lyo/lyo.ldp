@@ -56,7 +56,6 @@ import com.hp.hpl.jena.rdf.model.Resource;
 import com.hp.hpl.jena.rdf.model.ResourceFactory;
 import com.hp.hpl.jena.rdf.model.Statement;
 import com.hp.hpl.jena.rdf.model.StmtIterator;
-import com.hp.hpl.jena.vocabulary.DC;
 import com.hp.hpl.jena.vocabulary.DCTerms;
 import com.hp.hpl.jena.vocabulary.RDF;
 
@@ -674,7 +673,7 @@ public class JenaLDPContainer extends LDPContainer
 	 * @return true if rdf:type is one of: #BasicContainer, #DirectContainer or #IndirectContainer
 	 */
 	public static boolean isContainerType(Resource res) {
-		StmtIterator stmts = res.listProperties(DC.type);
+		StmtIterator stmts = res.listProperties(DCTerms.type);
 		while (stmts.hasNext()) {
 			Statement stmt = stmts.next();
 			for (String containerTypeURI : LDPConstants.CONTAINER_TYPES) {
