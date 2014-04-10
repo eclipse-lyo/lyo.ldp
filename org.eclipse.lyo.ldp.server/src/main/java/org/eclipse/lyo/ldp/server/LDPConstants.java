@@ -61,6 +61,8 @@ public class LDPConstants
 	public static final String PROP_MEMBERSHIP_RESOURCE = nsName(PROP_LNAME_MEMBERSHIP_RESOURCE);
 	public static final String PROP_LNAME_HAS_MEMBER_RELATION = "hasMemberRelation";
 	public static final String PROP_HAS_MEMBER_RELATION = nsName(PROP_LNAME_HAS_MEMBER_RELATION);
+	public static final String PROP_LNAME_IS_MEMBER_OF_RELATION = "isMemberOfRelation";
+	public static final String PROP_IS_MEMBER_OF_RELATION = nsName(PROP_LNAME_IS_MEMBER_OF_RELATION);
 	public static final String PROP_LNAME_MEMBER = "member";
 	public static final String PROP_MEMBER = nsName(PROP_LNAME_MEMBER);
 	public static final String PROP_LNAME_CONTAINS = "contains";

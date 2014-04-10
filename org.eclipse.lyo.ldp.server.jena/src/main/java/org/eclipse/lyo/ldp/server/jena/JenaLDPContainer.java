@@ -287,24 +287,31 @@ public class JenaLDPContainer extends LDPContainer
        if (addMembership) {
         	Model containerModel = fGraphStore.getGraph(fURI);
         	Property memberRelation = getMemberRelation(containerModel);
+        	Property memberOfRelation = getIsMemberOfRelation(containerModel);
         	Resource membershipResource = getMembershipResource(containerModel);
         	
+        	// If membership resource is NOT the same as the container
         	if (!membershipResource.asResource().getURI().equals(fURI)) {
         		Model membershipResourceModel = fGraphStore.getGraph(membershipResource.asResource().getURI());
         		if (membershipResourceModel == null) {
         			membershipResourceModel = containerModel;
         		} else {
         			membershipResource = membershipResourceModel.getResource(membershipResource.asResource().getURI());
-        			memberRelation = membershipResourceModel.getProperty(memberRelation.asResource().getURI());        			
+        			if (memberRelation != null)
+        				memberRelation = membershipResourceModel.getProperty(memberRelation.asResource().getURI());        			
         			// Update dcterms:modified
         			membershipResource.removeAll(DCTerms.modified);
         			membershipResource.addLiteral(DCTerms.modified, membershipResourceModel.createTypedLiteral(time));
         		}
         	}
-        	membershipResource.addProperty(memberRelation, subject);
+        	Resource containerResource = containerModel.getResource(fURI);
+        	if (memberOfRelation != null) {
+        		model.add(subject, memberOfRelation, model.getResource(containerResource.getURI()));
+        	} else {
+        		membershipResource.addProperty(memberRelation, subject);
+        	}
         	
         	// Put containment triples in container
-        	Resource containerResource = containerModel.getResource(fURI);
         	containerResource.addProperty(LDP.contains, subject);
         	containerResource.removeAll(DCTerms.modified);
         	containerResource.addLiteral(DCTerms.modified, containerModel.createTypedLiteral(time));
@@ -396,20 +403,32 @@ public class JenaLDPContainer extends LDPContainer
 	 */
 	public void delete(String resourceURI)
 	{
+		// Determine which container this resource belongs (so we can remove the right membership and containment triples)
+		Model globalModel = JenaLDPService.getJenaRootContainer().getGraphStore().getGraph("urn:x-arq:UnionGraph");     	
+		StmtIterator stmts = globalModel.listStatements(null, LDP.contains, globalModel.getResource(resourceURI));
+		String containerURI = null;
+		if (stmts.hasNext()) {
+			containerURI = stmts.next().getSubject().asResource().getURI();
+		} else {
+			containerURI = fURI;
+		}
+		
 		// Remove the resource from the container
-		Model containerModel = fGraphStore.getGraph(fURI);
+		Model containerModel = fGraphStore.getGraph(containerURI);
 		Model membershipResourceModel = containerModel;
 		Property memberRelation = getMemberRelation(containerModel);
 		Resource membershipResource = getMembershipResource(containerModel);
         Calendar time = Calendar.getInstance();
 
-		if (!membershipResource.asResource().getURI().equals(fURI)) {
+		if (!membershipResource.asResource().getURI().equals(containerURI)) {
 			membershipResourceModel = fGraphStore.getGraph(membershipResource.asResource().getURI());
 			if (membershipResourceModel == null) {
 				membershipResourceModel = containerModel;
 			} else {
 				membershipResource = membershipResourceModel.getResource(membershipResource.asResource().getURI());
-				memberRelation = membershipResourceModel.getProperty(memberRelation.asResource().getURI());        			
+				// If isMemberOfRelation then membership triple will be nuked with the LDPR graph
+				if (memberRelation != null)
+					memberRelation = membershipResourceModel.getProperty(memberRelation.asResource().getURI());        			
 				// Update dcterms:modified
 			}
 			membershipResource.removeAll(DCTerms.modified);
@@ -417,7 +436,7 @@ public class JenaLDPContainer extends LDPContainer
 		}
 		membershipResourceModel.remove(membershipResource, memberRelation, membershipResourceModel.getResource(resourceURI));
 
-		Resource containerResource = containerModel.getResource(fURI);
+		Resource containerResource = containerModel.getResource(containerURI);
 		containerModel.remove(containerResource, LDP.contains, containerModel.getResource(resourceURI));
 		containerResource.removeAll(DCTerms.modified);
 		containerResource.addLiteral(DCTerms.modified, containerModel.createTypedLiteral(time));
@@ -541,26 +560,33 @@ public class JenaLDPContainer extends LDPContainer
 		Model result = ModelFactory.createDefaultModel();
 		result.add(container);
 
-		Property memberRelation = getMemberRelation(container);
+    	Property isMemberOfRelation = getIsMemberOfRelation(container);
         Resource membershipResource = getMembershipResource(container);
 
-		for (NodeIterator iter = container.listObjectsOfProperty(membershipResource, memberRelation); iter.hasNext(); ) {
-			Resource member = iter.next().asResource();
-			if (fMemberFilter == null) {
-				// Add all the triples from the member
-				result.add(fGraphStore.getGraph(member.getURI()));
-			}
-			else {
-				// Filter the triples to be added
-				Model memberGraph = fGraphStore.getGraph(member.getURI());
-				//for (StmtIterator siter = memberGraph.listStatements(member, null, (RDFNode)null); siter.hasNext(); ) {
-				for (StmtIterator siter = memberGraph.listStatements(); siter.hasNext(); ) {
-					Statement stmt = siter.next();
-					if (fMemberFilter.contains(stmt.getPredicate()))
-						result.add(stmt);
+        if (isMemberOfRelation != null) {
+        	// Handling ldp:isMemberOfRelation, where all membership triples are stored in member resource graphs
+        	Model globalModel = JenaLDPService.getJenaRootContainer().getGraphStore().getGraph("urn:x-arq:UnionGraph"); 
+        	result.add(globalModel.listStatements(null, isMemberOfRelation, membershipResource));
+        } else {
+    		Property memberRelation = getMemberRelation(container);
+			for (NodeIterator iter = container.listObjectsOfProperty(membershipResource, memberRelation); iter.hasNext(); ) {
+				Resource member = iter.next().asResource();
+				if (fMemberFilter == null) {
+					// Add all the triples from the member
+					result.add(fGraphStore.getGraph(member.getURI()));
+				}
+				else {
+					// Filter the triples to be added
+					Model memberGraph = fGraphStore.getGraph(member.getURI());
+					//for (StmtIterator siter = memberGraph.listStatements(member, null, (RDFNode)null); siter.hasNext(); ) {
+					for (StmtIterator siter = memberGraph.listStatements(); siter.hasNext(); ) {
+						Statement stmt = siter.next();
+						if (fMemberFilter.contains(stmt.getPredicate()))
+							result.add(stmt);
+					}
 				}
 			}
-		}
+        }
 		return result;
 	}
 
@@ -598,6 +624,13 @@ public class JenaLDPContainer extends LDPContainer
         Resource containerResource = containerGraph.getResource(fURI);
 		Statement stmt = containerResource.getProperty(LDP.hasMemberRelation);
 		return stmt != null ? containerGraph.getProperty(stmt.getObject().asResource().getURI()) : LDP.member;
+	}
+	
+	protected Property getIsMemberOfRelation(Model containerGraph)
+	{
+        Resource containerResource = containerGraph.getResource(fURI);
+		Statement stmt = containerResource.getProperty(LDP.isMemberOfRelation);
+		return stmt != null ? containerGraph.getProperty(stmt.getObject().asResource().getURI()) : null;
 	}
 
 	protected Resource getMembershipResource(Model containerGraph)

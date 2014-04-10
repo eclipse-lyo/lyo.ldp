@@ -39,6 +39,7 @@ public class LDP
 	public static final Property member = property(LDPConstants.PROP_MEMBER);
 	public static final Property membershipResource = property(LDPConstants.PROP_MEMBERSHIP_RESOURCE);
 	public static final Property hasMemberRelation = property(LDPConstants.PROP_HAS_MEMBER_RELATION);
+	public static final Property isMemberOfRelation = property(LDPConstants.PROP_IS_MEMBER_OF_RELATION);
 	public static final Property pageOf = property(LDPConstants.PROP_PAGEOF);
 	public static final Property nextPage = property(LDPConstants.PROP_NEXTPAGE);
 	public static final Property containerSortPredicates = property(LDPConstants.PROP_CONTAINER_SORT_PREDICATE);
