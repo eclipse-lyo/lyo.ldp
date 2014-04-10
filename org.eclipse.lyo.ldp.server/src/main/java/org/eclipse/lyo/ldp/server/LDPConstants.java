@@ -88,6 +88,9 @@ public class LDPConstants
 	public static final String CLASS_LNAME_RESOURCE = "Resource";
 	public static final String CLASS_RESOURCE = nsName(CLASS_LNAME_RESOURCE);
 	
+	// Only container types that resource can be for, doesn't include #Container
+	public static final String [] CONTAINER_TYPES = {CLASS_BASIC_CONTAINER, CLASS_DIRECT_CONTAINER, CLASS_INDIRECT_CONTAINER};
+	
 	public static String nsName(String local) {
 		return NS + local;
 	}

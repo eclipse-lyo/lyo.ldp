@@ -58,12 +58,12 @@ public class JenaLDPPagingContainer extends JenaLDPContainer {
 		fPageStore = pageStore;
 	}
 
-	private void computePages()
+	private void computePages(String containerURI)
 	{
-	    String currentPageURI = fURI + FIRST_PAGE;
+	    String currentPageURI = containerURI + FIRST_PAGE;
 		Model currentPageModel = ModelFactory.createDefaultModel();
-	    Resource containerResource = currentPageModel.getResource(fURI);
-		String memberQuery = fSortPredicates != null ? getSortedMembersQuery() : getMembersQuery();
+	    Resource containerResource = currentPageModel.getResource(containerURI);
+		String memberQuery = fSortPredicates != null ? getSortedMembersQuery(containerURI) : getMembersQuery(containerURI);
 		String previousPageURI = null;
 		Model previousPageModel = null;
 	
@@ -86,7 +86,7 @@ public class JenaLDPPagingContainer extends JenaLDPContainer {
 				nextPageURI = null;
 			}
 			else {
-				nextPageURI = fPageStore.createGraph(fURI + NTH_PAGE, null, null);
+				nextPageURI = fPageStore.createGraph(containerURI + NTH_PAGE, null, null);
 			}
 	
 			// Add bp:nextPage triple
@@ -112,14 +112,14 @@ public class JenaLDPPagingContainer extends JenaLDPContainer {
 		}
 	}
 
-	private synchronized Response getPage(String page, String contentType)
+	private synchronized Response getPage(String page, String contentType, String containerURI)
 	{
 		if (fComputePages && FIRST_PAGE.equals(page)) {
 			fComputePages = false;
-			computePages();
+			computePages(containerURI);
 		}
 	
-		String pageURI = fURI + page;
+		String pageURI = containerURI + page;
 		Model pageModel = fPageStore.getGraph(pageURI);
 		if (pageModel == null)
 			throw new IllegalArgumentException();
@@ -127,10 +127,12 @@ public class JenaLDPPagingContainer extends JenaLDPContainer {
 		Model resultModel;
 		resultModel = ModelFactory.createDefaultModel();
 		resultModel.add(pageModel);
-		resultModel.add(fGraphStore.getGraph(fURI));
+		resultModel.add(fGraphStore.getGraph(containerURI));
 	
-		if (fMemberInfo)
-			resultModel = addMemberInformation(resultModel);
+		if (fMemberInfo) {
+			Resource containerResource = resultModel.getResource(containerURI);
+			resultModel = addMemberInformation(resultModel, containerResource);
+		}
 	
 		final String lang = WebContent.contentTypeToLang(contentType).getName();
 		final Model responseModel = resultModel;
@@ -192,10 +194,11 @@ public class JenaLDPPagingContainer extends JenaLDPContainer {
 	@Override
 	public Response get(String resourceURI, String contentType) {
 		// TODO: This is saying if (query param != _meta) then it must be paging, NOT!?!?
-		if (resourceURI.startsWith(fURI)) {
-			String suffix = resourceURI.substring(fURI.length());
+		String containerURI = getContainerURIForResource(resourceURI);
+		if (resourceURI.startsWith(containerURI)) {
+			String suffix = resourceURI.substring(containerURI.length());
 			if (suffix.startsWith("?") && !NON_MEMBER_PROPERTIES.equals(suffix))
-				return getPage(suffix, contentType);
+				return getPage(suffix, contentType, containerURI);
 		} 
 		
 		return super.get(resourceURI, contentType);
@@ -208,10 +211,10 @@ public class JenaLDPPagingContainer extends JenaLDPContainer {
 	}
 
 	protected String fSortedMembersQuery = null;
-	protected String getSortedMembersQuery()
+	protected String getSortedMembersQuery(String containerURI)
 	{
 		if (fSortedMembersQuery == null) {
-	        StringBuffer sb = getBaseMembersQuery();
+	        StringBuffer sb = getBaseMembersQuery(containerURI);
 	    	//sb.append("GRAPH ?m { ");
 	    	int listSize = fSortPredicates.size();
 	    	for (int i = 0; i < listSize; i++) {

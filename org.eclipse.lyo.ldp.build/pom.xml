@@ -13,7 +13,7 @@
         <module>../org.eclipse.lyo.ldp.server</module>
         <module>../org.eclipse.lyo.ldp.server.jena</module>
         <module>../org.eclipse.lyo.ldp.webapp</module>
-        <module>../org.eclipse.lyo.ldp.sample.networth</module>
+  <!--     <module>../org.eclipse.lyo.ldp.sample.networth</module>  -->  
         <module>../org.eclipse.lyo.ldp.sample.bugtracker</module>
         <module>../org.eclipse.lyo.ldp.sample</module>
     </modules>

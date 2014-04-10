@@ -56,6 +56,7 @@ import com.hp.hpl.jena.rdf.model.Resource;
 import com.hp.hpl.jena.rdf.model.ResourceFactory;
 import com.hp.hpl.jena.rdf.model.Statement;
 import com.hp.hpl.jena.rdf.model.StmtIterator;
+import com.hp.hpl.jena.vocabulary.DC;
 import com.hp.hpl.jena.vocabulary.DCTerms;
 import com.hp.hpl.jena.vocabulary.RDF;
 
@@ -282,16 +283,19 @@ public class JenaLDPContainer extends LDPContainer
         Model model = readModel(resourceURI, stream, contentType);
         Resource subject = model.getResource(resourceURI);
         Calendar time = Calendar.getInstance(); // to update dcterms:modified
+		String containerURI = getContainerURIForResource(resourceURI);
+
 
        // Add membership triple
        if (addMembership) {
-        	Model containerModel = fGraphStore.getGraph(fURI);
-        	Property memberRelation = getMemberRelation(containerModel);
-        	Property memberOfRelation = getIsMemberOfRelation(containerModel);
-        	Resource membershipResource = getMembershipResource(containerModel);
+        	Model containerModel = fGraphStore.getGraph(containerURI);
+        	Resource containerResource = containerModel.getResource(containerURI);
+        	Property memberRelation = getMemberRelation(containerModel, containerResource);
+        	Property memberOfRelation = getIsMemberOfRelation(containerModel, containerResource);
+        	Resource membershipResource = getMembershipResource(containerModel, containerResource);
         	
         	// If membership resource is NOT the same as the container
-        	if (!membershipResource.asResource().getURI().equals(fURI)) {
+        	if (!membershipResource.asResource().getURI().equals(containerURI)) {
         		Model membershipResourceModel = fGraphStore.getGraph(membershipResource.asResource().getURI());
         		if (membershipResourceModel == null) {
         			membershipResourceModel = containerModel;
@@ -304,7 +308,6 @@ public class JenaLDPContainer extends LDPContainer
         			membershipResource.addLiteral(DCTerms.modified, membershipResourceModel.createTypedLiteral(time));
         		}
         	}
-        	Resource containerResource = containerModel.getResource(fURI);
         	if (memberOfRelation != null) {
         		model.add(subject, memberOfRelation, model.getResource(containerResource.getURI()));
         	} else {
@@ -403,21 +406,14 @@ public class JenaLDPContainer extends LDPContainer
 	 */
 	public void delete(String resourceURI)
 	{
-		// Determine which container this resource belongs (so we can remove the right membership and containment triples)
-		Model globalModel = JenaLDPService.getJenaRootContainer().getGraphStore().getGraph("urn:x-arq:UnionGraph");     	
-		StmtIterator stmts = globalModel.listStatements(null, LDP.contains, globalModel.getResource(resourceURI));
-		String containerURI = null;
-		if (stmts.hasNext()) {
-			containerURI = stmts.next().getSubject().asResource().getURI();
-		} else {
-			containerURI = fURI;
-		}
+		String containerURI = getContainerURIForResource(resourceURI);
 		
 		// Remove the resource from the container
 		Model containerModel = fGraphStore.getGraph(containerURI);
+		Resource containerResource = containerModel.getResource(containerURI);
 		Model membershipResourceModel = containerModel;
-		Property memberRelation = getMemberRelation(containerModel);
-		Resource membershipResource = getMembershipResource(containerModel);
+		Property memberRelation = getMemberRelation(containerModel, containerResource);
+		Resource membershipResource = getMembershipResource(containerModel, containerResource);
         Calendar time = Calendar.getInstance();
 
 		if (!membershipResource.asResource().getURI().equals(containerURI)) {
@@ -436,7 +432,6 @@ public class JenaLDPContainer extends LDPContainer
 		}
 		membershipResourceModel.remove(membershipResource, memberRelation, membershipResourceModel.getResource(resourceURI));
 
-		Resource containerResource = containerModel.getResource(containerURI);
 		containerModel.remove(containerResource, LDP.contains, containerModel.getResource(resourceURI));
 		containerResource.removeAll(DCTerms.modified);
 		containerResource.addLiteral(DCTerms.modified, containerModel.createTypedLiteral(time));
@@ -445,27 +440,41 @@ public class JenaLDPContainer extends LDPContainer
 		fGraphStore.deleteGraph(resourceURI);
 	}
 
+	/**
+	 * Given as input resourceURI, find the containerURI that ldp:contains it
+	 * @param resourceURI
+	 * @return containerURI
+	 */
+	protected String getContainerURIForResource(String resourceURI) {
+		// Determine which container this resource belongs (so we can remove the right membership and containment triples)
+		Model globalModel = JenaLDPService.getJenaRootContainer().getGraphStore().getGraph("urn:x-arq:UnionGraph");     	
+		StmtIterator stmts = globalModel.listStatements(null, LDP.contains, globalModel.getResource(resourceURI));
+		String containerURI = null;
+		if (stmts.hasNext()) {
+			containerURI = stmts.next().getSubject().asResource().getURI();
+		} else {
+			containerURI = fURI;
+		}
+		return containerURI;
+	}
+
 	/* (non-Javadoc)
 	 * @see org.eclipse.lyo.ldp.server.impl.ILDPContainer#get(java.lang.String, java.io.OutputStream, java.lang.String)
 	 */
 	public Response get(String resourceURI, String contentType)
 	{
-		Model graph = null;
-		if (fURI.equals(resourceURI)) {
-			graph = ModelFactory.createDefaultModel();
-			graph.add(fGraphStore.construct(getMembersQuery()));
-			graph.add(fGraphStore.getGraph(fURI));
-		}
-		else {
-			graph = fGraphStore.getGraph(resourceURI);
-			if (graph == null)
-				throw new WebApplicationException(Status.NOT_FOUND);
-		}
+		Model graph = fGraphStore.getGraph(resourceURI);
+		if (graph == null)
+			throw new WebApplicationException(Status.NOT_FOUND);
 		
-		if (fMemberInfo)
-			graph = addMemberInformation(graph);
-
 		Resource r = graph.getResource(resourceURI);
+		if (r != null && isContainerType(r)) {
+			// TODO: Determine if getMembersQuery() is needed
+			// graph.add(fGraphStore.construct(getMembersQuery(resourceURI)));
+			if (fMemberInfo)
+				graph = addMemberInformation(graph, r);
+		}
+
 		Statement s = r.getProperty(DCTerms.modified);
 		final String eTag;
 		if (s == null) {
@@ -555,20 +564,20 @@ public class JenaLDPContainer extends LDPContainer
 		return fGraphStore;
 	}
 
-	protected Model addMemberInformation(Model container)
+	protected Model addMemberInformation(Model container, Resource containerResource)
 	{
 		Model result = ModelFactory.createDefaultModel();
 		result.add(container);
 
-    	Property isMemberOfRelation = getIsMemberOfRelation(container);
-        Resource membershipResource = getMembershipResource(container);
+    	Property isMemberOfRelation = getIsMemberOfRelation(container, containerResource);
+        Resource membershipResource = getMembershipResource(container, containerResource);
 
         if (isMemberOfRelation != null) {
         	// Handling ldp:isMemberOfRelation, where all membership triples are stored in member resource graphs
         	Model globalModel = JenaLDPService.getJenaRootContainer().getGraphStore().getGraph("urn:x-arq:UnionGraph"); 
         	result.add(globalModel.listStatements(null, isMemberOfRelation, membershipResource));
         } else {
-    		Property memberRelation = getMemberRelation(container);
+    		Property memberRelation = getMemberRelation(container, containerResource);
 			for (NodeIterator iter = container.listObjectsOfProperty(membershipResource, memberRelation); iter.hasNext(); ) {
 				Resource member = iter.next().asResource();
 				if (fMemberFilter == null) {
@@ -591,10 +600,10 @@ public class JenaLDPContainer extends LDPContainer
 	}
 
 	protected String fMembersQuery = null;
-	protected String getMembersQuery()
+	protected String getMembersQuery(String containerURI)
 	{
 		if (fMembersQuery == null) {
-	        StringBuffer sb = getBaseMembersQuery();
+	        StringBuffer sb = getBaseMembersQuery(containerURI);
 	        sb.append("}");
 	    	fMembersQuery = sb.toString();
 	    	//System.out.println("construct query:\n" + fConstructQuery);
@@ -602,11 +611,12 @@ public class JenaLDPContainer extends LDPContainer
 		return fMembersQuery;
 	}
 	
-	protected StringBuffer getBaseMembersQuery()
+	protected StringBuffer getBaseMembersQuery(String containerURI)
 	{
-		Model containerGraph = fGraphStore.getGraph(fURI);
-		Property memberRelation = getMemberRelation(containerGraph);
-        Resource membershipResource = getMembershipResource(containerGraph);
+		Model containerGraph = fGraphStore.getGraph(containerURI);
+		Resource containerResource = containerGraph.getResource(containerURI);
+		Property memberRelation = getMemberRelation(containerGraph, containerResource);
+        Resource membershipResource = getMembershipResource(containerGraph, containerResource);
         StringBuffer sb = new StringBuffer("CONSTRUCT { <");
     	sb.append(membershipResource);
     	sb.append("> <");
@@ -619,23 +629,20 @@ public class JenaLDPContainer extends LDPContainer
     	return sb;		
 	}
 	
-	protected Property getMemberRelation(Model containerGraph)
+	protected Property getMemberRelation(Model containerGraph, Resource containerResource)
 	{
-        Resource containerResource = containerGraph.getResource(fURI);
 		Statement stmt = containerResource.getProperty(LDP.hasMemberRelation);
 		return stmt != null ? containerGraph.getProperty(stmt.getObject().asResource().getURI()) : LDP.member;
 	}
 	
-	protected Property getIsMemberOfRelation(Model containerGraph)
+	protected Property getIsMemberOfRelation(Model containerGraph, Resource containerResource)
 	{
-        Resource containerResource = containerGraph.getResource(fURI);
 		Statement stmt = containerResource.getProperty(LDP.isMemberOfRelation);
 		return stmt != null ? containerGraph.getProperty(stmt.getObject().asResource().getURI()) : null;
 	}
 
-	protected Resource getMembershipResource(Model containerGraph)
+	protected Resource getMembershipResource(Model containerGraph, Resource containerResource)
 	{
-        Resource containerResource = containerGraph.getResource(fURI);
         Resource membershipResource = containerResource.getPropertyResourceValue(LDP.membershipResource);
         return membershipResource != null ? membershipResource : containerResource;
 	}
@@ -660,5 +667,21 @@ public class JenaLDPContainer extends LDPContainer
 	
 	public GraphStore getPagingGraphStore() {
 		return null;
+	}
+	
+	/**
+	 * @param res
+	 * @return true if rdf:type is one of: #BasicContainer, #DirectContainer or #IndirectContainer
+	 */
+	public static boolean isContainerType(Resource res) {
+		StmtIterator stmts = res.listProperties(DC.type);
+		while (stmts.hasNext()) {
+			Statement stmt = stmts.next();
+			for (String containerTypeURI : LDPConstants.CONTAINER_TYPES) {
+				if (stmt.getObject().asResource().getURI().equals(containerTypeURI))
+					return true;
+			}
+		}
+		return false;
 	}
 }
