@@ -51,7 +51,7 @@ public class JenaLDPResourceManager implements LDPResourceManager {
 		return new LDPRDFResource(resourceURI, graph);
 	}
 
-	public boolean isContainer(Resource r) {
+	public static boolean isContainer(Resource r) {
 	    return r.hasProperty(RDF.type, LDP.Container) ||
 				r.hasProperty(RDF.type, LDP.BasicContainer) ||
 				r.hasProperty(RDF.type, LDP.DirectContainer) ||

@@ -55,11 +55,11 @@ public abstract class LDPService {
 	@Context HttpHeaders fRequestHeaders;
 	@Context UriInfo fRequestUrl;
 	@PathParam("path") String fPath;
-	private String fPublicURI = ROOT_APP_URL;
 	
 	public static final String ROOT_APP_URL = (System.getProperty("ldp.rooturi") != null) ? System.getProperty("ldp.rooturi") : "http://localhost:8080/ldp";
 	public static final String ROOT_PATH_SEG = (System.getProperty("ldp.contseg") != null) ? wrapPathSeg(System.getProperty("ldp.contseg")) : "/resources/";
 	public static final String ROOT_CONTAINER_URL = ROOT_APP_URL + ROOT_PATH_SEG;
+	private static String fPublicURI = ROOT_APP_URL;
 	
 	public static final String[] ACCEPT_POST_CONTENT_TYPES = {
 			LDPConstants.CT_APPLICATION_RDFXML, 
@@ -116,7 +116,7 @@ public abstract class LDPService {
     public Response updateResource(InputStream content) {
     	// Set the initial container representation. Should only be called once.
     	// May be invoked when query params are used, like ?_admin or ?_meta.
-    	getRootContainer().put(fRequestUrl.getRequestUri().toString(),  content, stripCharset(fRequestHeaders.getMediaType().toString()));
+    	getRootContainer().put(fRequestUrl.getRequestUri().toString(),  content, stripCharset(fRequestHeaders.getMediaType().toString()), null);
     	if (getRootContainer().getURI().equals(fRequestUrl.getRequestUri())) {
     		return Response.status(Status.NO_CONTENT).header("Warning", "Overwriting ROOT container contents.").build();
     	}
@@ -194,7 +194,7 @@ public abstract class LDPService {
     @Path("id")
     @Consumes(LDPConstants.CT_TEXT_TURTLE)    
     public Response patchResource(final InputStream content, @PathParam("id") String id) {
-    	getRootContainer().patch(getConanicalURL(fRequestUrl.getRequestUri()), content, stripCharset(fRequestHeaders.getMediaType().toString()));
+    	getRootContainer().patch(getConanicalURL(fRequestUrl.getRequestUri()), content, stripCharset(fRequestHeaders.getMediaType().toString()), null);
 
       	return Response.status(Status.OK).build();
     }

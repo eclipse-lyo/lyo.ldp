@@ -108,7 +108,7 @@ public class JenaLDPContainer extends LDPContainer
 			containerResource.addProperty(LDP.hasMemberRelation, LDP.member);
 			ByteArrayOutputStream out = new ByteArrayOutputStream();
 			containerModel.write(out, "TURTLE");
-			rootContainer.put(new ByteArrayInputStream(out.toByteArray()), LDPConstants.CT_TEXT_TURTLE);
+			rootContainer.put(containerURI, new ByteArrayInputStream(out.toByteArray()), LDPConstants.CT_TEXT_TURTLE, null);
 		}
 		return rootContainer;
 	}
@@ -177,43 +177,11 @@ public class JenaLDPContainer extends LDPContainer
 	}
 
 	/* (non-Javadoc)
-	 * @see org.eclipse.lyo.ldp.server.impl.ILDPContainer#put(java.io.InputStream, java.lang.String)
-	 */
-	public void put(InputStream stream, String contentType)
-	{
-		put(stream, contentType, null);
-	}
-	
-	/* (non-Javadoc)
-	 * @see org.eclipse.lyo.ldp.server.impl.ILDPContainer#put(java.io.InputStream, java.lang.String, java.lang.String)
-	 */
-	public void put(InputStream stream, String contentType, String user)
-	{
-		put(fURI, stream, contentType);
-	}
-
-	/* (non-Javadoc)
 	 * @see org.eclipse.lyo.ldp.server.impl.ILDPContainer#query(java.io.OutputStream, java.lang.String, java.lang.String)
 	 */
 	public void query(OutputStream outStream, String queryString, String resultsFormat)
 	{
 		fGraphStore.query(outStream, queryString, resultsFormat);
-	}
-	
-	/*
-	public void construct(OutputStream outStream, String constructQuery) // FB TEMP, for testing.
-	{
-		Model model = fGraphStore.construct(constructQuery);
-		model.write(outStream, "Turtle");
-	}
-	*/
-
-	/* (non-Javadoc)
-	 * @see org.eclipse.lyo.ldp.server.impl.ILDPContainer#post(java.io.InputStream, java.lang.String)
-	 */
-	public String post(InputStream stream, String contentType)
-	{
-		return post(stream, contentType, null, null);
 	}
 	
 	/* (non-Javadoc)
@@ -224,15 +192,7 @@ public class JenaLDPContainer extends LDPContainer
 		String resourceURI = fGraphStore.createGraph(fURI, fResourceURIPrefix, nameHint);
 		return addResource(resourceURI, true, stream, contentType, user);
 	}
-	
-	/* (non-Javadoc)
-	 * @see org.eclipse.lyo.ldp.server.impl.ILDPContainer#put(java.lang.String, java.io.InputStream, java.lang.String)
-	 */
-	public void put(String resourceURI, InputStream stream, String contentType)
-	{
-		put(resourceURI, stream, contentType, null);
-	}
-	
+		
 	/* (non-Javadoc)
 	 * @see org.eclipse.lyo.ldp.server.impl.ILDPContainer#put(java.lang.String, java.io.InputStream, java.lang.String, java.lang.String)
 	 */
@@ -244,14 +204,6 @@ public class JenaLDPContainer extends LDPContainer
 			addResource(resourceURI, false, stream, contentType, user);
 		else
 			updateResource(resourceURI, resourceURI, stream, contentType, user);
-	}
-	
-	/* (non-Javadoc)
-	 * @see org.eclipse.lyo.ldp.server.impl.ILDPContainer#patch(java.lang.String, java.io.InputStream, java.lang.String)
-	 */
-	public void patch(String resourceURI, InputStream stream, String contentType)
-	{
-		patch(resourceURI, stream, contentType, null);
 	}
 	
 	/* (non-Javadoc)
@@ -467,7 +419,7 @@ public class JenaLDPContainer extends LDPContainer
 			throw new WebApplicationException(Status.NOT_FOUND);
 		
 		Resource r = graph.getResource(resourceURI);
-		if (r != null && isContainerType(r)) {
+		if (r != null && JenaLDPResourceManager.isContainer(r)) {
 			// TODO: Determine if getMembersQuery() is needed
 			// graph.add(fGraphStore.construct(getMembersQuery(resourceURI)));
 			if (fMemberInfo)
@@ -666,21 +618,5 @@ public class JenaLDPContainer extends LDPContainer
 	
 	public GraphStore getPagingGraphStore() {
 		return null;
-	}
-	
-	/**
-	 * @param res
-	 * @return true if rdf:type is one of: #BasicContainer, #DirectContainer or #IndirectContainer
-	 */
-	public static boolean isContainerType(Resource res) {
-		StmtIterator stmts = res.listProperties(DCTerms.type);
-		while (stmts.hasNext()) {
-			Statement stmt = stmts.next();
-			for (String containerTypeURI : LDPConstants.CONTAINER_TYPES) {
-				if (stmt.getObject().asResource().getURI().equals(containerTypeURI))
-					return true;
-			}
-		}
-		return false;
 	}
 }

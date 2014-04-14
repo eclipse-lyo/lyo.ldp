@@ -45,17 +45,17 @@ public class NetWorthTestCase {
 				new TDBGraphStore(), 
 				NetWorthSample.class.getClassLoader().getResourceAsStream(ASSET_CONTAINER_CONFIG));
 		
-		assetContainer.put(NetWorthTestCase.class.getClassLoader().getResourceAsStream(ASSET_CONTAINER_REP), "text/turtle");
+		assetContainer.put(ASSET_CONTAINER_URI, NetWorthTestCase.class.getClassLoader().getResourceAsStream(ASSET_CONTAINER_REP), "text/turtle", null);
 
-		assetContainer.put(NW_URI, NetWorthTestCase.class.getClassLoader().getResourceAsStream(NW1_REP), "text/turtle");
+		assetContainer.put(NW_URI, NetWorthTestCase.class.getClassLoader().getResourceAsStream(NW1_REP), "text/turtle", null);
 		
 		System.out.println("######## Net Worth resource added: " + NW_URI);
 		assetContainer.get(NW_URI, "text/turtle"/*"application/rdf+xml"*/);
 		
 		String resourceURI;
-		resourceURI = assetContainer.post(NetWorthTestCase.class.getClassLoader().getResourceAsStream(A1_REP), "text/turtle");
-		resourceURI = assetContainer.post(NetWorthTestCase.class.getClassLoader().getResourceAsStream(A2_REP), "text/turtle");
-		resourceURI = assetContainer.post(NetWorthTestCase.class.getClassLoader().getResourceAsStream(A3_REP), "text/turtle");
+		resourceURI = assetContainer.post(NetWorthTestCase.class.getClassLoader().getResourceAsStream(A1_REP), "text/turtle", null, null);
+		resourceURI = assetContainer.post(NetWorthTestCase.class.getClassLoader().getResourceAsStream(A2_REP), "text/turtle", null, null);
+		resourceURI = assetContainer.post(NetWorthTestCase.class.getClassLoader().getResourceAsStream(A3_REP), "text/turtle", null, null);
 		
 		/* TODO: Fix paging
 		System.out.println("######## Final Container (stage 1): " + ASSET_CONTAINER_URI + "?firstPage");
@@ -70,8 +70,8 @@ public class NetWorthTestCase {
 		assetContainer.get(ASSET_CONTAINER_URI + "?_meta", System.out, "text/turtle");
 		*/
 		
-		resourceURI = assetContainer.post(NetWorthTestCase.class.getClassLoader().getResourceAsStream(A4_REP), "text/turtle");
-		resourceURI = assetContainer.post(NetWorthTestCase.class.getClassLoader().getResourceAsStream(A5_REP), "text/turtle");
+		resourceURI = assetContainer.post(NetWorthTestCase.class.getClassLoader().getResourceAsStream(A4_REP), "text/turtle", null, null);
+		resourceURI = assetContainer.post(NetWorthTestCase.class.getClassLoader().getResourceAsStream(A5_REP), "text/turtle", null, null);
 
 		/* TODO: Added back paging tests when paging is working
 		System.out.println("######## Final Container (stage 2): " + ASSET_CONTAINER_URI + "?firstPage");

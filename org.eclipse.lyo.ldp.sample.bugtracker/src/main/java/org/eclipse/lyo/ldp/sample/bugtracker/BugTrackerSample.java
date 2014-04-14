@@ -18,17 +18,10 @@
  *******************************************************************************/
 package org.eclipse.lyo.ldp.sample.bugtracker;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 
 import org.eclipse.lyo.ldp.server.LDPConstants;
 import org.eclipse.lyo.ldp.server.LDPContainer;
-
-import com.hp.hpl.jena.rdf.model.Model;
-import com.hp.hpl.jena.rdf.model.ModelFactory;
-import com.hp.hpl.jena.rdf.model.Resource;
-import com.hp.hpl.jena.vocabulary.DCTerms;
 
 /**
  * Bootstrap the bug tracker example.
@@ -44,13 +37,13 @@ public class BugTrackerSample {
 		return BugTrackerSample.class.getClassLoader().getResourceAsStream(resource);
 	}
 	
-	private static InputStream asTurtleStream(Model m) {
+/*	private static InputStream asTurtleStream(Model m) {
 		ByteArrayOutputStream out = new ByteArrayOutputStream();
 		m.write(out, "TURTLE");
 		
 		byte[] data = out.toByteArray();
 		return new ByteArrayInputStream(data);
-	}
+	}*/
 	
 //	private static Model toModel(LDPContainer container, String uri) {
 //		ByteArrayOutputStream out = new ByteArrayOutputStream();
@@ -65,27 +58,27 @@ public class BugTrackerSample {
 //		return m;
 //	}
 //	
-	private static void put(LDPContainer container, String uri, Model m) {
+/*	private static void put(LDPContainer container, String uri, Model m) {
 		InputStream in = asTurtleStream(m);
-		container.put(uri, in, LDPConstants.CT_TEXT_TURTLE);
+		container.put(uri, in, LDPConstants.CT_TEXT_TURTLE, null);
 	}
-	
+*/	
 	public static void load(LDPContainer container) {
 		container.setConfigParameters(asStream("btconfig.ttl"), LDPConstants.CT_TEXT_TURTLE);
-		String productA = container.post(asStream("productA.ttl"), LDPConstants.CT_TEXT_TURTLE);
-		String productB = container.post(asStream("productB.ttl"), LDPConstants.CT_TEXT_TURTLE);
+		String productA = container.post(asStream("productA.ttl"), LDPConstants.CT_TEXT_TURTLE, null, null);
+		String productB = container.post(asStream("productB.ttl"), LDPConstants.CT_TEXT_TURTLE, null, null);
 		
-		String john = container.post(asStream("johndoe.ttl"), LDPConstants.CT_TEXT_TURTLE);
-		String jane = container.post(asStream("janeroe.ttl"), LDPConstants.CT_TEXT_TURTLE);
+		String john = container.post(asStream("johndoe.ttl"), LDPConstants.CT_TEXT_TURTLE, null, null);
+		String jane = container.post(asStream("janeroe.ttl"), LDPConstants.CT_TEXT_TURTLE, null, null);
 		
-		String bug1 = container.post(asStream("bug1.ttl"), LDPConstants.CT_TEXT_TURTLE);
+		String bug1 = container.post(asStream("bug1.ttl"), LDPConstants.CT_TEXT_TURTLE, null, null);
 //		Model bug1Model = toModel(container, bug1);
 //		Resource bug1Resource = bug1Model.createResource(bug1);
 //		bug1Resource.removeAll(DCTerms.creator);
 //		bug1Resource.addProperty(DCTerms.creator, bug1Model.createResource(john));
 //		put(container, bug1, bug1Model);
 
-		String bug2 = container.post(asStream("bug2.ttl"), LDPConstants.CT_TEXT_TURTLE);
+		String bug2 = container.post(asStream("bug2.ttl"), LDPConstants.CT_TEXT_TURTLE, null, null);
 //		Model bug2Model = toModel(container, bug2);
 //		Resource bug2Resource = bug2Model.createResource(bug2);
 //		bug2Resource.removeAll(DCTerms.creator);
@@ -93,7 +86,7 @@ public class BugTrackerSample {
 //		bug2Resource.addProperty(bug2Model.createProperty(RELATED_BUG), bug2Model.createResource(bug1));
 //		put(container, bug2, bug2Model);
 
-		String bug10 = container.post(asStream("bug10.ttl"), LDPConstants.CT_TEXT_TURTLE);
+		String bug10 = container.post(asStream("bug10.ttl"), LDPConstants.CT_TEXT_TURTLE, null, null);
 //		Model bug10Model = toModel(container, bug10);
 //		Resource bug10Resource = bug10Model.createResource(bug10);
 //		bug10Resource.removeAll(DCTerms.creator);
@@ -102,8 +95,8 @@ public class BugTrackerSample {
 //		bug10Resource.addProperty(DCTerms.contributor, bug10Model.createResource(john));
 //		put(container, bug10, bug10Model);
 
-		String bug11 = container.post(asStream("bug11.ttl"), LDPConstants.CT_TEXT_TURTLE);
-		String bug12 = container.post(asStream("bug12.ttl"), LDPConstants.CT_TEXT_TURTLE);
+		String bug11 = container.post(asStream("bug11.ttl"), LDPConstants.CT_TEXT_TURTLE, null, null);
+		String bug12 = container.post(asStream("bug12.ttl"), LDPConstants.CT_TEXT_TURTLE, null, null);
 
 		// TODO: Make Product A and Product B LDP containers.
 //		Model aModel = toModel(container, productA);

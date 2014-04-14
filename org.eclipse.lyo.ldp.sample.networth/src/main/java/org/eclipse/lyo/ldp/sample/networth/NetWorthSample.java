@@ -36,7 +36,7 @@ public class NetWorthSample {
 	public static void load(LDPContainer container) {
 		for (String res : RESOURCES) {
 			InputStream is = NetWorthSample.class.getClassLoader().getResourceAsStream(res);
-			container.post(is, LDPConstants.CT_TEXT_TURTLE);
+			container.post(is, LDPConstants.CT_TEXT_TURTLE, null, null);
 		}
 	}
 }

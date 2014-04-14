@@ -46,14 +46,6 @@ public abstract class LDPContainer extends LDPRDFResource{
 			String contentType);
 
 	/**
-	 * Set the value of the container.
-	 * @see #put(String, InputStream, String)
-	 */
-	public abstract void put(InputStream stream, String contentType);
-
-	public abstract void put(InputStream stream, String contentType, String user);
-
-	/**
 	 * Execute the specified SPARQL query over the container and its entries,
 	 * specifying the output format. Supported formats are "application/sparql-results+xml"
 	 * and "application/sparql-results+json".
@@ -76,8 +68,6 @@ public abstract class LDPContainer extends LDPRDFResource{
 	 * @param nameHint Value from Slug header or other source, used to determine the newly created resource's URL 
 	 * @return the new resource URI
 	 */
-	public abstract String post(InputStream stream, String contentType);
-
 	public abstract String post(InputStream stream, String contentType,
 			String user, String nameHint);
 
@@ -91,13 +81,7 @@ public abstract class LDPContainer extends LDPRDFResource{
 	 * @param contentType the Content-Type of the input stream.
 	 */
 	public abstract void put(String resourceURI, InputStream stream,
-			String contentType);
-
-	public abstract void put(String resourceURI, InputStream stream,
 			String contentType, String user);
-
-	public abstract void patch(String resourceURI, InputStream stream,
-			String contentType);
 
 	public abstract void patch(String resourceURI, InputStream stream,
 			String contentType, String user);
