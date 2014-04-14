@@ -4,6 +4,6 @@
 @prefix ldp:     <http://www.w3.org/ns/ldp#>.
 @prefix o:       <http://example.org/ontology/>.
 
-<http://example.org/netWorth/nw1>
+<>
    a o:NetWorth;
    dcterms:title "Net Worth of Jane Doe".

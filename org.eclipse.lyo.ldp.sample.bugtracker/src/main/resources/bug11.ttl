@@ -7,4 +7,6 @@
 
 <> a bt:Bug;
       dcterms:title "Product B GUI is too reddish";
+      dcterms:creator <http://example.org/people/johndoe>;
+      dcterms:contributor <http://example.org/people/johndoe>, <http://example.org/people/janedoe>;
       bt:isInState "InProgress" .

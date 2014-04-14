@@ -7,4 +7,6 @@
 
 <> a bt:Bug;
       dcterms:title "Product B does not make coffee";
+      dcterms:creator <http://example.org/people/johndoe>;
+      dcterms:contributor <http://example.org/people/johndoe>;
       bt:isInState "New" .

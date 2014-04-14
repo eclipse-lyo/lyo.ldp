@@ -5,5 +5,7 @@
 @prefix xsd:     <http://www.w3.org/2001/XMLSchema#>.
 @prefix bt:      <http://example.org/vocab/bugtracker#>.
 
-<> a bt:Product;
-		dcterms:title "Product A" . 
+<> a bt:Product; a ldp:DirectContainer;
+    dcterms:title "Product A"; 
+    ldp:hasMemberRelation bt:bug;                
+    ldp:membershipResource <>.

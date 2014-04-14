@@ -4,4 +4,6 @@
 
 <> a bt:Bug;
       dcterms:title "Product A crashes when shutting down.";
+      dcterms:creator <http://example.org/people/johndoe>;
+      dcterms:contributor <http://example.org/people/johndoe>, <http://example.org/people/janedoe>;
       bt:isInState "New" . 
