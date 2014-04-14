@@ -19,7 +19,7 @@
  *******************************************************************************/
 package org.eclipse.lyo.ldp.server.jena;
 
-import org.eclipse.lyo.ldp.server.LDPContainer;
+import org.eclipse.lyo.ldp.server.ILDPContainer;
 import org.eclipse.lyo.ldp.server.LDPResourceManager;
 import org.eclipse.lyo.ldp.server.jena.store.TDBGraphStore;
 import org.eclipse.lyo.ldp.server.service.LDPService;
@@ -47,7 +47,7 @@ public class JenaLDPService extends LDPService {
 	}
 
 	@Override
-	public LDPContainer getRootContainer() {
+	public ILDPContainer getRootContainer() {
 		return rootContainer;
 	}
 

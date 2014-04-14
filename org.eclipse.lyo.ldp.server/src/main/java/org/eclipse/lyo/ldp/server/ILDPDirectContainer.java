@@ -11,14 +11,10 @@
  *  
  *  Contributors:
  *  
- *     Steve Speicher - Updates for recent LDP spec changes
+ *     Steve Speicher - support for various container types
  *******************************************************************************/
 package org.eclipse.lyo.ldp.server;
 
-public class LDPRDFResource extends LDPResource {
-
-	public LDPRDFResource(String resourceURI, Object model) {
-		super(resourceURI, model);
-	}
+public interface ILDPDirectContainer extends ILDPContainer {
 
 }

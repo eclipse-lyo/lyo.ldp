@@ -16,8 +16,7 @@
  *******************************************************************************/
 package org.eclipse.lyo.ldp.server.jena;
 
-import org.eclipse.lyo.ldp.server.LDPRDFResource;
-import org.eclipse.lyo.ldp.server.LDPResource;
+import org.eclipse.lyo.ldp.server.ILDPResource;
 import org.eclipse.lyo.ldp.server.LDPResourceManager;
 import org.eclipse.lyo.ldp.server.jena.store.GraphStore;
 import org.eclipse.lyo.ldp.server.jena.vocabulary.LDP;
@@ -36,19 +35,23 @@ public class JenaLDPResourceManager implements LDPResourceManager {
 	}
 
 	@Override
-	public void put(LDPResource ldpr, boolean overwrite) {
+	public void put(ILDPResource ldpr, boolean overwrite) {
 		gs.createGraph(ldpr.getURI(), "r", null);
 	}
 
-	@Override
-	public LDPResource get(String resourceURI) {
+	public ILDPResource get(String resourceURI) {
 		Model graph = gs.getGraph(resourceURI);
 		if (graph == null) return null;
 		Resource r = graph.getResource(resourceURI);
-		if (isContainer(r)) {
-			return new JenaLDPContainer(resourceURI, gs, ps, null);
+		if (r.hasProperty(RDF.type, LDP.DirectContainer)) {
+			return new JenaLDPDirectContainer(resourceURI, gs, ps, null);
+		} else if (r.hasProperty(RDF.type, LDP.BasicContainer)) {
+			return new JenaLDPBasicContainer(resourceURI, gs, ps, null);			
+		} else if (r.hasProperty(RDF.type, LDP.Container)) {
+			// TODO: SPEC: Should only rdf:type of #Container be treated as RDF Source or error?  Probably an error
+			System.err.println("Received type of ldp:Container but treating as ldp:RDFSource.");
 		}
-		return new LDPRDFResource(resourceURI, graph);
+		return new JenaLDPRDFSource(resourceURI, gs, ps, null);
 	}
 
 	public static boolean isContainer(Resource r) {

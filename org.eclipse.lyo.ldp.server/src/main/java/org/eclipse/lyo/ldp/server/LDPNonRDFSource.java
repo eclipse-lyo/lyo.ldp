@@ -15,8 +15,10 @@
  *******************************************************************************/
 package org.eclipse.lyo.ldp.server;
 
-public interface LDPResourceManager {
-	
-	public void put(ILDPResource ldpr, boolean overwrite);
-	public ILDPResource get(String resourceURI);
+public abstract class LDPNonRDFSource extends LDPResource implements ILDPNonRDFSource {
+
+	public LDPNonRDFSource(String resourceURI, Object model) {
+		super(resourceURI, model);
+	}
+
 }

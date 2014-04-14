@@ -16,23 +16,48 @@
  *******************************************************************************/
 package org.eclipse.lyo.ldp.server;
 
-public class LDPResource {
+public abstract class LDPResource implements ILDPResource {
 	
 	protected String fURI;
 	protected Object fModel;
+	protected String fRDFType;
 	
 	public LDPResource(String resourceURI, Object model) {
 		this.fURI = resourceURI;
 		this.fModel = model;
+		this.fRDFType = LDPConstants.CLASS_RESOURCE;
 	}
 	
+	/* (non-Javadoc)
+	 * @see org.eclipse.lyo.ldp.server.ILDPResource#getURI()
+	 */
+	@Override
 	public String getURI() { return fURI; }
 	
+	/* (non-Javadoc)
+	 * @see org.eclipse.lyo.ldp.server.ILDPResource#setURI(java.lang.String)
+	 */
+	@Override
 	public void setURI(String resourceURI)
 	{ this.fURI = resourceURI; }
 
+	/* (non-Javadoc)
+	 * @see org.eclipse.lyo.ldp.server.ILDPResource#getModel()
+	 */
+	@Override
 	public Object getModel() { return fModel; }
 	
+	/* (non-Javadoc)
+	 * @see org.eclipse.lyo.ldp.server.ILDPResource#setModel(java.lang.Object)
+	 */
+	@Override
 	public void setModel(Object model)
 	{ this.fModel = model; }
+	
+	/* (non-Javadoc)
+	 * @see org.eclipse.lyo.ldp.server.ILDPResource#getTypeURI()
+	 */
+	@Override
+	public String getTypeURI() {
+		return this.fRDFType; }
 }

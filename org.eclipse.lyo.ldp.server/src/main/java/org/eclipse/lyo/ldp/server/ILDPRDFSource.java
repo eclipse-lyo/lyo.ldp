@@ -11,12 +11,10 @@
  *  
  *  Contributors:
  *  
- *     Steve Speicher - Updates for recent LDP spec changes
+ *     Steve Speicher - support for various container types
  *******************************************************************************/
 package org.eclipse.lyo.ldp.server;
 
-public interface LDPResourceManager {
-	
-	public void put(ILDPResource ldpr, boolean overwrite);
-	public ILDPResource get(String resourceURI);
+public interface ILDPRDFSource extends ILDPResource {
+
 }

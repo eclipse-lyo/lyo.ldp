@@ -44,9 +44,10 @@ import javax.ws.rs.core.StreamingOutput;
 import javax.ws.rs.core.UriInfo;
 
 import org.apache.commons.io.IOUtils;
+import org.eclipse.lyo.ldp.server.ILDPContainer;
+import org.eclipse.lyo.ldp.server.ILDPResource;
 import org.eclipse.lyo.ldp.server.LDPConstants;
-import org.eclipse.lyo.ldp.server.LDPContainer;
-import org.eclipse.lyo.ldp.server.LDPResource;
+import org.eclipse.lyo.ldp.server.LDPRDFSource;
 import org.eclipse.lyo.ldp.server.LDPResourceManager;
 
 @Path("/{path:.*}")
@@ -71,7 +72,7 @@ public abstract class LDPService {
 	public static final String ACCEPT_POST_CONTENT_TYPES_STR = encodeAccept(ACCEPT_POST_CONTENT_TYPES);
 	
 	protected abstract void resetContainer();
-	protected abstract LDPContainer getRootContainer();
+	protected abstract ILDPContainer getRootContainer();
 	protected abstract LDPResourceManager getResourceManger();
 	
     public LDPService() { }
@@ -131,13 +132,13 @@ public abstract class LDPService {
     	//   if null return 404
     	//   if not container return 400
     	//   else follow model for container
-    	LDPResource ldpR = getResourceManger().get(getConanicalURL(fRequestUrl.getRequestUri()));
+    	ILDPResource ldpR = getResourceManger().get(getConanicalURL(fRequestUrl.getRequestUri()));
     	if (ldpR == null) return Response.status(Status.NOT_FOUND).build();
-    	else if (!(ldpR instanceof LDPContainer))  return Response.status(Status.BAD_REQUEST).build();  // TODO: Provide some details in response
+    	else if (!(ldpR instanceof ILDPContainer))  return Response.status(Status.BAD_REQUEST).build();  // TODO: Provide some details in response
     	
     	//   else follow model for POST against container
     	
-    	LDPContainer ldpC = (LDPContainer)ldpR;
+    	ILDPContainer ldpC = (ILDPContainer)ldpR;
     	
     	String slug = fRequestHeaders.getHeaderString(LDPConstants.HDR_SLUG);
     	
@@ -200,7 +201,12 @@ public abstract class LDPService {
     }
     
     private Response getResourceRDF(final String type) {	
-    	return getRootContainer().get(getConanicalURL(fRequestUrl.getRequestUri()), type);
+    	String resourceURI = getConanicalURL(fRequestUrl.getRequestUri());
+    	ILDPResource ldpR = getResourceManger().get(resourceURI);
+    	if (ldpR == null || !(ldpR instanceof LDPRDFSource)) return Response.status(Status.NOT_FOUND).build();
+    	LDPRDFSource rdfS = (LDPRDFSource)ldpR;
+    	
+    	return rdfS.get(resourceURI, type);
     }
     
     String stripCharset(String contentType) {

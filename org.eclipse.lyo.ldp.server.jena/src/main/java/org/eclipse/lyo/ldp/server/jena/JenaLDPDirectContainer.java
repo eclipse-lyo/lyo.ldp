@@ -11,12 +11,21 @@
  *  
  *  Contributors:
  *  
- *     Steve Speicher - Updates for recent LDP spec changes
+ *     Steve Speicher - support for various container types
  *******************************************************************************/
-package org.eclipse.lyo.ldp.server;
+package org.eclipse.lyo.ldp.server.jena;
 
-public interface LDPResourceManager {
-	
-	public void put(ILDPResource ldpr, boolean overwrite);
-	public ILDPResource get(String resourceURI);
+import java.io.InputStream;
+
+import org.eclipse.lyo.ldp.server.ILDPDirectContainer;
+import org.eclipse.lyo.ldp.server.LDPConstants;
+import org.eclipse.lyo.ldp.server.jena.store.GraphStore;
+
+public class JenaLDPDirectContainer extends JenaLDPContainer implements ILDPDirectContainer {
+
+	protected JenaLDPDirectContainer(String containerURI,
+			GraphStore graphStore, GraphStore pageStore, InputStream config) {
+		super(containerURI, graphStore, pageStore, config);
+		fRDFType = LDPConstants.CLASS_DIRECT_CONTAINER;
+	}
 }

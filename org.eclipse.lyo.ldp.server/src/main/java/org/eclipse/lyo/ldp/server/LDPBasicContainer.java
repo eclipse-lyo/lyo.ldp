@@ -11,14 +11,15 @@
  *  
  *  Contributors:
  *  
- *     Steve Speicher - Updates for recent LDP spec changes
+ *     Steve Speicher - adding support for basic containers
  *******************************************************************************/
 package org.eclipse.lyo.ldp.server;
 
-public class LDPBinaryResource extends LDPResource {
+public abstract class LDPBasicContainer extends LDPContainer implements ILDPBasicContainer {
 
-	public LDPBinaryResource(String resourceURI, Object model) {
+	public LDPBasicContainer(String resourceURI, Object model) {
 		super(resourceURI, model);
+		this.fRDFType = LDPConstants.CLASS_BASIC_CONTAINER;
 	}
 
 }

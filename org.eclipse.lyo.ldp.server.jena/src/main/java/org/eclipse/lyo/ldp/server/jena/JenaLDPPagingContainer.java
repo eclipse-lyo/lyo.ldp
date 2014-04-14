@@ -197,7 +197,7 @@ public class JenaLDPPagingContainer extends JenaLDPContainer {
 		String containerURI = getContainerURIForResource(resourceURI);
 		if (resourceURI.startsWith(containerURI)) {
 			String suffix = resourceURI.substring(containerURI.length());
-			if (suffix.startsWith("?") && !NON_MEMBER_PROPERTIES.equals(suffix))
+			if (suffix.startsWith("?") && !CONFIG_PARAM.equals(suffix))
 				return getPage(suffix, contentType, containerURI);
 		} 
 		

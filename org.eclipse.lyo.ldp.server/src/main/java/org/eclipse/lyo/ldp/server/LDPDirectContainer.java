@@ -11,12 +11,14 @@
  *  
  *  Contributors:
  *  
- *     Steve Speicher - Updates for recent LDP spec changes
+ *     Steve Speicher - adding support for basic containers
  *******************************************************************************/
 package org.eclipse.lyo.ldp.server;
 
-public interface LDPResourceManager {
-	
-	public void put(ILDPResource ldpr, boolean overwrite);
-	public ILDPResource get(String resourceURI);
+public abstract class LDPDirectContainer extends LDPContainer implements ILDPDirectContainer {
+
+	public LDPDirectContainer(String resourceURI, Object model) {
+		super(resourceURI, model);
+		this.fRDFType = LDPConstants.CLASS_DIRECT_CONTAINER;
+	}
 }

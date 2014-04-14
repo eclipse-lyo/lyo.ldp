@@ -15,8 +15,10 @@
  *******************************************************************************/
 package org.eclipse.lyo.ldp.server;
 
-public interface LDPResourceManager {
-	
-	public void put(ILDPResource ldpr, boolean overwrite);
-	public ILDPResource get(String resourceURI);
+public abstract class LDPRDFSource extends LDPResource implements ILDPRDFSource {
+
+	public LDPRDFSource(String resourceURI, Object model) {
+		super(resourceURI, model);
+		this.fRDFType = LDPConstants.CLASS_RDFSOURCE;
+	}
 }
