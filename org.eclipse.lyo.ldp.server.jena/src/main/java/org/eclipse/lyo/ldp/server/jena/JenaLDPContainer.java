@@ -19,6 +19,7 @@
  *     Steve Speicher - make root URI configurable 
  *     Samuel Padgett - remove membership and containment triples on delete and update dcterms:modified
  *     Samuel Padgett - add ETag and Link headers with correct types on GET requests
+ *     Samuel Padgett - fix NPEx creating root container on first launch
  *******************************************************************************/
 package org.eclipse.lyo.ldp.server.jena;
 
@@ -207,11 +208,10 @@ public class JenaLDPContainer extends JenaLDPRDFSource implements ILDPContainer
         Model model = readModel(resourceURI, stream, contentType);
         Resource subject = model.getResource(resourceURI);
         Calendar time = Calendar.getInstance(); // to update dcterms:modified
-		String containerURI = getContainerURIForResource(resourceURI);
-
 
        // Add membership triple
        if (addMembership) {
+    	    String containerURI = getContainerURIForResource(resourceURI);
         	Model containerModel = fGraphStore.getGraph(containerURI);
         	Resource containerResource = containerModel.getResource(containerURI);
         	Property memberRelation = getMemberRelation(containerModel, containerResource);
