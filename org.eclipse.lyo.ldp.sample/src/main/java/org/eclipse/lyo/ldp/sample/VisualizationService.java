@@ -26,7 +26,7 @@ import javax.ws.rs.core.MediaType;
 
 import org.apache.jena.atlas.json.JsonArray;
 import org.apache.jena.atlas.json.JsonObject;
-import org.eclipse.lyo.ldp.server.jena.JenaLDPService;
+import org.eclipse.lyo.ldp.server.jena.store.TDBGraphStore;
 import org.eclipse.lyo.ldp.server.service.LDPService;
 
 import com.hp.hpl.jena.rdf.model.Model;
@@ -43,22 +43,23 @@ public class VisualizationService {
 	@GET
 	@Produces(MediaType.APPLICATION_JSON)
 	public String getVisualization() {
-		// Get the union of all graphs. FIXME: Specific to Jena TDB.
-		Model m = JenaLDPService.getJenaRootContainer().getGraphStore().getGraph("urn:x-arq:UnionGraph");
-		
-		// Return the nodes and links in the format expected by D3.js for visualization.
-		JsonObject response = new JsonObject();
-		JsonArray nodes = new JsonArray();
-		response.put("nodes", nodes);
-		JsonArray links = new JsonArray();
-		response.put("links", links);
-		HashMap<String, Integer> resourceToNodeIndex = new HashMap<String, Integer>();
-		HashMap<String, Integer> typeToGroup = new HashMap<String, Integer>();
-		int i = 0;
-		int nextGroupID = 0;
-		
-		m.enterCriticalSection(true);
+		TDBGraphStore store = new TDBGraphStore(false);
+		store.readLock();
 		try {
+			// Get the union of all graphs.
+			Model m = store.getGraph("urn:x-arq:UnionGraph");
+
+			// Return the nodes and links in the format expected by D3.js for visualization.
+			JsonObject response = new JsonObject();
+			JsonArray nodes = new JsonArray();
+			response.put("nodes", nodes);
+			JsonArray links = new JsonArray();
+			response.put("links", links);
+			HashMap<String, Integer> resourceToNodeIndex = new HashMap<String, Integer>();
+			HashMap<String, Integer> typeToGroup = new HashMap<String, Integer>();
+			int i = 0;
+			int nextGroupID = 0;
+
 			// Find all the nodes.
 			ResIterator subjects = m.listSubjects();
 			while (subjects.hasNext()) {
@@ -80,7 +81,7 @@ public class VisualizationService {
 				}
 				i++;
 			}
-			
+
 			// Iterate a second time to find the links.
 			subjects = m.listSubjects();
 			while (subjects.hasNext()) {
@@ -103,11 +104,11 @@ public class VisualizationService {
 					}
 				}
 			}
+
+			return response.toString();
 		} finally {
-			m.leaveCriticalSection();
+			store.end();
 		}
-	
-		return response.toString();
 	}
 	
 	private String getNodeName(Resource r) {

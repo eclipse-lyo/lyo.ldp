@@ -33,7 +33,6 @@ import com.hp.hpl.jena.query.ResultSet;
 import com.hp.hpl.jena.query.ResultSetFormatter;
 import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.rdf.model.Resource;
-import com.hp.hpl.jena.shared.Lock;
 import com.hp.hpl.jena.tdb.TDB;
 import com.hp.hpl.jena.tdb.TDBFactory;
 import com.hp.hpl.jena.tdb.base.block.FileMode;
@@ -45,14 +44,17 @@ import com.hp.hpl.jena.vocabulary.DCTerms;
  */
 public class TDBGraphStore implements GraphStore
 {
+	public static final String LDP_DATASET_DIR = "ldp.dataset.dir";
+
 	static String fDatasetDir=null;
 	static {
-		fDatasetDir = System.getProperty("ldp.dataset.dir");
+		fDatasetDir = System.getProperty(LDP_DATASET_DIR);
 		TDB.getContext().set(TDB.symUnionDefaultGraph, true);
 		TDB.setOptimizerWarningFlag(false);
         SystemTDB.setFileMode(FileMode.direct) ;
+        System.out.println("Using dataset directory: " + fDatasetDir);
 	}
-
+	
 	protected Dataset fDataset; // Dataset to store the graphs
 
 	public TDBGraphStore(Dataset dataset)
@@ -76,82 +78,70 @@ public class TDBGraphStore implements GraphStore
 		}		
 	}
 	
-	public Model getDefaultModel() {
+	public void readLock() {
 		fDataset.begin(ReadWrite.READ);
-		Model model = fDataset.getDefaultModel();
+	}
+	
+	public void writeLock() {
+		fDataset.begin(ReadWrite.WRITE);
+	}
+	
+	public void commit() {
+		fDataset.commit();
+	}
+	
+	public void abort() {
+		fDataset.abort();
+	}
+	
+	public void end() {
 		fDataset.end();
-		return model;
+	}
+	
+	public Model getDefaultModel() {
+		return fDataset.getDefaultModel();
 	}
 
 	public void putGraph(String graphURI, Model model)
 	{
-		Lock lock = fDataset.getLock();
-		lock.enterCriticalSection(Lock.WRITE);
-		try {
-			Model graphModel = graphURI != null ? fDataset.getNamedModel(graphURI) : fDataset.getDefaultModel();
-			graphModel.removeAll();
-			graphModel.add(model);
-			TDB.sync(fDataset);
-		} finally {
-			lock.leaveCriticalSection();
-		}
+		Model graphModel = graphURI != null ? fDataset.getNamedModel(graphURI) : fDataset.getDefaultModel();
+		graphModel.removeAll();
+		graphModel.add(model);
 	}
 
 	public Model getGraph(String graphURI)
 	{
-		Model model;
-		Lock lock = fDataset.getLock();
-		lock.enterCriticalSection(Lock.READ);
-		try {
-			if (graphURI != null)
-				model = fDataset.containsNamedModel(graphURI) ? fDataset.getNamedModel(graphURI) : null;
-			else
-				model = fDataset.getDefaultModel();
-		} finally {
-			lock.leaveCriticalSection();
+		if (graphURI != null) {
+			return fDataset.containsNamedModel(graphURI) ? fDataset.getNamedModel(graphURI) : null;
 		}
-		return model;
+		return fDataset.getDefaultModel();
 	}
 
 	public void deleteGraph(String graphURI)
 	{
-		Lock lock = fDataset.getLock();
-		lock.enterCriticalSection(Lock.WRITE);
-		try {
-			Model model = fDataset.getNamedModel(graphURI);
-			Resource resource = model.getResource(graphURI);
-			fDataset.asDatasetGraph().removeGraph(resource.asNode());
-			TDB.sync(fDataset);
-		} finally {
-			lock.leaveCriticalSection();
-		}
+		Model model = fDataset.getNamedModel(graphURI);
+		Resource resource = model.getResource(graphURI);
+		fDataset.asDatasetGraph().removeGraph(resource.asNode());
 	}
 
 	public String createGraph(String containerURI, String graphURIPrefix, String nameHint)
 	{
 		String graphURI = null;
-		Lock lock = fDataset.getLock();
-		lock.enterCriticalSection(Lock.WRITE);
-		try {
-			if (nameHint != null && nameHint.length() > 0) {
-				graphURI = appendURISegment(containerURI,  nameHint);
-				if (fDataset.containsNamedModel(graphURI)) graphURI = null;
-			} 
-			if (graphURI == null) {
-				// TODO: Use count # from container so we don't have to always start at 1
-				for (long count = 1; ; ++count) {
-					graphURI = graphURIPrefix + count;
-					if (!fDataset.containsNamedModel(graphURI)) break;
-				}
+		if (nameHint != null && nameHint.length() > 0) {
+			graphURI = appendURISegment(containerURI,  nameHint);
+			if (fDataset.containsNamedModel(graphURI)) graphURI = null;
+		} 
+		if (graphURI == null) {
+			// TODO: Use count # from container so we don't have to always start at 1
+			for (long count = 1; ; ++count) {
+				graphURI = graphURIPrefix + count;
+				if (!fDataset.containsNamedModel(graphURI)) break;
 			}
-			// Add a dummy triple, just to allocate the graph
-			Model model = fDataset.getNamedModel(graphURI);
-			Resource graphResource = model.getResource(graphURI);
-			model.add(graphResource, DCTerms.description, "Graph Placeholder");
-			TDB.sync(fDataset);
-		} finally {
-			lock.leaveCriticalSection();
 		}
+		// Add a dummy triple, just to allocate the graph
+		Model model = fDataset.getNamedModel(graphURI);
+		Resource graphResource = model.getResource(graphURI);
+		model.add(graphResource, DCTerms.description, "Graph Placeholder");
 		return graphURI;
 	}
 
@@ -162,8 +152,7 @@ public class TDBGraphStore implements GraphStore
 
 	@Override
 	public void query(OutputStream outStream, String queryString, String resultsFormat) {
-		Lock lock = fDataset.getLock();
-		lock.enterCriticalSection(Lock.READ);
+		readLock();
 		try {
 			Query query = QueryFactory.create(queryString);
 			QueryExecution qexec = QueryExecutionFactory.create(query, fDataset);
@@ -175,18 +164,17 @@ public class TDBGraphStore implements GraphStore
 					ResultSetFormatter.outputAsXML(outStream, result);
 				}
 			} finally { qexec.close(); }
-		} finally { lock.leaveCriticalSection(); }
+		} finally { end(); }
 	}
 
 	public Model construct(String queryString)
 	{
-		Lock lock = fDataset.getLock();
-		lock.enterCriticalSection(Lock.READ);
+		readLock();
 		try {
 			Query query = QueryFactory.create(queryString);
 			QueryExecution qexec = QueryExecutionFactory.create(query, fDataset);
 			return qexec.execConstruct();
-		} finally { lock.leaveCriticalSection(); }
+		} finally { end(); }
 	}
 
 

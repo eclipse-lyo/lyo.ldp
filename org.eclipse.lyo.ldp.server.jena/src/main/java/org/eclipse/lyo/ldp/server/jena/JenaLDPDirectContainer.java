@@ -12,20 +12,20 @@
  *  Contributors:
  *  
  *     Steve Speicher - support for various container types
+ *     Samuel Padgett - use TDB transactions
  *******************************************************************************/
 package org.eclipse.lyo.ldp.server.jena;
-
-import java.io.InputStream;
 
 import org.eclipse.lyo.ldp.server.ILDPDirectContainer;
 import org.eclipse.lyo.ldp.server.LDPConstants;
 import org.eclipse.lyo.ldp.server.jena.store.GraphStore;
+import org.eclipse.lyo.ldp.server.jena.store.TDBGraphStore;
 
 public class JenaLDPDirectContainer extends JenaLDPContainer implements ILDPDirectContainer {
 
 	protected JenaLDPDirectContainer(String containerURI,
-			GraphStore graphStore, GraphStore pageStore, InputStream config) {
-		super(containerURI, graphStore, pageStore, config);
+			TDBGraphStore graphStore, GraphStore pageStore) {
+		super(containerURI, graphStore, pageStore);
 		fRDFType = LDPConstants.CLASS_DIRECT_CONTAINER;
 	}
 }

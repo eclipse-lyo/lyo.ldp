@@ -18,6 +18,7 @@
  *     Steve Speicher - updates for recent LDP spec changes
  *     Steve Speicher - factored out paging into this class from JenaLDPContainer 
  *     Samuel Padgett - update for new container interface
+ *     Samuel Padgett - use TDB transactions
  *******************************************************************************/
 package org.eclipse.lyo.ldp.server.jena;
 
@@ -30,14 +31,13 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.StreamingOutput;
 
 import org.apache.jena.riot.WebContent;
-import org.eclipse.lyo.ldp.server.jena.store.GraphStore;
+import org.eclipse.lyo.ldp.server.jena.store.TDBGraphStore;
 import org.eclipse.lyo.ldp.server.jena.vocabulary.LDP;
 
 import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.rdf.model.ModelFactory;
 import com.hp.hpl.jena.rdf.model.RDFList;
 import com.hp.hpl.jena.rdf.model.Resource;
-import com.hp.hpl.jena.rdf.model.Statement;
 import com.hp.hpl.jena.vocabulary.RDF;
 
 // TODO: Consider better extensions mechanism for LDP (namely this paging)
@@ -49,66 +49,76 @@ public class JenaLDPPagingContainer extends JenaLDPContainer {
 	public static final String NTH_PAGE = "?p=";
 	protected boolean fComputePages = true; // true when paged representation needs to be recomputed.
 	protected int fPageSize; // members per LDP-C page
-	protected final GraphStore fPageStore; // GraphStore for page graphs
+	protected final TDBGraphStore fPageStore; // GraphStore for page graphs
 	protected RDFList fSortPredicates; // sort predicates for paged representation
 
 	protected JenaLDPPagingContainer(String containerURI,
-			GraphStore graphStore, GraphStore pageStore, InputStream config) {
-		super(containerURI, graphStore, pageStore, config);
+			TDBGraphStore graphStore, TDBGraphStore pageStore) {
+		super(containerURI, graphStore, pageStore);
 		fPageStore = pageStore;
 	}
 
 	private void computePages(String containerURI)
 	{
-	    String currentPageURI = containerURI + FIRST_PAGE;
-		Model currentPageModel = ModelFactory.createDefaultModel();
-	    Resource containerResource = currentPageModel.getResource(containerURI);
-		String memberQuery = fSortPredicates != null ? getSortedMembersQuery(containerURI) : getMembersQuery(containerURI);
-		String previousPageURI = null;
-		Model previousPageModel = null;
-	
-		for (long memberOffset = 0; true; memberOffset += fPageSize) {
-			String pageQuery = getPagingQuery(memberQuery, memberOffset, fPageSize);
-			Model pageMembers = fGraphStore.construct(pageQuery);
-			currentPageModel.add(pageMembers);
-			
-			String nextPageURI;
-			long memberCount = pageMembers.size();
-			if (memberCount < fPageSize) {
-				if (memberCount == 0 && memberOffset != 0) {
-					fGraphStore.deleteGraph(currentPageURI);
-					Resource previousPageResource = previousPageModel.getResource(previousPageURI);
-					previousPageModel.removeAll(previousPageResource, LDP.nextPage, null);
-					previousPageModel.add(previousPageResource, LDP.nextPage, RDF.nil);
-					fPageStore.putGraph(previousPageURI, previousPageModel);
-					return;
+		fGraphStore.writeLock();
+		fPageStore.writeLock();
+
+		try {
+			String currentPageURI = containerURI + FIRST_PAGE;
+			Model currentPageModel = ModelFactory.createDefaultModel();
+			Resource containerResource = currentPageModel.getResource(containerURI);
+			String memberQuery = fSortPredicates != null ? getSortedMembersQuery(containerURI) : getMembersQuery(containerURI);
+			String previousPageURI = null;
+			Model previousPageModel = null;
+
+			for (long memberOffset = 0; true; memberOffset += fPageSize) {
+				String pageQuery = getPagingQuery(memberQuery, memberOffset, fPageSize);
+				Model pageMembers = fGraphStore.construct(pageQuery);
+				currentPageModel.add(pageMembers);
+
+				String nextPageURI;
+				long memberCount = pageMembers.size();
+				if (memberCount < fPageSize) {
+					if (memberCount == 0 && memberOffset != 0) {
+						fGraphStore.deleteGraph(currentPageURI);
+						Resource previousPageResource = previousPageModel.getResource(previousPageURI);
+						previousPageModel.removeAll(previousPageResource, LDP.nextPage, null);
+						previousPageModel.add(previousPageResource, LDP.nextPage, RDF.nil);
+						fPageStore.putGraph(previousPageURI, previousPageModel);
+						return;
+					}
+					nextPageURI = null;
 				}
-				nextPageURI = null;
+				else {
+					nextPageURI = fPageStore.createGraph(containerURI + NTH_PAGE, null, null);
+				}
+
+				// Add bp:nextPage triple
+				Resource pageResource = currentPageModel.getResource(currentPageURI);
+				currentPageModel.add(pageResource, RDF.type, LDP.Page);
+				currentPageModel.add(pageResource, LDP.pageOf, containerResource);
+				currentPageModel.add(pageResource, LDP.nextPage, nextPageURI != null ? currentPageModel.getResource(nextPageURI) : RDF.nil);
+
+				if (fSortPredicates != null) {
+					RDFList list = currentPageModel.createList(fSortPredicates.iterator());
+					currentPageModel.add(pageResource, LDP.containerSortPredicates, list);
+				}
+
+				fPageStore.putGraph(currentPageURI, currentPageModel);
+				if (nextPageURI == null)
+					return;
+
+				// Move to next page
+				previousPageModel = currentPageModel;
+				previousPageURI = currentPageURI;
+				currentPageModel = ModelFactory.createDefaultModel();
+				currentPageURI = nextPageURI;
+				fGraphStore.commit();
+				fPageStore.commit();
 			}
-			else {
-				nextPageURI = fPageStore.createGraph(containerURI + NTH_PAGE, null, null);
-			}
-	
-			// Add bp:nextPage triple
-			Resource pageResource = currentPageModel.getResource(currentPageURI);
-			currentPageModel.add(pageResource, RDF.type, LDP.Page);
-			currentPageModel.add(pageResource, LDP.pageOf, containerResource);
-			currentPageModel.add(pageResource, LDP.nextPage, nextPageURI != null ? currentPageModel.getResource(nextPageURI) : RDF.nil);
-			
-			if (fSortPredicates != null) {
-				RDFList list = currentPageModel.createList(fSortPredicates.iterator());
-				currentPageModel.add(pageResource, LDP.containerSortPredicates, list);
-			}
-	
-			fPageStore.putGraph(currentPageURI, currentPageModel);
-			if (nextPageURI == null)
-				return;
-			
-			// Move to next page
-			previousPageModel = currentPageModel;
-			previousPageURI = currentPageURI;
-			currentPageModel = ModelFactory.createDefaultModel();
-			currentPageURI = nextPageURI;
+		} finally {
+			fGraphStore.end();
+			fPageStore.end();
 		}
 	}
 
@@ -120,6 +130,8 @@ public class JenaLDPPagingContainer extends JenaLDPContainer {
 		}
 	
 		String pageURI = containerURI + page;
+		fPageStore.readLock();
+		try {
 		Model pageModel = fPageStore.getGraph(pageURI);
 		if (pageModel == null)
 			throw new IllegalArgumentException();
@@ -144,6 +156,9 @@ public class JenaLDPPagingContainer extends JenaLDPContainer {
 		};
 
 		return Response.ok(out).build();
+		} finally {
+			fPageStore.end();
+		}
 	}
 
 	/**
@@ -194,12 +209,17 @@ public class JenaLDPPagingContainer extends JenaLDPContainer {
 	@Override
 	public Response get(String resourceURI, String contentType) {
 		// TODO: This is saying if (query param != _meta) then it must be paging, NOT!?!?
-		String containerURI = getContainerURIForResource(resourceURI);
-		if (resourceURI.startsWith(containerURI)) {
-			String suffix = resourceURI.substring(containerURI.length());
-			if (suffix.startsWith("?") && !CONFIG_PARAM.equals(suffix))
-				return getPage(suffix, contentType, containerURI);
-		} 
+		fGraphStore.readLock();
+		try {
+			String containerURI = getContainerURIForResource(resourceURI);
+			if (resourceURI.startsWith(containerURI)) {
+				String suffix = resourceURI.substring(containerURI.length());
+				if (suffix.startsWith("?") && !CONFIG_PARAM.equals(suffix))
+					return getPage(suffix, contentType, containerURI);
+			} 
+		} finally {
+			fGraphStore.end();
+		}
 		
 		return super.get(resourceURI, contentType);
 	}
@@ -240,29 +260,7 @@ public class JenaLDPPagingContainer extends JenaLDPContainer {
 	}
 	
 	@Override
-	public void setConfigParameters(InputStream config, String contentType) {
-		super.setConfigParameters(config, contentType);
-		
-		// The parent method should make sure the graph exists
-		Model configGraph = fGraphStore.getGraph(fConfigGraphURI);
-        Resource containerResource = configGraph.getResource(fConfigGraphURI);
-        
-        // Get page size int value
-		Statement stmt = containerResource.getProperty(JenaLDPImpl.pageSize);
-		if (stmt != null) {
-			fPageSize = stmt.getObject().asLiteral().getInt();
-		} else {
-			fPageSize = DEFAULT_PAGE_SIZE;
-			containerResource.addLiteral(JenaLDPImpl.pageSize, fPageSize);
-		}
-		
-        // Get sort predicate values
-        stmt = containerResource.getProperty(JenaLDPImpl.pageSortPredicates);
-        fSortPredicates = stmt != null ? stmt.getObject().as(RDFList.class) : null;
-	}
-	
-	@Override
-	public GraphStore getPagingGraphStore() {
+	public TDBGraphStore getPagingGraphStore() {
 		return fPageStore;
 	}
 

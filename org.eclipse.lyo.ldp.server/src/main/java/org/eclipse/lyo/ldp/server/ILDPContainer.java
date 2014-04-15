@@ -12,6 +12,7 @@
  *  Contributors:
  *  
  *     Steve Speicher - support for various container types
+ *     Samuel Padgett - remove setConfigParameters() method from interface
  *******************************************************************************/
 package org.eclipse.lyo.ldp.server;
 
@@ -20,14 +21,6 @@ import java.io.OutputStream;
 
 
 public interface ILDPContainer extends ILDPRDFSource {
-
-	/**
-	 * Set the configuration parameters.
-	 * @param config an RDF input stream containing configuration parameters.
-	 * @param contentType the Content-Type of the input stream.
-	 */
-	public abstract void setConfigParameters(InputStream config,
-			String contentType);
 
 	/**
 	 * Execute the specified SPARQL query over the container and its entries,

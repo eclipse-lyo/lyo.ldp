@@ -17,16 +17,22 @@
  *******************************************************************************/
 package org.eclipse.lyo.ldp.sample;
 
+import java.io.File;
+
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
+
+import org.eclipse.lyo.ldp.server.jena.store.TDBGraphStore;
 
 public class Bootstrap implements ServletContextListener {
 
 	@Override
 	public void contextInitialized(ServletContextEvent e) {
-		//LDPContainer container = JenaLDPService.getJenaRootContainer();
-		//NetWorthSample.load(container);
-		//BugTrackerSample.load(container);
+		String datasetDir = System.getProperty(TDBGraphStore.LDP_DATASET_DIR);
+		if (datasetDir == null) {
+			File tempdir = (File) e.getServletContext().getAttribute("javax.servlet.context.tempdir");
+			System.setProperty(TDBGraphStore.LDP_DATASET_DIR, tempdir.getPath());
+		}
 	}
 
 	@Override

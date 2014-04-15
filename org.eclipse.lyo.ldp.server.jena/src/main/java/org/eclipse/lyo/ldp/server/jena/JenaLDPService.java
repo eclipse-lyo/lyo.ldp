@@ -16,6 +16,7 @@
  *     Samuel Padgett - initial API and implementation
  *     Steve Speicher - updates for recent LDP spec changes
  *     Steve Speicher - make root URI configurable 
+ *     Samuel Padgett - use TDB transactions
  *******************************************************************************/
 package org.eclipse.lyo.ldp.server.jena;
 
@@ -28,22 +29,18 @@ public class JenaLDPService extends LDPService {
 	private static JenaLDPContainer rootContainer;
 	private static JenaLDPResourceManager resManager;
 	
-	static {
+	public JenaLDPService() {
 		reset();
 	}
 
-	private static void reset() {
+	private void reset() {
 		rootContainer = JenaLDPContainer.create(ROOT_CONTAINER_URL, new TDBGraphStore(false), new TDBGraphStore());
 		resManager = new JenaLDPResourceManager(rootContainer.getGraphStore(), rootContainer.getPagingGraphStore());
 	}
 	
-	public static JenaLDPContainer getJenaRootContainer() {
-		return rootContainer;
-	}
-
 	@Override
 	protected synchronized void resetContainer() {
-		JenaLDPService.reset();
+		reset();
 	}
 
 	@Override

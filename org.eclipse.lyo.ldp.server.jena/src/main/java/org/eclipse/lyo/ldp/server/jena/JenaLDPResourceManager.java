@@ -13,12 +13,13 @@
  *  
  *     Steve Speicher - Updates for recent LDP spec changes
  *     Samuel Padgett - Look for all LDP container types
+ *     Samuel Padgett - use TDB transactions
  *******************************************************************************/
 package org.eclipse.lyo.ldp.server.jena;
 
 import org.eclipse.lyo.ldp.server.ILDPResource;
 import org.eclipse.lyo.ldp.server.LDPResourceManager;
-import org.eclipse.lyo.ldp.server.jena.store.GraphStore;
+import org.eclipse.lyo.ldp.server.jena.store.TDBGraphStore;
 import org.eclipse.lyo.ldp.server.jena.vocabulary.LDP;
 
 import com.hp.hpl.jena.rdf.model.Model;
@@ -27,9 +28,9 @@ import com.hp.hpl.jena.vocabulary.RDF;
 
 public class JenaLDPResourceManager implements LDPResourceManager {
 	
-	GraphStore gs, ps;
+	TDBGraphStore gs, ps;
 
-	public JenaLDPResourceManager(GraphStore gs, GraphStore ps) {
+	public JenaLDPResourceManager(TDBGraphStore gs, TDBGraphStore ps) {
 		this.gs = gs;
 		this.ps = ps;
 	}
@@ -40,18 +41,23 @@ public class JenaLDPResourceManager implements LDPResourceManager {
 	}
 
 	public ILDPResource get(String resourceURI) {
-		Model graph = gs.getGraph(resourceURI);
-		if (graph == null) return null;
-		Resource r = graph.getResource(resourceURI);
-		if (r.hasProperty(RDF.type, LDP.DirectContainer)) {
-			return new JenaLDPDirectContainer(resourceURI, gs, ps, null);
-		} else if (r.hasProperty(RDF.type, LDP.BasicContainer)) {
-			return new JenaLDPBasicContainer(resourceURI, gs, ps, null);			
-		} else if (r.hasProperty(RDF.type, LDP.Container)) {
-			// TODO: SPEC: Should only rdf:type of #Container be treated as RDF Source or error?  Probably an error
-			System.err.println("Received type of ldp:Container but treating as ldp:RDFSource.");
+		gs.readLock();
+		try {
+			Model graph = gs.getGraph(resourceURI);
+			if (graph == null) return null;
+			Resource r = graph.getResource(resourceURI);
+			if (r.hasProperty(RDF.type, LDP.DirectContainer)) {
+				return new JenaLDPDirectContainer(resourceURI, gs, ps);
+			} else if (r.hasProperty(RDF.type, LDP.BasicContainer)) {
+				return new JenaLDPBasicContainer(resourceURI, gs, ps);			
+			} else if (r.hasProperty(RDF.type, LDP.Container)) {
+				// TODO: SPEC: Should only rdf:type of #Container be treated as RDF Source or error?  Probably an error
+				System.err.println("Received type of ldp:Container but treating as ldp:RDFSource.");
+			}
+			return new JenaLDPRDFSource(resourceURI, gs, ps);
+		} finally {
+			gs.end();
 		}
-		return new JenaLDPRDFSource(resourceURI, gs, ps, null);
 	}
 
 	public static boolean isContainer(Resource r) {

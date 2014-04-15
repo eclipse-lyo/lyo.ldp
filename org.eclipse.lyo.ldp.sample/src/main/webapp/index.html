@@ -139,6 +139,10 @@ require([ "dojo/_base/xhr",
 			event.stop(e);
 		}
 
+		getInternal();
+	}
+	
+	function getInternal(callback) {
 		xhr.get({
 			url: dom.byId('getURI').value,
 			headers: { Accept: dom.byId('getMediaType').value },
@@ -147,11 +151,14 @@ require([ "dojo/_base/xhr",
 				var n = dom.byId('resources');
 				n.innerHTML = '';
 				n.appendChild(document.createTextNode(data));
+				if (callback) {
+                    callback();
+				}
 			},
 			error: function(error, ioArgs) {
 				alert('Could not get resource (status ' + ioArgs.xhr.status + ')');
 			}
-		})
+		});
 	}
 	
 	function putResource(e) {
@@ -295,8 +302,9 @@ require([ "dojo/_base/xhr",
 		on(dom.byId('putForm'), 'submit', putResource);
 		on(dom.byId('postForm'), 'submit', postResource);
 		on(dom.byId('deleteForm'), 'submit', deleteResource);
-		visualize();
-		getResource();	
+		
+		// Call getResource() once before visualize() so that the root container can initialize.
+		getInternal(visualize);	
 	});
 });
 </script>

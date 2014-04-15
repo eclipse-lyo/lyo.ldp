@@ -34,5 +34,4 @@ public interface GraphStore
 	void query(OutputStream outStream, String queryString);
 	void query(OutputStream outStream, String queryString, String contentType);
 	Model construct(String queryString);
-
 }
