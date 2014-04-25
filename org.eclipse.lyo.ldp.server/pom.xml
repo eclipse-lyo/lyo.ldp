@@ -28,10 +28,16 @@
             <artifactId>commons-io</artifactId>
             <version>2.4</version>
         </dependency>
+        <!-- Use wsdl4j 1.6.2 rather than 1.6.3 since it's in Eclipse Orbit -->
+        <dependency>
+            <groupId>wsdl4j</groupId>
+            <artifactId>wsdl4j</artifactId>
+            <version>1.6.2</version>
+        </dependency>
         <dependency>
             <groupId>org.apache.cxf</groupId>
-            <artifactId>cxf-bundle-jaxrs</artifactId>
-            <version>2.7.2</version>
+            <artifactId>cxf-rt-frontend-jaxrs</artifactId>
+            <version>2.7.10</version>
         </dependency>
     </dependencies>
     <build>
