@@ -18,6 +18,7 @@
  *     Steve Speicher - make root URI configurable 
  *     Samuel Padgett - add LDP-RS Link header to responses
  *     Samuel Padgett - allow implementations to set response headers using Response
+ *     Samuel Padgett - add Accept-Patch header constants
  *******************************************************************************/
 package org.eclipse.lyo.ldp.server.service;
 
@@ -68,8 +69,10 @@ public abstract class LDPService {
 			LDPConstants.CT_APPLICATION_XTURTLE,
 			LDPConstants.CT_APPLICATION_JSON,
 			LDPConstants.CT_APPLICATION_LD_JSON };
+	public static final String[] ACCEPT_PATCH_CONTENT_TYPES = ACCEPT_POST_CONTENT_TYPES;
 	
 	public static final String ACCEPT_POST_CONTENT_TYPES_STR = encodeAccept(ACCEPT_POST_CONTENT_TYPES);
+	public static final String ACCEPT_PATCH_CONTENT_TYPES_STR = encodeAccept(ACCEPT_PATCH_CONTENT_TYPES);
 	
 	protected abstract void resetContainer();
 	protected abstract ILDPContainer getRootContainer();
@@ -156,8 +159,7 @@ public abstract class LDPService {
     	//   else create LDPC with default interaction model (based on rdf:type)
     	String loc = ldpC.post(content, stripCharset(fRequestHeaders.getMediaType().toString()), null, slug);
     	if (loc != null)
-    		return Response.status(Status.CREATED).header(HttpHeaders.LOCATION, loc).
-    				header(LDPConstants.HDR_LINK, "<"+LDPConstants.CLASS_RESOURCE+">; " + LDPConstants.HDR_LINK_TYPE).build();
+    		return Response.status(Status.CREATED).header(HttpHeaders.LOCATION, loc).build();
     	else
     		return Response.status(Status.CONFLICT).build();
     }

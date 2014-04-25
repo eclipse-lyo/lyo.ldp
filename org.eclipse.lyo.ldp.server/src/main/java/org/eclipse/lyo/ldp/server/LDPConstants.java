@@ -17,6 +17,7 @@
  *     Steve Speicher - updates for recent LDP spec changes
  *     Samuel Padgett - add constants for different LDP container types
  *     Samuel Padgett - add constant for ETag header
+ *     Samuel Padgett - add Accept-Patch header constants
  *******************************************************************************/
 package org.eclipse.lyo.ldp.server;
 
@@ -48,6 +49,7 @@ public class LDPConstants
 	public static final String CT_TEXT_TRIG = "text/trig";
 	
 	// HTTP Headers
+	public static final String HDR_ACCEPT_PATCH = "Accept-Patch";
 	public static final String HDR_ACCEPT_POST = "Accept-Post";
 	public static final String HDR_ETAG = "ETag";
 	public static final String HDR_LINK = "Link";
