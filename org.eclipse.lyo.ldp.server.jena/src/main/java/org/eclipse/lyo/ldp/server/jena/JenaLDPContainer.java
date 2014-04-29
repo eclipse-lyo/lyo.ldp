@@ -21,6 +21,7 @@
  *     Samuel Padgett - add ETag and Link headers with correct types on GET requests
  *     Samuel Padgett - fix NPEx creating root container on first launch
  *     Samuel Padgett - use TDB transactions
+ *     Samuel Padgett - add Allow header to GET responses
  *******************************************************************************/
 package org.eclipse.lyo.ldp.server.jena;
 
@@ -32,6 +33,7 @@ import java.util.Calendar;
 import java.util.HashSet;
 import java.util.Set;
 
+import javax.ws.rs.HttpMethod;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response.Status;
 
@@ -460,4 +462,11 @@ public class JenaLDPContainer extends JenaLDPRDFSource implements ILDPContainer
 	public TDBGraphStore getPagingGraphStore() {
 		return null;
 	}
+	
+	@Override
+    public Set<String> getAllowedMethods() {
+		Set<String> allow = super.getAllowedMethods();
+		allow.add(HttpMethod.POST);
+	    return allow;
+    }
 }

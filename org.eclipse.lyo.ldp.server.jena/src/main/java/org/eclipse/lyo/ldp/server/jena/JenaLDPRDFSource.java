@@ -13,6 +13,7 @@
  *  
  *     Steve Speicher - support for various container types
  *     Samuel Padgett - use TDB transactions
+ *     Samuel Padgett - add Allow header to GET responses
  *******************************************************************************/
 package org.eclipse.lyo.ldp.server.jena;
 
@@ -24,7 +25,10 @@ import java.io.Writer;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.util.Calendar;
+import java.util.HashSet;
+import java.util.Set;
 
+import javax.ws.rs.HttpMethod;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
@@ -161,7 +165,10 @@ public class JenaLDPRDFSource extends LDPRDFSource {
 			// Determine the right type for the Link response header.
 			String type = getTypeURI();
 
-			return Response.ok(out).header(LDPConstants.HDR_ETAG, eTag).header(LDPConstants.HDR_LINK, "<" + type + ">; " + LDPConstants.HDR_LINK_TYPE).build();
+			return Response.ok(out)
+					.header(LDPConstants.HDR_ETAG, eTag)
+					.header(LDPConstants.HDR_LINK, "<" + type + ">; " + LDPConstants.HDR_LINK_TYPE)
+					.allow(getAllowedMethods()).build();
 		} finally {
 			fGraphStore.end();
 		}
@@ -256,4 +263,16 @@ public class JenaLDPRDFSource extends LDPRDFSource {
 		return containerURI;
 	}
 
+	@Override
+    public Set<String> getAllowedMethods() {
+		HashSet<String> allowedMethods = new HashSet<String>();
+		allowedMethods.add(HttpMethod.GET);
+		allowedMethods.add(HttpMethod.PUT);
+		allowedMethods.add(HttpMethod.DELETE);
+		allowedMethods.add(HttpMethod.HEAD);
+		allowedMethods.add(HttpMethod.OPTIONS);
+		allowedMethods.add("PATCH");
+
+	    return allowedMethods;
+    }
 }

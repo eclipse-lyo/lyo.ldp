@@ -13,8 +13,11 @@
  *  
  *     Steve Speicher - Updates for recent LDP spec changes
  *     Steve Speicher - make root URI configurable 
+ *     Samuel Padgett - add Allow header to GET responses
  *******************************************************************************/
 package org.eclipse.lyo.ldp.server;
+
+import java.util.Set;
 
 public abstract class LDPResource implements ILDPResource {
 	
@@ -60,4 +63,13 @@ public abstract class LDPResource implements ILDPResource {
 	@Override
 	public String getTypeURI() {
 		return this.fRDFType; }
+	
+	/**
+	 * Returns the allowed HTTP methods for this resource as defined in RFC 2616.
+	 * 
+	 * @return the allowed HTTP methods, a set of strings
+	 * 
+	 * @see <a href="http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html">RFC 2616</a>
+	 */
+	public abstract Set<String> getAllowedMethods();
 }
