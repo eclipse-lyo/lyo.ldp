@@ -12,11 +12,13 @@
  *  Contributors:
  *  
  *     Steve Speicher - support for various container types
+ *     Samuel Padgett - return accurate Allow header values for HTTP OPTIONS
  *******************************************************************************/
 package org.eclipse.lyo.ldp.server;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Set;
 
 import javax.ws.rs.core.Response;
 
@@ -67,5 +69,12 @@ public interface ILDPResource {
 	 */
 	public abstract Response get(String resourceURI, String contentType);
 
-
+	/**
+	 * Returns the allowed HTTP methods for this resource as defined in RFC 2616.
+	 * 
+	 * @return the allowed HTTP methods, a set of strings
+	 * 
+	 * @see <a href="http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html">RFC 2616</a>
+	 */
+	public abstract Set<String> getAllowedMethods();
 }

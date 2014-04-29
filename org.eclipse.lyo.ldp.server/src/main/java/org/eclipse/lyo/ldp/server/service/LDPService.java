@@ -31,6 +31,7 @@ import java.net.URI;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
+import javax.ws.rs.OPTIONS;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
@@ -113,6 +114,17 @@ public abstract class LDPService {
     @Produces(LDPConstants.CT_TEXT_HTML)
     public StreamingOutput getResourceHTML() {
     	return null; // TODO fix me
+    }
+    
+    @OPTIONS
+    public Response options() {
+    	String resourceURI = getConanicalURL(fRequestUrl.getRequestUri());
+    	ILDPResource ldpR = getResourceManger().get(resourceURI);
+    	if (ldpR == null) {
+    		return Response.status(Status.NOT_FOUND).build();
+    	}
+    	
+    	return Response.ok().allow(ldpR.getAllowedMethods()).build();
     }
     
     @PUT
