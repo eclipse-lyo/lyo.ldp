@@ -22,6 +22,7 @@
  *     Samuel Padgett - fix NPEx creating root container on first launch
  *     Samuel Padgett - use TDB transactions
  *     Samuel Padgett - add Allow header to GET responses
+ *     Samuel Padgett - reject PUT requests that modify containment triples
  *******************************************************************************/
 package org.eclipse.lyo.ldp.server.jena;
 
@@ -31,6 +32,7 @@ import java.io.OutputStream;
 import java.lang.reflect.Method;
 import java.util.Calendar;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import javax.ws.rs.HttpMethod;
@@ -38,6 +40,7 @@ import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response.Status;
 
 import org.apache.commons.io.output.ByteArrayOutputStream;
+import org.apache.http.HttpStatus;
 import org.apache.jena.riot.WebContent;
 import org.eclipse.lyo.ldp.server.ILDPContainer;
 import org.eclipse.lyo.ldp.server.LDPConstants;
@@ -50,6 +53,7 @@ import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.rdf.model.ModelFactory;
 import com.hp.hpl.jena.rdf.model.NodeIterator;
 import com.hp.hpl.jena.rdf.model.Property;
+import com.hp.hpl.jena.rdf.model.RDFNode;
 import com.hp.hpl.jena.rdf.model.Resource;
 import com.hp.hpl.jena.rdf.model.ResourceFactory;
 import com.hp.hpl.jena.rdf.model.Statement;
@@ -320,6 +324,22 @@ public class JenaLDPContainer extends JenaLDPRDFSource implements ILDPContainer
 	{
 		Model model = readModel(baseURI, stream, contentType);
 		Resource subject = model.getResource(resourceURI);
+
+		if (resourceURI.equals(fURI)) {
+			// Make sure we're not updating any containment triples.
+			Model before = fGraphStore.getGraph(resourceURI);
+			List<Statement> originalContainmentTriples = before.listStatements(before.getResource(resourceURI), LDP.contains, (RDFNode) null).toList();
+			List<Statement> newContainmentTriples = subject.listProperties(LDP.contains).toList();
+			if (newContainmentTriples.size() != originalContainmentTriples.size()) {
+				throw new WebApplicationException(HttpStatus.SC_CONFLICT);
+			}
+	
+			for (Statement s : originalContainmentTriples) {
+				if (!subject.hasProperty(s.getPredicate(), s.getResource())) {
+					throw new WebApplicationException(HttpStatus.SC_CONFLICT);
+				}
+			}
+		}
 
 		// FIXME: Never used?
 		if (user == null) user = UNSPECIFIED_USER;
