@@ -20,6 +20,7 @@
  *     Samuel Padgett - allow implementations to set response headers using Response
  *     Samuel Padgett - add Accept-Patch header constants
  *     Samuel Padgett - pass request headers on HTTP PUT
+ *     Samuel Padgett - return 201 status when PUT is used to create a resource
  *******************************************************************************/
 package org.eclipse.lyo.ldp.server.service;
 
@@ -133,11 +134,8 @@ public abstract class LDPService {
     public Response updateResource(InputStream content) {
     	// Set the initial container representation. Should only be called once.
     	// May be invoked when query params are used, like ?_admin or ?_meta.
-    	getRootContainer().put(fRequestUrl.getRequestUri().toString(),  content, stripCharset(fRequestHeaders.getMediaType().toString()), null, fRequestHeaders);
-    	if (getRootContainer().getURI().equals(fRequestUrl.getRequestUri())) {
-    		return Response.status(Status.NO_CONTENT).header("Warning", "Overwriting ROOT container contents.").build();
-    	}
-        return Response.status(Status.NO_CONTENT).build();
+    	boolean created = getRootContainer().put(fRequestUrl.getRequestUri().toString(),  content, stripCharset(fRequestHeaders.getMediaType().toString()), null, fRequestHeaders);
+        return Response.status((created) ? Status.CREATED : Status.NO_CONTENT).build();
     }
     
     @POST
