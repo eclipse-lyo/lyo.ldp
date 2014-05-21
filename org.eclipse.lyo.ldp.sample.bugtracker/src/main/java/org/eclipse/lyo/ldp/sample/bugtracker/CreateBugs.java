@@ -14,6 +14,7 @@
  *     Frank Budinsky - initial API and implementation
  *     Steve Speicher - initial API and implementation
  *     Samuel Padgett - initial API and implementation
+ *     Samuel Padgett - add If-Match headers to PUT requests
  *******************************************************************************/
 package org.eclipse.lyo.ldp.sample.bugtracker;
 
@@ -100,7 +101,14 @@ public class CreateBugs {
 	private static void linkBugs(String sourceURI, String targetURI) {
 		// Get the bug.
 		org.apache.wink.client.Resource resource = client.resource(sourceURI);
-		InputStream is = resource.accept("text/turtle").get(InputStream.class);
+		ClientResponse getResponse = resource.accept("text/turtle").get();
+		if (getResponse.getStatusType().getFamily() != Family.SUCCESSFUL) {
+			System.err.println("Could not GET bug " + sourceURI);
+			System.exit(1);
+		}
+
+		String eTag = getResponse.getHeaders().getFirst("ETag");
+		InputStream is = getResponse.getEntity(InputStream.class);
 		Model model = read(is, sourceURI);
 		
 		// Update the property.
@@ -108,8 +116,8 @@ public class CreateBugs {
 		r.addProperty(RELATED_BUG, model.getResource(targetURI));
 
 		// Put it back.
-		ClientResponse response = resource.contentType("text/turtle").put(toTurtle(model));
-		if (response.getStatusType().getFamily() != Family.SUCCESSFUL) {
+		ClientResponse putResponse = resource.contentType("text/turtle").header("If-Match", eTag).put(toTurtle(model));
+		if (putResponse.getStatusType().getFamily() != Family.SUCCESSFUL) {
 			System.err.println("Could not PUT bug " + sourceURI);
 			System.exit(1);
 		}
@@ -117,7 +125,7 @@ public class CreateBugs {
 	
 	private static Model read(InputStream is, String base) {
 		Model model = ModelFactory.createDefaultModel();
-		model.read(asStream("bug1.ttl"), base, "TURTLE");
+		model.read(is, base, "TURTLE");
 		
 		return model;
 	}
