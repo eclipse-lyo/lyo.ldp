@@ -14,6 +14,7 @@
  *     Steve Speicher - support for various container types
  *     Samuel Padgett - use TDB transactions
  *     Samuel Padgett - add Allow header to GET responses
+ *     Samuel Padgett - add request headers to put() parameters
  *******************************************************************************/
 package org.eclipse.lyo.ldp.server.jena;
 
@@ -30,6 +31,7 @@ import java.util.Set;
 
 import javax.ws.rs.HttpMethod;
 import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.StreamingOutput;
@@ -74,7 +76,7 @@ public class JenaLDPRDFSource extends LDPRDFSource {
 	
 	@Override
 	public void put(String resourceURI, InputStream stream, String contentType,
-			String user) {
+			String user, HttpHeaders requestHeaders) {
 		// TODO Auto-generated method stub
 		
 	}
@@ -138,16 +140,7 @@ public class JenaLDPRDFSource extends LDPRDFSource {
 			Resource r = graph.getResource(fURI);
 			amendResponseGraph(graph);
 
-			Statement s = r.getProperty(DCTerms.modified);
-			final String eTag;
-			if (s == null) {
-				// uh oh. this should never be null.
-				System.err.println("WARNING: Last modified is null for resource! <" + fURI + ">");
-				eTag = "<unmodified>";
-			} else {
-				eTag = s.getLiteral().getLexicalForm();
-			}
-
+			final String eTag = getETag(r);
 			StreamingOutput out;
 			if (LDPConstants.CT_APPLICATION_JSON.equals(contentType)) {
 				out = getJSONLD(graph);
@@ -173,6 +166,19 @@ public class JenaLDPRDFSource extends LDPRDFSource {
 			fGraphStore.end();
 		}
 	}
+
+	protected String getETag(Resource r) {
+	    Statement s = r.getProperty(DCTerms.modified);
+	    final String eTag;
+	    if (s == null) {
+	    	// uh oh. this should never be null.
+	    	System.err.println("WARNING: Last modified is null for resource! <" + fURI + ">");
+	    	eTag = "<unmodified>";
+	    } else {
+	    	eTag = s.getLiteral().getLexicalForm();
+	    }
+	    return eTag;
+    }
 	
 	/**
 	 * For sub-classes to implement, given the graph for resource R, amend some triples before

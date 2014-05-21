@@ -23,6 +23,7 @@
  *     Samuel Padgett - use TDB transactions
  *     Samuel Padgett - add Allow header to GET responses
  *     Samuel Padgett - reject PUT requests that modify containment triples
+ *     Samuel Padgett - check If-Match header on PUT requests
  *******************************************************************************/
 package org.eclipse.lyo.ldp.server.jena;
 
@@ -37,6 +38,7 @@ import java.util.Set;
 
 import javax.ws.rs.HttpMethod;
 import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response.Status;
 
 import org.apache.commons.io.output.ByteArrayOutputStream;
@@ -102,7 +104,7 @@ public class JenaLDPContainer extends JenaLDPRDFSource implements ILDPContainer
 			containerResource.addProperty(LDP.hasMemberRelation, LDP.member);
 			ByteArrayOutputStream out = new ByteArrayOutputStream();
 			containerModel.write(out, "TURTLE");
-			rootContainer.put(containerURI, new ByteArrayInputStream(out.toByteArray()), LDPConstants.CT_TEXT_TURTLE, null);
+			rootContainer.put(containerURI, new ByteArrayInputStream(out.toByteArray()), LDPConstants.CT_TEXT_TURTLE, null, null);
 		}
 		return rootContainer;
 	}
@@ -181,7 +183,8 @@ public class JenaLDPContainer extends JenaLDPRDFSource implements ILDPContainer
 	/* (non-Javadoc)
 	 * @see org.eclipse.lyo.ldp.server.impl.ILDPContainer#put(java.lang.String, java.io.InputStream, java.lang.String, java.lang.String)
 	 */
-	public void put(String resourceURI, InputStream stream, String contentType, String user)
+	@Override
+	public void put(String resourceURI, InputStream stream, String contentType, String user, HttpHeaders requestHeaders)
 	{
 		/* TODO: Handle ?_meta updates
 		String baseURI = resourceURI.equals(fContainerMetaURI) ? fURI : resourceURI; */
@@ -190,7 +193,7 @@ public class JenaLDPContainer extends JenaLDPRDFSource implements ILDPContainer
 			if (fGraphStore.getGraph(resourceURI) == null)
 				addResource(resourceURI, false, stream, contentType, user);
 			else
-				updateResource(resourceURI, resourceURI, stream, contentType, user);
+				updateResource(resourceURI, resourceURI, stream, contentType, user, requestHeaders);
 			fGraphStore.commit();
 		} finally {
 			fGraphStore.end();
@@ -320,14 +323,14 @@ public class JenaLDPContainer extends JenaLDPRDFSource implements ILDPContainer
 		return model;
 	}
 	
-	protected void updateResource(String resourceURI, String baseURI, InputStream stream, String contentType, String user)
+	protected void updateResource(String resourceURI, String baseURI, InputStream stream, String contentType, String user, HttpHeaders requestHeaders)
 	{
 		Model model = readModel(baseURI, stream, contentType);
 		Resource subject = model.getResource(resourceURI);
 
+		Model before = fGraphStore.getGraph(resourceURI);
 		if (resourceURI.equals(fURI)) {
 			// Make sure we're not updating any containment triples.
-			Model before = fGraphStore.getGraph(resourceURI);
 			List<Statement> originalContainmentTriples = before.listStatements(before.getResource(resourceURI), LDP.contains, (RDFNode) null).toList();
 			List<Statement> newContainmentTriples = subject.listProperties(LDP.contains).toList();
 			if (newContainmentTriples.size() != originalContainmentTriples.size()) {
@@ -338,6 +341,20 @@ public class JenaLDPContainer extends JenaLDPRDFSource implements ILDPContainer
 				if (!subject.hasProperty(s.getPredicate(), s.getResource())) {
 					throw new WebApplicationException(HttpStatus.SC_CONFLICT);
 				}
+			}
+		}
+		
+		// Check the If-Match request header.
+		if (requestHeaders != null) {
+			String ifMatch = requestHeaders.getHeaderString(HttpHeaders.IF_MATCH);
+			if (ifMatch == null) {
+				// condition required
+				throw new WebApplicationException(428);
+			}
+			String originalETag = getETag(before.getResource(resourceURI));
+			// FIXME: Does not handle wildcards or comma-separated values...
+			if (!originalETag.equals(ifMatch)) {
+				throw new WebApplicationException(HttpStatus.SC_PRECONDITION_FAILED);
 			}
 		}
 
