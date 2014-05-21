@@ -13,6 +13,7 @@
  *  
  *     Steve Speicher - support for various container types
  *     Samuel Padgett - return accurate Allow header values for HTTP OPTIONS
+ *     Samuel Padgett - pass request headers on HTTP PUT
  *******************************************************************************/
 package org.eclipse.lyo.ldp.server;
 
@@ -20,6 +21,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Set;
 
+import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 
 public interface ILDPResource {
@@ -44,7 +46,7 @@ public interface ILDPResource {
 	 * @param contentType the Content-Type of the input stream.
 	 */
 	public abstract void put(String resourceURI, InputStream stream,
-			String contentType, String user);
+			String contentType, String user, HttpHeaders requestHeaders);
 
 	public abstract void patch(String resourceURI, InputStream stream,
 			String contentType, String user);

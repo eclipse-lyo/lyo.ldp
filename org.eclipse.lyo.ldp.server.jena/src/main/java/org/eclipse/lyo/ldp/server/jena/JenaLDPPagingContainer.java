@@ -19,6 +19,7 @@
  *     Steve Speicher - factored out paging into this class from JenaLDPContainer 
  *     Samuel Padgett - update for new container interface
  *     Samuel Padgett - use TDB transactions
+ *     Samuel Padgett - add request headers to updateResource() parameters
  *******************************************************************************/
 package org.eclipse.lyo.ldp.server.jena;
 
@@ -27,6 +28,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 
 import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.StreamingOutput;
 
@@ -201,9 +203,9 @@ public class JenaLDPPagingContainer extends JenaLDPContainer {
 	
 	@Override
 	protected void updateResource(String resourceURI, String baseURI,
-			InputStream stream, String contentType, String user) {
+			InputStream stream, String contentType, String user, HttpHeaders requestHeaders) {
 		fComputePages = true;
-		super.updateResource(resourceURI, baseURI, stream, contentType, user);
+		super.updateResource(resourceURI, baseURI, stream, contentType, user, requestHeaders);
 	}
 	
 	@Override

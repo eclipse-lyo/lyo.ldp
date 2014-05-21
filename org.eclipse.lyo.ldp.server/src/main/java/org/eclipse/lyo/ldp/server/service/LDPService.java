@@ -19,6 +19,7 @@
  *     Samuel Padgett - add LDP-RS Link header to responses
  *     Samuel Padgett - allow implementations to set response headers using Response
  *     Samuel Padgett - add Accept-Patch header constants
+ *     Samuel Padgett - pass request headers on HTTP PUT
  *******************************************************************************/
 package org.eclipse.lyo.ldp.server.service;
 
@@ -132,7 +133,7 @@ public abstract class LDPService {
     public Response updateResource(InputStream content) {
     	// Set the initial container representation. Should only be called once.
     	// May be invoked when query params are used, like ?_admin or ?_meta.
-    	getRootContainer().put(fRequestUrl.getRequestUri().toString(),  content, stripCharset(fRequestHeaders.getMediaType().toString()), null);
+    	getRootContainer().put(fRequestUrl.getRequestUri().toString(),  content, stripCharset(fRequestHeaders.getMediaType().toString()), null, fRequestHeaders);
     	if (getRootContainer().getURI().equals(fRequestUrl.getRequestUri())) {
     		return Response.status(Status.NO_CONTENT).header("Warning", "Overwriting ROOT container contents.").build();
     	}
