@@ -75,10 +75,9 @@ public class JenaLDPRDFSource extends LDPRDFSource {
 	}
 	
 	@Override
-	public void put(String resourceURI, InputStream stream, String contentType,
+	public boolean put(String resourceURI, InputStream stream, String contentType,
 			String user, HttpHeaders requestHeaders) {
-		// TODO Auto-generated method stub
-		
+		return false;
 	}
 
 	@Override

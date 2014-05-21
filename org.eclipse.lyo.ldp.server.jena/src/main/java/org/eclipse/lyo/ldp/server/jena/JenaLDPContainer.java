@@ -184,20 +184,26 @@ public class JenaLDPContainer extends JenaLDPRDFSource implements ILDPContainer
 	 * @see org.eclipse.lyo.ldp.server.impl.ILDPContainer#put(java.lang.String, java.io.InputStream, java.lang.String, java.lang.String)
 	 */
 	@Override
-	public void put(String resourceURI, InputStream stream, String contentType, String user, HttpHeaders requestHeaders)
+	public boolean put(String resourceURI, InputStream stream, String contentType, String user, HttpHeaders requestHeaders)
 	{
+		boolean create = false;
+
 		/* TODO: Handle ?_meta updates
 		String baseURI = resourceURI.equals(fContainerMetaURI) ? fURI : resourceURI; */
 		fGraphStore.writeLock();
 		try {
-			if (fGraphStore.getGraph(resourceURI) == null)
+			if (fGraphStore.getGraph(resourceURI) == null) {
 				addResource(resourceURI, false, stream, contentType, user);
-			else
+				create = true;
+			} else {
 				updateResource(resourceURI, resourceURI, stream, contentType, user, requestHeaders);
+			}
 			fGraphStore.commit();
 		} finally {
 			fGraphStore.end();
 		}
+		
+		return create;
 	}
 	
 	/* (non-Javadoc)

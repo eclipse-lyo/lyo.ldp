@@ -44,8 +44,10 @@ public interface ILDPResource {
 	 * @param resourceURI the URI of the BPC or a member resource.
 	 * @param stream the input stream containing the resource representation.
 	 * @param contentType the Content-Type of the input stream.
+	 * @param requestHeaders the HTTP request headers
+	 * @return true if a new resource was created or false if the resource already existed
 	 */
-	public abstract void put(String resourceURI, InputStream stream,
+	public abstract boolean put(String resourceURI, InputStream stream,
 			String contentType, String user, HttpHeaders requestHeaders);
 
 	public abstract void patch(String resourceURI, InputStream stream,
