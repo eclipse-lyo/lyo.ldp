@@ -22,6 +22,8 @@ package org.eclipse.lyo.ldp.server.jena.store;
 import java.io.OutputStream;
 
 import org.eclipse.lyo.ldp.server.LDPConstants;
+import org.eclipse.lyo.ldp.server.jena.JenaLDPRDFSource;
+import org.eclipse.lyo.ldp.server.jena.vocabulary.Lyo;
 
 import com.hp.hpl.jena.query.Dataset;
 import com.hp.hpl.jena.query.Query;
@@ -129,13 +131,13 @@ public class TDBGraphStore implements GraphStore
 		String graphURI = null;
 		if (nameHint != null && nameHint.length() > 0) {
 			graphURI = appendURISegment(containerURI,  nameHint);
-			if (fDataset.containsNamedModel(graphURI)) graphURI = null;
+			if (previouslyUsed(graphURI)) graphURI = null;
 		} 
 		if (graphURI == null) {
 			// TODO: Use count # from container so we don't have to always start at 1
 			for (long count = 1; ; ++count) {
 				graphURI = graphURIPrefix + count;
-				if (!fDataset.containsNamedModel(graphURI)) break;
+				if (!previouslyUsed(graphURI)) break;
 			}
 		}
 		// Add a dummy triple, just to allocate the graph
@@ -143,6 +145,28 @@ public class TDBGraphStore implements GraphStore
 		Resource graphResource = model.getResource(graphURI);
 		model.add(graphResource, DCTerms.description, "Graph Placeholder");
 		return graphURI;
+	}
+	
+	/**
+	 * Companion graph to the one identified by uri
+	 * @param uri  The primary resource being managed
+	 * @param configURI A side resource, in support of uri
+	 */
+	public Model createConfigGraph(String uri, String configURI) {
+		Model model = fDataset.getNamedModel(configURI);
+		Resource graphResource = model.getResource(uri);
+		Resource configResource = model.getResource(configURI);
+		model.add(configResource, Lyo.describes, graphResource);
+		return model;
+	}
+	
+	/**
+	 * Given uri, determine if a resource graph or config graph exists (further testing could be done)
+	 * @param uri
+	 * @return true if found an old config graph
+	 */
+	public boolean previouslyUsed(String uri) {
+		return fDataset.containsNamedModel(uri) || fDataset.containsNamedModel(JenaLDPRDFSource.mintConfigURI(uri));
 	}
 
 	public void query(OutputStream outStream, String queryString)

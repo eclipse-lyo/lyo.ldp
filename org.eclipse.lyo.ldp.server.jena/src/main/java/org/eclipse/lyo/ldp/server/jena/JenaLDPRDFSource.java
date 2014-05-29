@@ -42,6 +42,7 @@ import org.eclipse.lyo.ldp.server.LDPRDFSource;
 import org.eclipse.lyo.ldp.server.jena.store.GraphStore;
 import org.eclipse.lyo.ldp.server.jena.store.TDBGraphStore;
 import org.eclipse.lyo.ldp.server.jena.vocabulary.LDP;
+import org.eclipse.lyo.ldp.server.jena.vocabulary.Lyo;
 
 import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.rdf.model.Property;
@@ -67,7 +68,7 @@ public class JenaLDPRDFSource extends LDPRDFSource {
 		super(resourceURI, graphStore);
 		fRDFType = LDPConstants.CLASS_RDFSOURCE;
 		fGraphStore = graphStore;
-		fConfigGraphURI = fURI + CONFIG_PARAM;
+		fConfigGraphURI = mintConfigURI(fURI);
 	}
 	
 	protected Model getConfigModel() {
@@ -122,6 +123,15 @@ public class JenaLDPRDFSource extends LDPRDFSource {
 
 			// Delete the resource itself
 			fGraphStore.deleteGraph(resourceURI);
+			
+			// Keep track of the deletion by logging the delete time
+			String configURI = mintConfigURI(resourceURI);
+			Model configModel = fGraphStore.getGraph(configURI);
+			if (configModel == null) {
+				configModel = fGraphStore.createConfigGraph(resourceURI, configURI);
+			}
+			configModel.getResource(resourceURI).addLiteral(Lyo.deleted, configModel.createTypedLiteral(time));
+			
 			fGraphStore.commit();
 		} finally {
 			fGraphStore.end();
@@ -280,4 +290,8 @@ public class JenaLDPRDFSource extends LDPRDFSource {
 
 	    return allowedMethods;
     }
+	
+	public static String mintConfigURI(String uri) {
+		return 	uri + CONFIG_PARAM;
+	}
 }

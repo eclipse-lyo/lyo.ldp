@@ -39,6 +39,7 @@ import java.util.Set;
 import javax.ws.rs.HttpMethod;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 
 import org.apache.commons.io.output.ByteArrayOutputStream;
@@ -172,6 +173,7 @@ public class JenaLDPContainer extends JenaLDPRDFSource implements ILDPContainer
 		fGraphStore.writeLock();
 		try {
 			String resourceURI = fGraphStore.createGraph(fURI, fResourceURIPrefix, nameHint);
+			fGraphStore.createConfigGraph(resourceURI, mintConfigURI(resourceURI));
 			String result = addResource(resourceURI, true, stream, contentType, user);
 			fGraphStore.commit();
 			return result;
@@ -188,12 +190,17 @@ public class JenaLDPContainer extends JenaLDPRDFSource implements ILDPContainer
 	{
 		boolean create = false;
 
-		/* TODO: Handle ?_meta updates
-		String baseURI = resourceURI.equals(fContainerMetaURI) ? fURI : resourceURI; */
 		fGraphStore.writeLock();
 		try {
 			if (fGraphStore.getGraph(resourceURI) == null) {
-				addResource(resourceURI, false, stream, contentType, user);
+				Model configModel = fGraphStore.getGraph(mintConfigURI(resourceURI));
+				if (configModel != null) {
+					// Attempting to reuse a URI, fail the request.
+					throw new WebApplicationException(Response.status(Status.BAD_REQUEST).entity(
+							"Can not create a resource for URI that has already been used for a deleted resource at: "+resourceURI).build());
+				}
+				fGraphStore.createConfigGraph(resourceURI, mintConfigURI(resourceURI));
+				addResource(resourceURI, false, stream, contentType, user);	
 				create = true;
 			} else {
 				updateResource(resourceURI, resourceURI, stream, contentType, user, requestHeaders);
