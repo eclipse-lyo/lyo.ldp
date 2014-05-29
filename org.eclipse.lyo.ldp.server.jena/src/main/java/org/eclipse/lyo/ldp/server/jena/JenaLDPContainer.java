@@ -133,7 +133,6 @@ public class JenaLDPContainer extends JenaLDPRDFSource implements ILDPContainer
 			fMemberInfo = stmt.getObject().asLiteral().getBoolean();
 		} else {
 			fMemberInfo = false;
-			containerResource.addLiteral(JenaLDPImpl.memberInfo, fMemberInfo);
 		}
 
 		// Get member filter Property values
@@ -156,7 +155,7 @@ public class JenaLDPContainer extends JenaLDPRDFSource implements ILDPContainer
 		fResourceURIPrefix = appendURISegment(fURI, fResourceURIPrefix);
 		configGraph.close();
 	}
-
+	
 	/* (non-Javadoc)
 	 * @see org.eclipse.lyo.ldp.server.impl.ILDPContainer#query(java.io.OutputStream, java.lang.String, java.lang.String)
 	 */
