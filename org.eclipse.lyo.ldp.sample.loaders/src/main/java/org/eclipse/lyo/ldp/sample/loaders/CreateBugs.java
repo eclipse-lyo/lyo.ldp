@@ -16,7 +16,7 @@
  *     Samuel Padgett - initial API and implementation
  *     Samuel Padgett - add If-Match headers to PUT requests
  *******************************************************************************/
-package org.eclipse.lyo.ldp.sample.bugtracker;
+package org.eclipse.lyo.ldp.sample.loaders;
 
 import java.io.InputStream;
 import java.io.StringWriter;
@@ -138,6 +138,6 @@ public class CreateBugs {
 	}
 
 	private static InputStream asStream(String resource) {
-		return CreateBugs.class.getClassLoader().getResourceAsStream(resource);
+		return CreateBugs.class.getClassLoader().getResourceAsStream("bugs/"+resource);
 	}
 }

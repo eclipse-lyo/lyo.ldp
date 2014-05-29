@@ -1,0 +1,6 @@
+@prefix dcterms: <http://purl.org/dc/terms/>.
+@prefix ldp:     <http://www.w3.org/ns/ldp#>.
+
+<>
+   a ldp:RDFSource;
+   dcterms:title "TestSuite example of a ldp:RDFSource, used as a membership resource".

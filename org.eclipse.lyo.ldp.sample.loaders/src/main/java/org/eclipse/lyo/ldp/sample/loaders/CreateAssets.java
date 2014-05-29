@@ -15,7 +15,7 @@
  *     Steve Speicher - initial API and implementation
  *     Samuel Padgett - initial API and implementation
  *******************************************************************************/
-package org.eclipse.lyo.ldp.sample.networth;
+package org.eclipse.lyo.ldp.sample.loaders;
 
 import java.io.InputStream;
 import java.io.StringWriter;
@@ -91,6 +91,6 @@ public class CreateAssets {
     }
 	
 	private static InputStream asStream(String resource) {
-		return CreateAssets.class.getClassLoader().getResourceAsStream(resource);
+		return CreateAssets.class.getClassLoader().getResourceAsStream("networth/"+resource);
 	}
 }
