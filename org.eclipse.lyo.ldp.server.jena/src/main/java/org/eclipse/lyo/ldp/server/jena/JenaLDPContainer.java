@@ -155,7 +155,6 @@ public class JenaLDPContainer extends JenaLDPRDFSource implements ILDPContainer
 			prefix = stmt.getObject().asLiteral().getString();
 		}
 		fResourceURIPrefix = appendURISegment(fURI, prefix);
-		configGraph.close();
 	}
 	
 	/* (non-Javadoc)
@@ -381,7 +380,6 @@ public class JenaLDPContainer extends JenaLDPRDFSource implements ILDPContainer
 		model.add(subject, DCTerms.modified, model.createTypedLiteral(time));
 
 		fGraphStore.putGraph(resourceURI, model);
-		model.close();
 	}
 	
 	protected void patchResource(String resourceURI, String baseURI, InputStream stream, String contentType, String user)

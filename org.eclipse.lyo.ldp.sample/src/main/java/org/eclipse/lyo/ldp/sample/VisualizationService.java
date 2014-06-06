@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2013 IBM Corporation.
+ * Copyright (c) 2013, 2014 IBM Corporation.
  *
  *  All rights reserved. This program and the accompanying materials
  *  are made available under the terms of the Eclipse Public License v1.0
@@ -26,6 +26,7 @@ import javax.ws.rs.core.MediaType;
 
 import org.apache.jena.atlas.json.JsonArray;
 import org.apache.jena.atlas.json.JsonObject;
+import org.eclipse.lyo.ldp.server.jena.JenaLDPService;
 import org.eclipse.lyo.ldp.server.jena.store.TDBGraphStore;
 import org.eclipse.lyo.ldp.server.service.LDPService;
 
@@ -43,7 +44,7 @@ public class VisualizationService {
 	@GET
 	@Produces(MediaType.APPLICATION_JSON)
 	public String getVisualization() {
-		TDBGraphStore store = new TDBGraphStore(false);
+		TDBGraphStore store = JenaLDPService.getStore();
 		store.readLock();
 		try {
 			// Get the union of all graphs.

@@ -20,36 +20,42 @@
  *******************************************************************************/
 package org.eclipse.lyo.ldp.server.jena;
 
-import org.eclipse.lyo.ldp.server.ILDPContainer;
-import org.eclipse.lyo.ldp.server.LDPResourceManager;
 import org.eclipse.lyo.ldp.server.jena.store.TDBGraphStore;
 import org.eclipse.lyo.ldp.server.service.LDPService;
 
 public class JenaLDPService extends LDPService {
 	private static JenaLDPContainer rootContainer;
+	private static TDBGraphStore graphStore = new TDBGraphStore(false);
 	private static JenaLDPResourceManager resManager;
 	
-	public JenaLDPService() {
+	static {
 		reset();
 	}
+	
+	public JenaLDPService() {
+	}
 
-	private void reset() {
-		rootContainer = JenaLDPContainer.create(ROOT_CONTAINER_URL, new TDBGraphStore(false), new TDBGraphStore());
-		resManager = new JenaLDPResourceManager(rootContainer.getGraphStore(), rootContainer.getPagingGraphStore());
+	private synchronized static void reset() {
+		rootContainer = JenaLDPContainer.create(ROOT_CONTAINER_URL, graphStore, new TDBGraphStore());
+		resManager = new JenaLDPResourceManager(graphStore, rootContainer.getPagingGraphStore());
 	}
 	
 	@Override
-	protected synchronized void resetContainer() {
+	protected void resetContainer() {
 		reset();
 	}
 
 	@Override
-	public ILDPContainer getRootContainer() {
+	public JenaLDPContainer getRootContainer() {
 		return rootContainer;
 	}
 
 	@Override
-	protected LDPResourceManager getResourceManger() {
+	protected JenaLDPResourceManager getResourceManger() {
 		return resManager;
+	}
+	
+	public static TDBGraphStore getStore() {
+		return graphStore;
 	}
 }
