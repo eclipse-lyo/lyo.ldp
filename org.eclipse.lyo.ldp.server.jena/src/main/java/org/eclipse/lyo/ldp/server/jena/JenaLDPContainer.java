@@ -24,6 +24,7 @@
  *     Samuel Padgett - add Allow header to GET responses
  *     Samuel Padgett - reject PUT requests that modify containment triples
  *     Samuel Padgett - check If-Match header on PUT requests
+ *     Samuel Padgett - fix null resource prefix for root container
  *******************************************************************************/
 package org.eclipse.lyo.ldp.server.jena;
 
@@ -148,11 +149,12 @@ public class JenaLDPContainer extends JenaLDPRDFSource implements ILDPContainer
 			fMemberFilter = null;
 
 		// Get resource URI prefix string value
+		String prefix = DEFAULT_RESOURCE_PREFIX;
 		stmt = containerResource.getProperty(JenaLDPImpl.resourceURIPrefix);
 		if (stmt != null) {
-			fResourceURIPrefix = stmt.getObject().asLiteral().getString();
+			prefix = stmt.getObject().asLiteral().getString();
 		}
-		fResourceURIPrefix = appendURISegment(fURI, fResourceURIPrefix);
+		fResourceURIPrefix = appendURISegment(fURI, prefix);
 		configGraph.close();
 	}
 	
