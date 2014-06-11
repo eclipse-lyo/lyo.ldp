@@ -21,6 +21,7 @@
  *     Samuel Padgett - add Accept-Patch header constants
  *     Samuel Padgett - pass request headers on HTTP PUT
  *     Samuel Padgett - return 201 status when PUT is used to create a resource
+ *     Samuel Padgett - add support for LDP Non-RDF Source
  *******************************************************************************/
 package org.eclipse.lyo.ldp.server.service;
 
@@ -30,9 +31,11 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URI;
 
+import javax.servlet.ServletContext;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
+import javax.ws.rs.HeaderParam;
 import javax.ws.rs.OPTIONS;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
@@ -51,19 +54,24 @@ import org.apache.commons.io.IOUtils;
 import org.eclipse.lyo.ldp.server.ILDPContainer;
 import org.eclipse.lyo.ldp.server.ILDPResource;
 import org.eclipse.lyo.ldp.server.LDPConstants;
-import org.eclipse.lyo.ldp.server.LDPRDFSource;
+import org.eclipse.lyo.ldp.server.LDPNonRDFSource;
 import org.eclipse.lyo.ldp.server.LDPResourceManager;
 
 @Path("/{path:.*}")
 public abstract class LDPService {
+	public static final String LDP_CONTENT_SEGMENT = "ldp.contseg";
+	public static final String LDP_ROOTURI = "ldp.rooturi";
+
 	
 	@Context HttpHeaders fRequestHeaders;
 	@Context UriInfo fRequestUrl;
+	@Context ServletContext context;
 	@PathParam("path") String fPath;
 	
-	public static final String ROOT_APP_URL = (System.getProperty("ldp.rooturi") != null) ? System.getProperty("ldp.rooturi") : "http://localhost:8080/ldp";
-	public static final String ROOT_PATH_SEG = (System.getProperty("ldp.contseg") != null) ? wrapPathSeg(System.getProperty("ldp.contseg")) : "/resources/";
+	public static final String ROOT_APP_URL = System.getProperty(LDP_ROOTURI, "http://localhost:8080/ldp");
+	public static final String ROOT_PATH_SEG = System.getProperty(LDP_CONTENT_SEGMENT, "/resources/");
 	public static final String ROOT_CONTAINER_URL = ROOT_APP_URL + ROOT_PATH_SEG;
+	//public static final String FILE_DIR = System.getProperty(LDP_FILE_DIR, getCon);
 	private static String fPublicURI = ROOT_APP_URL;
 	
 	public static final String[] ACCEPT_POST_CONTENT_TYPES = {
@@ -91,33 +99,33 @@ public abstract class LDPService {
     @GET
     @Produces(LDPConstants.CT_APPLICATION_RDFXML)
     public Response getContainerApplicationRDFXML() {	
-        return getResourceRDF(LDPConstants.CT_APPLICATION_RDFXML);
+        return getResource(LDPConstants.CT_APPLICATION_RDFXML);
     }
   
     @GET
     @Produces(LDPConstants.CT_TEXT_TURTLE)
     public Response getContainerTextTurtle() {	
-        return getResourceRDF(LDPConstants.CT_TEXT_TURTLE);
+        return getResource(LDPConstants.CT_TEXT_TURTLE);
     }
     
     @GET
     @Produces(LDPConstants.CT_APPLICATION_XTURTLE)
     public Response getContainerApplicationXTurtle() {	
-        return getResourceRDF(LDPConstants.CT_APPLICATION_XTURTLE);
+        return getResource(LDPConstants.CT_APPLICATION_XTURTLE);
     }
 
     @GET
     @Produces({ LDPConstants.CT_APPLICATION_JSON, LDPConstants.CT_APPLICATION_LD_JSON })
     public Response getContainerJSON() {	
-        return getResourceRDF(LDPConstants.CT_APPLICATION_JSON);
+        return getResource(LDPConstants.CT_APPLICATION_JSON);
     }
 
     @GET
-    @Produces(LDPConstants.CT_TEXT_HTML)
-    public StreamingOutput getResourceHTML() {
-    	return null; // TODO fix me
+    @Produces("*/*")
+    public Response getNonRdfSource() {
+    	return getResource(null);
     }
-    
+
     @OPTIONS
     public Response options() {
     	String resourceURI = getConanicalURL(fRequestUrl.getRequestUri());
@@ -138,23 +146,25 @@ public abstract class LDPService {
         return Response.status((created) ? Status.CREATED : Status.NO_CONTENT).build();
     }
     
+    @PUT
+    @Consumes("*/*")
+    public Response putLDPNR(InputStream content) {
+    	String resourceURI = getConanicalURL(fRequestUrl.getRequestUri());
+    	ILDPResource ldpR = getResourceManger().get(resourceURI);
+    	if (ldpR == null) return Response.status(Status.NOT_FOUND).build();
+    	// We don't allow changing an LDP-RS to an LDP-NR.
+    	if (!(ldpR instanceof LDPNonRDFSource)) return Response.status(Status.CONFLICT).build();
+    	
+    	ldpR.put(fRequestUrl.getRequestUri().toString(),  content, stripCharset(fRequestHeaders.getMediaType().toString()), null, fRequestHeaders);
+
+    	return Response.status(Status.NO_CONTENT).build();
+    }
+    
     @POST
     @Consumes({ LDPConstants.CT_APPLICATION_RDFXML, LDPConstants.CT_TEXT_TURTLE, LDPConstants.CT_APPLICATION_XTURTLE, LDPConstants.CT_APPLICATION_JSON, LDPConstants.CT_APPLICATION_LD_JSON })
-    public Response createResource(InputStream content) {
+    public Response createResource(@HeaderParam(LDPConstants.HDR_SLUG) String slug, InputStream content) {
     	
-    	// Look up content at Request-URI
-    	//   if null return 404
-    	//   if not container return 400
-    	//   else follow model for container
-    	ILDPResource ldpR = getResourceManger().get(getConanicalURL(fRequestUrl.getRequestUri()));
-    	if (ldpR == null) return Response.status(Status.NOT_FOUND).build();
-    	else if (!(ldpR instanceof ILDPContainer))  return Response.status(Status.BAD_REQUEST).build();  // TODO: Provide some details in response
-    	
-    	//   else follow model for POST against container
-    	
-    	ILDPContainer ldpC = (ILDPContainer)ldpR;
-    	
-    	String slug = fRequestHeaders.getHeaderString(LDPConstants.HDR_SLUG);
+    	ILDPContainer ldpC = getRequestContainer();
     	
     	//  Look at headers (rel='type') and content to determine kind + interaction model
     	/* List<String> typeHeaders = getLDPTypesFromTypeHeader(fRequestHeaders); */
@@ -163,16 +173,30 @@ public abstract class LDPService {
     	/* @SuppressWarnings("rawtypes")
 		Class interactionModel = LDPRDFResource.class; */
     	
-    	//   TODO: if null/no-type and NOT RDF content then create LDP-BR and meta-LDP-RR (note: this could be separate @Consumes(XML, GIF, ...)
-    	
     	//   TODO: if LDPC/w-LDPR interaction model, create container and mark as LDPR model
     	
     	//   else create LDPC with default interaction model (based on rdf:type)
     	String loc = ldpC.post(content, stripCharset(fRequestHeaders.getMediaType().toString()), null, slug);
     	if (loc != null)
-    		return Response.status(Status.CREATED).header(HttpHeaders.LOCATION, loc).build();
+    		return Response.status(Status.CREATED).header(HttpHeaders.LOCATION, loc)
+					.header(LDPConstants.HDR_LINK, "<" + ldpC.getTypeURI() + ">; " + LDPConstants.HDR_LINK_TYPE).build();
     	else
     		return Response.status(Status.CONFLICT).build();
+    }
+
+	protected ILDPContainer getRequestContainer() {
+	    // Look up content at Request-URI
+    	//   if null return 404
+    	//   if not container return 400
+    	//   else follow model for container
+    	ILDPResource ldpR = getResourceManger().get(getConanicalURL(fRequestUrl.getRequestUri()));
+    	if (ldpR == null) throw new WebApplicationException(Status.NOT_FOUND);
+    	else if (!(ldpR instanceof ILDPContainer)) throw new WebApplicationException(Status.BAD_REQUEST);  // TODO: Provide some details in response
+    	
+    	//   else follow model for POST against container
+    	
+    	ILDPContainer ldpC = (ILDPContainer)ldpR;
+	    return ldpC;
     }
     
     @POST
@@ -197,10 +221,30 @@ public abstract class LDPService {
     		return null;
     }
 
+    /*
+     * POST non-RDF source
+     */
+    @POST
+    @Consumes("*/*")
+    public Response createLDPNR(@HeaderParam(LDPConstants.HDR_SLUG) String slug, InputStream content) {
+    	ILDPContainer ldpC = getRequestContainer();
+
+    	//   else create LDPC with default interaction model (based on rdf:type)
+    	String loc = ldpC.postLDPNR(content, stripCharset(fRequestHeaders.getMediaType().toString()), null, slug);
+    	if (loc != null)
+    		return Response.status(Status.CREATED).header(HttpHeaders.LOCATION, loc)
+					.header(LDPConstants.HDR_LINK, "<" + ldpC.getTypeURI() + ">; " + LDPConstants.HDR_LINK_TYPE).build();
+    	else
+    		return Response.status(Status.CONFLICT).build();
+    }
+    
     @DELETE
     public Response deleteResource() {
     	String uri = getConanicalURL(fRequestUrl.getRequestUri());
-    	getRootContainer().delete(uri);
+    	ILDPResource ldpR = getResourceManger().get(uri);
+    	if (ldpR == null) return Response.status(Status.NOT_FOUND).build();
+    	// FIXME: Check if this is the root container before allowing delete.
+    	ldpR.delete(uri);
         return Response.status(Status.NO_CONTENT).build();
     }
     
@@ -213,15 +257,14 @@ public abstract class LDPService {
       	return Response.status(Status.OK).build();
     }
     
-    private Response getResourceRDF(final String type) {	
+    private Response getResource(final String type) {	
     	String resourceURI = getConanicalURL(fRequestUrl.getRequestUri());
     	ILDPResource ldpR = getResourceManger().get(resourceURI);
-    	if (ldpR == null || !(ldpR instanceof LDPRDFSource)) return Response.status(Status.NOT_FOUND).build();
-    	LDPRDFSource rdfS = (LDPRDFSource)ldpR;
+    	if (ldpR == null) return Response.status(Status.NOT_FOUND).build();
     	
-    	return rdfS.get(resourceURI, type);
+    	return ldpR.get(resourceURI, type);
     }
-    
+
     String stripCharset(String contentType) {
     	int i = contentType.indexOf(";");
     	if (i == -1)

@@ -16,13 +16,14 @@
  *     Samuel Padgett - initial API and implementation
  *     Steve Speicher - updates for recent LDP spec changes
  *     Steve Speicher - make root URI configurable 
+ *     Samuel Padgett - add support for LDP Non-RDF Source
  *******************************************************************************/
 package org.eclipse.lyo.ldp.server.jena.store;
 
 import java.io.OutputStream;
 
 import org.eclipse.lyo.ldp.server.LDPConstants;
-import org.eclipse.lyo.ldp.server.jena.JenaLDPRDFSource;
+import org.eclipse.lyo.ldp.server.jena.JenaLDPResourceManager;
 import org.eclipse.lyo.ldp.server.jena.vocabulary.Lyo;
 
 import com.hp.hpl.jena.query.Dataset;
@@ -128,7 +129,16 @@ public class TDBGraphStore implements GraphStore
 
 	public String createGraph(String containerURI, String graphURIPrefix, String nameHint)
 	{
-		String graphURI = null;
+		String graphURI = mintURI(containerURI, graphURIPrefix, nameHint);
+		// Add a dummy triple, just to allocate the graph
+		Model model = fDataset.getNamedModel(graphURI);
+		Resource graphResource = model.getResource(graphURI);
+		model.add(graphResource, DCTerms.description, "Graph Placeholder");
+		return graphURI;
+	}
+
+	public String mintURI(String containerURI, String graphURIPrefix, String nameHint) {
+	    String graphURI = null;
 		if (nameHint != null && nameHint.length() > 0) {
 			graphURI = appendURISegment(containerURI,  nameHint);
 			if (previouslyUsed(graphURI)) graphURI = null;
@@ -140,12 +150,8 @@ public class TDBGraphStore implements GraphStore
 				if (!previouslyUsed(graphURI)) break;
 			}
 		}
-		// Add a dummy triple, just to allocate the graph
-		Model model = fDataset.getNamedModel(graphURI);
-		Resource graphResource = model.getResource(graphURI);
-		model.add(graphResource, DCTerms.description, "Graph Placeholder");
-		return graphURI;
-	}
+	    return graphURI;
+    }
 	
 	/**
 	 * Companion graph to the one identified by uri
@@ -166,7 +172,7 @@ public class TDBGraphStore implements GraphStore
 	 * @return true if found an old config graph
 	 */
 	public boolean previouslyUsed(String uri) {
-		return fDataset.containsNamedModel(uri) || fDataset.containsNamedModel(JenaLDPRDFSource.mintConfigURI(uri));
+		return fDataset.containsNamedModel(uri) || fDataset.containsNamedModel(JenaLDPResourceManager.mintConfigURI(uri));
 	}
 
 	public void query(OutputStream outStream, String queryString)

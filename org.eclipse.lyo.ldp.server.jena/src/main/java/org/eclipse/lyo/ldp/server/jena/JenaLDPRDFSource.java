@@ -15,6 +15,7 @@
  *     Samuel Padgett - use TDB transactions
  *     Samuel Padgett - add Allow header to GET responses
  *     Samuel Padgett - add request headers to put() parameters
+ *     Samuel Padgett - add support for LDP Non-RDF Source
  *******************************************************************************/
 package org.eclipse.lyo.ldp.server.jena;
 
@@ -54,8 +55,6 @@ import com.hp.hpl.jena.vocabulary.DCTerms;
 
 public class JenaLDPRDFSource extends LDPRDFSource {
 		
-    public static final String CONFIG_PARAM = "?_config";
-	
     /**
      * A companion resource "next to" the "real" resource, used to hold implementation
      * specific data.
@@ -68,7 +67,7 @@ public class JenaLDPRDFSource extends LDPRDFSource {
 		super(resourceURI, graphStore);
 		fRDFType = LDPConstants.CLASS_RDFSOURCE;
 		fGraphStore = graphStore;
-		fConfigGraphURI = mintConfigURI(fURI);
+		fConfigGraphURI = JenaLDPResourceManager.mintConfigURI(fURI);
 	}
 	
 	protected Model getConfigModel() {
@@ -125,7 +124,7 @@ public class JenaLDPRDFSource extends LDPRDFSource {
 			fGraphStore.deleteGraph(resourceURI);
 			
 			// Keep track of the deletion by logging the delete time
-			String configURI = mintConfigURI(resourceURI);
+			String configURI = JenaLDPResourceManager.mintConfigURI(resourceURI);
 			Model configModel = fGraphStore.getGraph(configURI);
 			if (configModel == null) {
 				configModel = fGraphStore.createConfigGraph(resourceURI, configURI);
@@ -290,8 +289,4 @@ public class JenaLDPRDFSource extends LDPRDFSource {
 
 	    return allowedMethods;
     }
-	
-	public static String mintConfigURI(String uri) {
-		return 	uri + CONFIG_PARAM;
-	}
 }

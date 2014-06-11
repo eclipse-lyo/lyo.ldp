@@ -13,6 +13,7 @@
  *  
  *     Steve Speicher - support for various container types
  *     Samuel Padgett - remove setConfigParameters() method from interface
+ *     Samuel Padgett - add support for LDP Non-RDF Source
  *******************************************************************************/
 package org.eclipse.lyo.ldp.server;
 
@@ -48,4 +49,14 @@ public interface ILDPContainer extends ILDPRDFSource {
 	public abstract String post(InputStream stream, String contentType,
 			String user, String nameHint);
 
+	/**
+	 * Post a new LDP-NR (non-RDF source) to the container.
+	 * 
+	 * @param stream the input stream containing the posted resource representation.
+	 * @param contentType the Content-Type of the input stream.
+	 * @param nameHint Value from Slug header or other source, used to determine the newly created resource's URL 
+	 * @return the new resource URI
+	 */
+	public abstract String postLDPNR(InputStream content, String stripCharset,
+            Object object, String slug);
 }

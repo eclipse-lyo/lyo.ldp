@@ -55,6 +55,10 @@
                         <systemProperty>
                             <name>ldp.dataset.dir</name>
                             <value>/var/db/TDB</value>
+                        </systemProperty>
+                        <systemProperty>
+                            <name>ldp.nr.dir</name>
+                            <value>/var/ldpnr</value>
                         </systemProperty> -->
                     </systemProperties>
                 </configuration>

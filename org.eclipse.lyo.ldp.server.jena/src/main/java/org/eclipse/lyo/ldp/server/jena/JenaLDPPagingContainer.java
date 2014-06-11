@@ -20,6 +20,7 @@
  *     Samuel Padgett - update for new container interface
  *     Samuel Padgett - use TDB transactions
  *     Samuel Padgett - add request headers to updateResource() parameters
+ *     Samuel Padgett - add support for LDP Non-RDF Source
  *******************************************************************************/
 package org.eclipse.lyo.ldp.server.jena;
 
@@ -216,7 +217,7 @@ public class JenaLDPPagingContainer extends JenaLDPContainer {
 			String containerURI = getContainerURIForResource(resourceURI);
 			if (resourceURI.startsWith(containerURI)) {
 				String suffix = resourceURI.substring(containerURI.length());
-				if (suffix.startsWith("?") && !CONFIG_PARAM.equals(suffix))
+				if (suffix.startsWith("?") && !JenaLDPResourceManager.CONFIG_PARAM.equals(suffix))
 					return getPage(suffix, contentType, containerURI);
 			} 
 		} finally {

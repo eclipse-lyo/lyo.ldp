@@ -25,6 +25,7 @@
  *     Samuel Padgett - reject PUT requests that modify containment triples
  *     Samuel Padgett - check If-Match header on PUT requests
  *     Samuel Padgett - fix null resource prefix for root container
+ *     Samuel Padgett - add support for LDP Non-RDF Source
  *******************************************************************************/
 package org.eclipse.lyo.ldp.server.jena;
 
@@ -51,6 +52,7 @@ import org.eclipse.lyo.ldp.server.LDPConstants;
 import org.eclipse.lyo.ldp.server.jena.store.GraphStore;
 import org.eclipse.lyo.ldp.server.jena.store.TDBGraphStore;
 import org.eclipse.lyo.ldp.server.jena.vocabulary.LDP;
+import org.eclipse.lyo.ldp.server.jena.vocabulary.Lyo;
 import org.eclipse.lyo.ldp.server.service.LDPService;
 
 import com.hp.hpl.jena.rdf.model.Model;
@@ -76,7 +78,6 @@ public class JenaLDPContainer extends JenaLDPRDFSource implements ILDPContainer
 	protected String fResourceURIPrefix; // New resource name template, default is "res" + N
 	protected boolean fMemberInfo; // include member info in container representation
 	protected Set<Property> fMemberFilter; // filtered list of members to include
-
 
 	/**
 	 * Create a LDPContainer instance for the specified URI and with the default configuration parameters}.
@@ -173,7 +174,7 @@ public class JenaLDPContainer extends JenaLDPRDFSource implements ILDPContainer
 		fGraphStore.writeLock();
 		try {
 			String resourceURI = fGraphStore.createGraph(fURI, fResourceURIPrefix, nameHint);
-			fGraphStore.createConfigGraph(resourceURI, mintConfigURI(resourceURI));
+			fGraphStore.createConfigGraph(resourceURI, JenaLDPResourceManager.mintConfigURI(resourceURI));
 			String result = addResource(resourceURI, true, stream, contentType, user);
 			fGraphStore.commit();
 			return result;
@@ -193,13 +194,13 @@ public class JenaLDPContainer extends JenaLDPRDFSource implements ILDPContainer
 		fGraphStore.writeLock();
 		try {
 			if (fGraphStore.getGraph(resourceURI) == null) {
-				Model configModel = fGraphStore.getGraph(mintConfigURI(resourceURI));
+				Model configModel = fGraphStore.getGraph(JenaLDPResourceManager.mintConfigURI(resourceURI));
 				if (configModel != null) {
 					// Attempting to reuse a URI, fail the request.
 					throw new WebApplicationException(Response.status(Status.BAD_REQUEST).entity(
 							"Can not create a resource for URI that has already been used for a deleted resource at: "+resourceURI).build());
 				}
-				fGraphStore.createConfigGraph(resourceURI, mintConfigURI(resourceURI));
+				fGraphStore.createConfigGraph(resourceURI, JenaLDPResourceManager.mintConfigURI(resourceURI));
 				addResource(resourceURI, false, stream, contentType, user);	
 				create = true;
 			} else {
@@ -245,50 +246,15 @@ public class JenaLDPContainer extends JenaLDPRDFSource implements ILDPContainer
 	protected String addResource(String resourceURI, boolean addMembership, InputStream stream, String contentType, String user)
 	{
 		Model model = readModel(resourceURI, stream, contentType);
-		Resource subject = model.getResource(resourceURI);
 		Calendar time = Calendar.getInstance(); // to update dcterms:modified
 
 		// Add membership triple
 		if (addMembership) {
-			String containerURI = getContainerURIForResource(resourceURI);
-			Model containerModel = fGraphStore.getGraph(containerURI);
-			Resource containerResource = containerModel.getResource(containerURI);
-			Property memberRelation = getMemberRelation(containerModel, containerResource);
-			Property memberOfRelation = getIsMemberOfRelation(containerModel, containerResource);
-			Resource membershipResource = getMembershipResource(containerModel, containerResource);
-
-			if (memberOfRelation != null) {
-				model.add(subject, memberOfRelation, model.getResource(containerResource.getURI()));
-			}
-
-			// If membership resource is NOT the same as the container
-			if (!membershipResource.asResource().getURI().equals(containerURI)) {
-				Model membershipResourceModel = fGraphStore.getGraph(membershipResource.asResource().getURI());
-				if (membershipResourceModel == null) {
-					membershipResourceModel = containerModel;
-				} else {
-					membershipResource = membershipResourceModel.getResource(membershipResource.asResource().getURI());
-					if (memberRelation != null)
-						memberRelation = membershipResourceModel.getProperty(memberRelation.asResource().getURI());        			
-					// Update dcterms:modified
-					membershipResource.removeAll(DCTerms.modified);
-					membershipResource.addLiteral(DCTerms.modified, membershipResourceModel.createTypedLiteral(time));
-					membershipResource.addProperty(memberRelation, subject);
-					if (memberOfRelation == null) {
-						membershipResource.addProperty(memberRelation, subject);
-					}
-				}
-			} else if (memberOfRelation == null) {
-				membershipResource.addProperty(memberRelation, subject);
-			}
-
-			// Put containment triples in container
-			containerResource.addProperty(LDP.contains, subject);
-			containerResource.removeAll(DCTerms.modified);
-			containerResource.addLiteral(DCTerms.modified, containerModel.createTypedLiteral(time));
+			addMembership(resourceURI, model, time);
 		}
 
 		// Add dcterms:creator, dcterms:created, dcterms:contributor, and dcterms:modified
+		Resource subject = model.getResource(resourceURI);
 		if (user == null) user = UNSPECIFIED_USER;
 		if (!model.contains(subject, DCTerms.creator))
 			model.add(subject, DCTerms.creator, model.createResource(user));
@@ -303,6 +269,49 @@ public class JenaLDPContainer extends JenaLDPRDFSource implements ILDPContainer
 
 		return resourceURI;	
 	}
+
+	protected void addMembership(String resourceURI, Model model, Calendar time) {
+	    String containerURI = getContainerURIForResource(resourceURI);
+	    Model containerModel = fGraphStore.getGraph(containerURI);
+	    Resource containerResource = containerModel.getResource(containerURI);
+	    Property memberRelation = getMemberRelation(containerModel, containerResource);
+	    Property memberOfRelation = getIsMemberOfRelation(containerModel, containerResource);
+	    Resource membershipResource = getMembershipResource(containerModel, containerResource);
+
+	    // model is null for non-RDF source
+	    if (memberOfRelation != null && model != null) {
+	    	model.add(model.getResource(resourceURI), memberOfRelation, model.getResource(containerResource.getURI()));
+	    }
+
+	    // If membership resource is NOT the same as the container
+	    if (!membershipResource.asResource().getURI().equals(containerURI)) {
+	    	Model membershipResourceModel = fGraphStore.getGraph(membershipResource.asResource().getURI());
+	    	if (membershipResourceModel == null) {
+	    		membershipResourceModel = containerModel;
+	    	}
+
+	    	Resource subject = membershipResourceModel.createResource(resourceURI);
+	    	membershipResource = membershipResourceModel.getResource(membershipResource.asResource().getURI());
+	    	if (memberRelation != null) {
+	    		memberRelation = membershipResourceModel.getProperty(memberRelation.asResource().getURI());        			
+	    	}
+
+	    	// Update dcterms:modified
+	    	membershipResource.removeAll(DCTerms.modified);
+	    	membershipResource.addLiteral(DCTerms.modified, membershipResourceModel.createTypedLiteral(time));
+	    	membershipResource.addProperty(memberRelation, subject);
+	    	if (memberOfRelation == null) {
+	    		membershipResource.addProperty(memberRelation, subject);
+	    	}
+	    } else if (memberOfRelation == null) {
+	    	membershipResource.addProperty(memberRelation, containerModel.createResource(resourceURI));
+	    }
+
+	    // Put containment triples in container
+	    containerResource.addProperty(LDP.contains, containerModel.createResource(resourceURI));
+	    containerResource.removeAll(DCTerms.modified);
+	    containerResource.addLiteral(DCTerms.modified, containerModel.createTypedLiteral(time));
+    }
 
 	private Model readModel(String baseURI, InputStream stream, String contentType) {
 		final Model model;
@@ -517,5 +526,33 @@ public class JenaLDPContainer extends JenaLDPRDFSource implements ILDPContainer
 		Set<String> allow = super.getAllowedMethods();
 		allow.add(HttpMethod.POST);
 	    return allow;
+    }
+
+	@Override
+    public String postLDPNR(InputStream content, String stripCharset, Object object, String slug) {
+		fGraphStore.writeLock();
+		try {
+			String uri = fGraphStore.mintURI(fURI, fResourceURIPrefix, slug);
+
+			String configURI = JenaLDPResourceManager.mintConfigURI(uri);
+			Model configModel = fGraphStore.createConfigGraph(uri, configURI);
+
+			JenaLDPNonRdfSource.save(content, uri);
+
+			addMembership(uri, null, Calendar.getInstance());
+			Resource configResource = configModel.getResource(configURI);
+			configResource.addProperty(Lyo.ldpNRMemberOf, configModel.createResource(fURI));
+			if (stripCharset != null) {
+				configResource.addProperty(Lyo.ldpNRContentType, stripCharset);
+			}
+			if (slug != null) {
+				configResource.addProperty(Lyo.ldpNRFilename, slug);
+			}
+			fGraphStore.commit();
+
+			return uri;
+        } finally {
+			fGraphStore.end();
+		}
     }
 }

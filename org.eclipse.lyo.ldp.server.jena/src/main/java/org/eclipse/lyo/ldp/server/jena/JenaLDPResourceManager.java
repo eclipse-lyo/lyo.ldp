@@ -14,6 +14,7 @@
  *     Steve Speicher - Updates for recent LDP spec changes
  *     Samuel Padgett - Look for all LDP container types
  *     Samuel Padgett - use TDB transactions
+ *     Samuel Padgett - add support for LDP Non-RDF Source
  *******************************************************************************/
 package org.eclipse.lyo.ldp.server.jena;
 
@@ -27,7 +28,9 @@ import com.hp.hpl.jena.rdf.model.Resource;
 import com.hp.hpl.jena.vocabulary.RDF;
 
 public class JenaLDPResourceManager implements LDPResourceManager {
-	
+
+	public static final String CONFIG_PARAM = "?_config";
+
 	TDBGraphStore gs, ps;
 
 	public JenaLDPResourceManager(TDBGraphStore gs, TDBGraphStore ps) {
@@ -44,7 +47,12 @@ public class JenaLDPResourceManager implements LDPResourceManager {
 		gs.readLock();
 		try {
 			Model graph = gs.getGraph(resourceURI);
-			if (graph == null) return null;
+			if (graph == null) {
+				if (JenaLDPNonRdfSource.isLDPNR(resourceURI)) {
+					return new JenaLDPNonRdfSource(resourceURI, gs);
+				}
+				return null;
+			}
 			Resource r = graph.getResource(resourceURI);
 			if (r.hasProperty(RDF.type, LDP.DirectContainer)) {
 				return new JenaLDPDirectContainer(resourceURI, gs, ps);
@@ -60,6 +68,10 @@ public class JenaLDPResourceManager implements LDPResourceManager {
 		}
 	}
 
+	public static String mintConfigURI(String uri) {
+		return 	uri + JenaLDPResourceManager.CONFIG_PARAM;
+	}
+	
 	public static boolean isContainer(Resource r) {
 	    return r.hasProperty(RDF.type, LDP.Container) ||
 				r.hasProperty(RDF.type, LDP.BasicContainer) ||
