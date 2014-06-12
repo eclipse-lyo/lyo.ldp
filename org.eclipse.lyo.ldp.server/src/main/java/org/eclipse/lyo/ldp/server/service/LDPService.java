@@ -74,15 +74,14 @@ public abstract class LDPService {
 	//public static final String FILE_DIR = System.getProperty(LDP_FILE_DIR, getCon);
 	private static String fPublicURI = ROOT_APP_URL;
 	
-	public static final String[] ACCEPT_POST_CONTENT_TYPES = {
+	public static final String[] ACCEPT_PATCH_CONTENT_TYPES = {
 			LDPConstants.CT_APPLICATION_RDFXML, 
 			LDPConstants.CT_TEXT_TURTLE,
 			LDPConstants.CT_APPLICATION_XTURTLE,
 			LDPConstants.CT_APPLICATION_JSON,
 			LDPConstants.CT_APPLICATION_LD_JSON };
-	public static final String[] ACCEPT_PATCH_CONTENT_TYPES = ACCEPT_POST_CONTENT_TYPES;
 	
-	public static final String ACCEPT_POST_CONTENT_TYPES_STR = encodeAccept(ACCEPT_POST_CONTENT_TYPES);
+	public static final String ACCEPT_POST_CONTENT_TYPES_STR = "*/*";
 	public static final String ACCEPT_PATCH_CONTENT_TYPES_STR = encodeAccept(ACCEPT_PATCH_CONTENT_TYPES);
 	
 	protected abstract void resetContainer();

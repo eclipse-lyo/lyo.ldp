@@ -47,7 +47,7 @@ public class HttpHeaderResponseFilter implements ContainerResponseFilter {
 		// If PATCH is allowed, add in an Accept-Patch header.
 		if (responseContext.getAllowedMethods().contains("PATCH")) {
 			responseContext.getHeaders().putSingle(LDPConstants.HDR_ACCEPT_PATCH,
-					LDPService.ACCEPT_POST_CONTENT_TYPES_STR);
+					LDPService.ACCEPT_PATCH_CONTENT_TYPES_STR);
 		}
 	}
 }
