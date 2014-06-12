@@ -227,17 +227,9 @@ public abstract class LDPService {
     @POST
     @Consumes("*/*")
     public Response createLDPNR(@HeaderParam(LDPConstants.HDR_SLUG) String slug, InputStream content) {
-    	ILDPContainer ldpC = getRequestContainer();
-
-    	//   else create LDPC with default interaction model (based on rdf:type)
-    	String loc = ldpC.postLDPNR(content, stripCharset(fRequestHeaders.getMediaType().toString()), null, slug);
-    	if (loc != null)
-    		return Response.status(Status.CREATED).header(HttpHeaders.LOCATION, loc)
-					.header(LDPConstants.HDR_LINK, "<" + ldpC.getTypeURI() + ">; " + LDPConstants.HDR_LINK_TYPE).build();
-    	else
-    		return Response.status(Status.CONFLICT).build();
+    	return getRequestContainer().postLDPNR(content, stripCharset(fRequestHeaders.getMediaType().toString()), slug);
     }
-    
+ 
     @DELETE
     public Response deleteResource() {
     	String uri = getConanicalURL(fRequestUrl.getRequestUri());

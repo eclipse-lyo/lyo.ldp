@@ -21,6 +21,7 @@
 package org.eclipse.lyo.ldp.server.jena.store;
 
 import java.io.OutputStream;
+import java.util.Calendar;
 
 import org.eclipse.lyo.ldp.server.LDPConstants;
 import org.eclipse.lyo.ldp.server.jena.JenaLDPResourceManager;
@@ -158,11 +159,14 @@ public class TDBGraphStore implements GraphStore
 	 * @param uri  The primary resource being managed
 	 * @param configURI A side resource, in support of uri
 	 */
-	public Model createConfigGraph(String uri, String configURI) {
+	public Model createCompanionGraph(String uri, String configURI) {
 		Model model = fDataset.getNamedModel(configURI);
 		Resource graphResource = model.getResource(uri);
-		Resource configResource = model.getResource(configURI);
-		model.add(configResource, Lyo.describes, graphResource);
+		Resource companionResource = model.getResource(configURI);
+		model.add(companionResource, Lyo.describes, graphResource);
+		Calendar time = Calendar.getInstance();
+		companionResource.addLiteral(DCTerms.created, model.createTypedLiteral(time));
+		companionResource.addLiteral(DCTerms.modified, model.createTypedLiteral(time));
 		return model;
 	}
 	

@@ -20,6 +20,8 @@ package org.eclipse.lyo.ldp.server;
 import java.io.InputStream;
 import java.io.OutputStream;
 
+import javax.ws.rs.core.Response;
+
 
 public interface ILDPContainer extends ILDPRDFSource {
 
@@ -57,6 +59,5 @@ public interface ILDPContainer extends ILDPRDFSource {
 	 * @param nameHint Value from Slug header or other source, used to determine the newly created resource's URL 
 	 * @return the new resource URI
 	 */
-	public abstract String postLDPNR(InputStream content, String stripCharset,
-            Object object, String slug);
+	public abstract Response postLDPNR(InputStream content, String stripCharset, String slug);
 }

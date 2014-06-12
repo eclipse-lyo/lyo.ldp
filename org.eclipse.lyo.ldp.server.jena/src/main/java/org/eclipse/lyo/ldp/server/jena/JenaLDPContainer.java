@@ -174,7 +174,7 @@ public class JenaLDPContainer extends JenaLDPRDFSource implements ILDPContainer
 		fGraphStore.writeLock();
 		try {
 			String resourceURI = fGraphStore.createGraph(fURI, fResourceURIPrefix, nameHint);
-			fGraphStore.createConfigGraph(resourceURI, JenaLDPResourceManager.mintConfigURI(resourceURI));
+			fGraphStore.createCompanionGraph(resourceURI, JenaLDPResourceManager.mintConfigURI(resourceURI));
 			String result = addResource(resourceURI, true, stream, contentType, user);
 			fGraphStore.commit();
 			return result;
@@ -200,7 +200,7 @@ public class JenaLDPContainer extends JenaLDPRDFSource implements ILDPContainer
 					throw new WebApplicationException(Response.status(Status.BAD_REQUEST).entity(
 							"Can not create a resource for URI that has already been used for a deleted resource at: "+resourceURI).build());
 				}
-				fGraphStore.createConfigGraph(resourceURI, JenaLDPResourceManager.mintConfigURI(resourceURI));
+				fGraphStore.createCompanionGraph(resourceURI, JenaLDPResourceManager.mintConfigURI(resourceURI));
 				addResource(resourceURI, false, stream, contentType, user);	
 				create = true;
 			} else {
@@ -529,28 +529,43 @@ public class JenaLDPContainer extends JenaLDPRDFSource implements ILDPContainer
     }
 
 	@Override
-    public String postLDPNR(InputStream content, String stripCharset, Object object, String slug) {
+    public Response postLDPNR(InputStream content, String stripCharset, String slug) {
 		fGraphStore.writeLock();
 		try {
 			String uri = fGraphStore.mintURI(fURI, fResourceURIPrefix, slug);
-
+			
+			// Config graph for internal metadata (e.g., tracking resource deletion)
 			String configURI = JenaLDPResourceManager.mintConfigURI(uri);
-			Model configModel = fGraphStore.createConfigGraph(uri, configURI);
+			Model configModel = fGraphStore.createCompanionGraph(uri, configURI);
+
+			// LDP-NR associated RDF source
+			String associatedURI = JenaLDPResourceManager.mintAssociatedRDFSourceURI(uri);
+			Model associatedModel = fGraphStore.createCompanionGraph(uri, associatedURI);
 
 			JenaLDPNonRdfSource.save(content, uri);
 
 			addMembership(uri, null, Calendar.getInstance());
-			Resource configResource = configModel.getResource(configURI);
-			configResource.addProperty(Lyo.ldpNRMemberOf, configModel.createResource(fURI));
+			configModel.add(configModel.getResource(configURI), Lyo.memberOf, configModel.getResource(fURI));
+
+			Resource associatedResource = associatedModel.getResource(associatedURI);
 			if (stripCharset != null) {
-				configResource.addProperty(Lyo.ldpNRContentType, stripCharset);
+				Resource mediaType = associatedModel.createResource(null,  associatedModel.createResource(DCTerms.NS + "IMT"));
+				mediaType.addProperty(RDF.value, stripCharset);
+				associatedResource.addProperty(DCTerms.format, mediaType);
 			}
+
 			if (slug != null) {
-				configResource.addProperty(Lyo.ldpNRFilename, slug);
+				associatedResource.addProperty(Lyo.slug, slug);
 			}
+			
 			fGraphStore.commit();
 
-			return uri;
+			return Response
+					.status(Status.CREATED)
+					.header(HttpHeaders.LOCATION, uri)
+					.header(LDPConstants.HDR_LINK, "<" + getTypeURI() + ">; " + LDPConstants.HDR_LINK_TYPE)
+					.header(LDPConstants.HDR_LINK, "<" + associatedURI + ">; " + LDPConstants.HDR_LINK_DESCRIBEDBY)
+					.build();
         } finally {
 			fGraphStore.end();
 		}

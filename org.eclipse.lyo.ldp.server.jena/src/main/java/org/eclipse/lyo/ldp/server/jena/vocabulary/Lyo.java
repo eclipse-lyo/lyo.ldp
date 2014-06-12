@@ -36,18 +36,13 @@ public class Lyo {
 	/**
 	 * Config graph property describing the container an LDP-NR belongs to.
 	 */
-	public static final Property ldpNRMemberOf = property(nsName("ldpNRMemberOf"));
-
-	/**
-	 *  Config graph property describing the LDP-NR content type.
-	 */
-	public static final Property ldpNRContentType = property(nsName("ldpnrContentType"));
+	public static final Property memberOf = property(nsName("memberOf"));
 
 	/**
 	 * Config graph property describing the suggested LDP-NR filename taken from
 	 * the Slug header. Only set if a Slug header was part of the request.
 	 */
-	public static final Property ldpNRFilename = property(nsName("ldpNRFilename"));
+	public static final Property slug = property(nsName("slug"));
 
 	public static String nsName(String local) {
 		return NS + local;

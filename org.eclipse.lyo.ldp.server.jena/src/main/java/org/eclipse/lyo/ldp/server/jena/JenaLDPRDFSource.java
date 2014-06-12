@@ -89,6 +89,11 @@ public class JenaLDPRDFSource extends LDPRDFSource {
 
 	@Override
 	public void delete(String resourceURI) {
+		// If this is a companion to another resources (e.g., a config graph), don't delete it.
+		if (JenaLDPResourceManager.isCompanion(resourceURI)) {
+			throw new WebApplicationException(Status.FORBIDDEN);
+		}
+
 		fGraphStore.writeLock();
 		try {
 			String containerURI = getContainerURIForResource(resourceURI);
@@ -127,7 +132,7 @@ public class JenaLDPRDFSource extends LDPRDFSource {
 			String configURI = JenaLDPResourceManager.mintConfigURI(resourceURI);
 			Model configModel = fGraphStore.getGraph(configURI);
 			if (configModel == null) {
-				configModel = fGraphStore.createConfigGraph(resourceURI, configURI);
+				configModel = fGraphStore.createCompanionGraph(resourceURI, configURI);
 			}
 			configModel.getResource(resourceURI).addLiteral(Lyo.deleted, configModel.createTypedLiteral(time));
 			

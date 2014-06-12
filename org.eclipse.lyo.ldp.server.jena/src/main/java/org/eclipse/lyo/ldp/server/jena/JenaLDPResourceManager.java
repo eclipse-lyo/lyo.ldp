@@ -30,6 +30,7 @@ import com.hp.hpl.jena.vocabulary.RDF;
 public class JenaLDPResourceManager implements LDPResourceManager {
 
 	public static final String CONFIG_PARAM = "?_config";
+	public static final String ASSOCIATED_LDP_RS_PARAM = "?_rdf";
 
 	TDBGraphStore gs, ps;
 
@@ -69,7 +70,31 @@ public class JenaLDPResourceManager implements LDPResourceManager {
 	}
 
 	public static String mintConfigURI(String uri) {
-		return 	uri + JenaLDPResourceManager.CONFIG_PARAM;
+		return 	uri + CONFIG_PARAM;
+	}
+	
+	public static String mintAssociatedRDFSourceURI(String uri) {
+		return 	uri + ASSOCIATED_LDP_RS_PARAM;
+	}
+	
+	public static boolean isConfigURI(String uri) {
+		return uri.endsWith(CONFIG_PARAM);
+	}
+
+	public static boolean isAssociatedRDFSource(String uri) {
+		return uri.endsWith(ASSOCIATED_LDP_RS_PARAM);
+	}
+	
+	/**
+	 * Is this resource a companion of another resource? These resources are
+	 * managed specially. For instance, they probably should not be deleted
+	 * without deleting the other resource.
+	 * 
+	 * @param uri the resource URI
+	 * @return true iff this is a companion resource to another resource (such as a config graph)
+	 */
+	public static boolean isCompanion(String uri) {
+		return isConfigURI(uri) || isAssociatedRDFSource(uri);
 	}
 	
 	public static boolean isContainer(Resource r) {

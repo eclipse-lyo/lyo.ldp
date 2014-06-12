@@ -46,6 +46,7 @@ import com.hp.hpl.jena.rdf.model.Property;
 import com.hp.hpl.jena.rdf.model.Resource;
 import com.hp.hpl.jena.rdf.model.Statement;
 import com.hp.hpl.jena.vocabulary.DCTerms;
+import com.hp.hpl.jena.vocabulary.RDF;
 
 public class JenaLDPNonRdfSource extends LDPNonRDFSource {
 	protected final TDBGraphStore fGraphStore; // GraphStore in which to store the container and member resources   
@@ -65,8 +66,8 @@ public class JenaLDPNonRdfSource extends LDPNonRDFSource {
 	        String contentType, String user, HttpHeaders requestHeaders) {
 		fGraphStore.writeLock();
 		try {
-			String configURI = JenaLDPResourceManager.mintConfigURI(resourceURI);
-			Model configGraph = fGraphStore.getGraph(configURI);
+			String associatedURI = JenaLDPResourceManager.mintAssociatedRDFSourceURI(resourceURI);
+			Model associatedModel = fGraphStore.getGraph(associatedURI);
 
 			File file = toFile(resourceURI);
 			if (!file.isFile()) {
@@ -91,11 +92,17 @@ public class JenaLDPNonRdfSource extends LDPNonRDFSource {
 			writeToFile(stream, file);
 			
 			// Update config graph with new content type.
-			Resource configResource = configGraph.getResource(configURI);
-			configResource.removeAll(Lyo.ldpNRContentType);
+			Resource associatedResource = associatedModel.getResource(associatedURI);
+			associatedResource.removeAll(DCTerms.format);
 			if (contentType != null) {
-				configResource.addProperty(Lyo.ldpNRContentType, contentType);
+				Resource mediaType = associatedModel.createResource(null,  associatedModel.createResource(DCTerms.NS + "IMT"));
+				mediaType.addProperty(RDF.value, contentType);
+				associatedResource.addProperty(DCTerms.format, mediaType);
 			}
+
+			Calendar time = Calendar.getInstance();
+			associatedResource.removeAll(DCTerms.modified);
+			associatedResource.addLiteral(DCTerms.modified, associatedModel.createTypedLiteral(time));
 			
 			fGraphStore.commit();
 			return true;
@@ -123,9 +130,9 @@ public class JenaLDPNonRdfSource extends LDPNonRDFSource {
 	public void delete(String resourceURI) {
 		fGraphStore.writeLock();
 		try {
-			String configURI = JenaLDPResourceManager.mintConfigURI(resourceURI);
+			String configURI = JenaLDPResourceManager.mintAssociatedRDFSourceURI(resourceURI);
 			Model configGraph = fGraphStore.getGraph(configURI);
-			Statement memberOfStatement = configGraph.getProperty(configGraph.createResource(configURI), Lyo.ldpNRMemberOf);
+			Statement memberOfStatement = configGraph.getProperty(configGraph.createResource(configURI), Lyo.memberOf);
 			String containerURI = memberOfStatement.getResource().getURI();
 
 			File file = toFile(resourceURI);
@@ -152,10 +159,8 @@ public class JenaLDPNonRdfSource extends LDPNonRDFSource {
 					membershipResourceModel = containerModel;
 				} else {
 					membershipResource = membershipResourceModel.getResource(membershipResource.asResource().getURI());
-					// If isMemberOfRelation then membership triple will be nuked with the LDPR graph
 					if (memberRelation != null)
 						memberRelation = membershipResourceModel.getProperty(memberRelation.asResource().getURI());        			
-					// Update dcterms:modified
 				}
 				membershipResource.removeAll(DCTerms.modified);
 				membershipResource.addLiteral(DCTerms.modified, membershipResourceModel.createTypedLiteral(time));
@@ -167,7 +172,7 @@ public class JenaLDPNonRdfSource extends LDPNonRDFSource {
 			containerResource.addLiteral(DCTerms.modified, containerModel.createTypedLiteral(time));
 
 			// Delete the resource itself
-			fGraphStore.deleteGraph(resourceURI);
+			fGraphStore.deleteGraph(JenaLDPResourceManager.mintAssociatedRDFSourceURI(resourceURI));
 
 			// Keep track of the deletion by logging the delete time
 			configGraph.getResource(resourceURI).addLiteral(Lyo.deleted, configGraph.createTypedLiteral(time));
@@ -188,9 +193,9 @@ public class JenaLDPNonRdfSource extends LDPNonRDFSource {
 	public Response get(String uri, String contentType) {
 		fGraphStore.readLock();
 		try {
-			String configURI = mintConfigURI(uri);
-			Model configModel = fGraphStore.getGraph(configURI);
-			if (configModel == null) {
+			String associatedURI = JenaLDPResourceManager.mintAssociatedRDFSourceURI(uri);
+			Model associatedModel = fGraphStore.getGraph(associatedURI);
+			if (associatedModel == null) {
 				return Response.status(Response.Status.NOT_FOUND).build();
 			}
 	
@@ -198,19 +203,23 @@ public class JenaLDPNonRdfSource extends LDPNonRDFSource {
 			if (!file.isFile()) {
 				return Response.status(Response.Status.NOT_FOUND).build();
 			}
-			
+	
 	        ResponseBuilder response = Response.ok(file);
 			response.header(LDPConstants.HDR_LINK, "<" + LDPConstants.CLASS_NONRDFSOURCE + ">; " + LDPConstants.HDR_LINK_TYPE);
+			response.header(LDPConstants.HDR_LINK, "<" + associatedURI + ">; " + LDPConstants.HDR_LINK_DESCRIBEDBY);
 	        response.header(LDPConstants.HDR_ETAG, getETag(file));
 	        
-			Resource configResource = configModel.getResource(configURI);
-			Statement contentTypeStatement = configResource.getProperty(Lyo.ldpNRContentType);
+			Resource configResource = associatedModel.getResource(associatedURI);
+			Statement contentTypeStatement = configResource.getProperty(DCTerms.format);
 			if (contentTypeStatement != null) {
 				// TODO: Make sure actual type is compatible with the Accept header.
-				response.type(contentTypeStatement.getString());
+				Statement value = contentTypeStatement.getResource().getProperty(RDF.value);
+				if (value != null) {
+					response.type(value.getString());
+				}
 			}
 	
-			Statement filenameStatement = configResource.getProperty(Lyo.ldpNRFilename);
+			Statement filenameStatement = configResource.getProperty(Lyo.slug);
 			if (filenameStatement != null) {
 				String filename = filenameStatement.getString().replace("\"", "");
 				response.header("Content-Disposition", "attachment; filename=\"" + filename + "\"");
@@ -260,10 +269,6 @@ public class JenaLDPNonRdfSource extends LDPNonRDFSource {
 			e.printStackTrace();
 			throw new WebApplicationException(Response.Status.INTERNAL_SERVER_ERROR);
 		}
-	}
-
-	public static String mintConfigURI(String uri) {
-		return 	uri + JenaLDPResourceManager.CONFIG_PARAM;
 	}
 
 	private String getETag(File file) throws IOException {
