@@ -22,6 +22,7 @@
  *     Samuel Padgett - pass request headers on HTTP PUT
  *     Samuel Padgett - return 201 status when PUT is used to create a resource
  *     Samuel Padgett - add support for LDP Non-RDF Source
+ *     Samuel Padgett - respond with text/turtle when Accept header missing
  *******************************************************************************/
 package org.eclipse.lyo.ldp.server.service;
 
@@ -96,12 +97,6 @@ public abstract class LDPService {
 	protected String getPublicURI() { return fPublicURI ; }
 
     @GET
-    @Produces(LDPConstants.CT_APPLICATION_RDFXML)
-    public Response getContainerApplicationRDFXML() {	
-        return getResource(LDPConstants.CT_APPLICATION_RDFXML);
-    }
-  
-    @GET
     @Produces(LDPConstants.CT_TEXT_TURTLE)
     public Response getContainerTextTurtle() {	
         return getResource(LDPConstants.CT_TEXT_TURTLE);
@@ -117,6 +112,12 @@ public abstract class LDPService {
     @Produces({ LDPConstants.CT_APPLICATION_JSON, LDPConstants.CT_APPLICATION_LD_JSON })
     public Response getContainerJSON() {	
         return getResource(LDPConstants.CT_APPLICATION_JSON);
+    }
+
+    @GET
+    @Produces(LDPConstants.CT_APPLICATION_RDFXML)
+    public Response getContainerApplicationRDFXML() {	
+        return getResource(LDPConstants.CT_APPLICATION_RDFXML);
     }
 
     @GET
