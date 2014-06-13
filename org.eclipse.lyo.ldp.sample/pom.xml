@@ -52,17 +52,34 @@
                             <name>jetty.port</name>
                             <value>8080</value>
                         </systemProperty>
-                        <!--Set different root URI, default http://localhost:8080/ldp
+                        <!--Set different root URI, default http://localhost:8080/ldp 
                         <systemProperty>
                             <name>ldp.rooturi</name>
                             <value>http://ldphost:8080/ldp</value>
-                        </systemProperty>  -->
-                         <!-- Directory location for Jena TDB, defaults to in-member 
+                        </systemProperty>
+                        -->
+                        <!-- Directory location for Jena TDB, defaults to in-member
                         <systemProperty>
                             <name>ldp.dataset.dir</name>
-                            <value>/var/db/TDB</value>
-                        </systemProperty> -->
+                            <value>/var/db/TDB</value> 
+                        </systemProperty>
+                         -->
                     </systemProperties>
+                </configuration>
+            </plugin>
+            <plugin>
+                <artifactId>maven-clean-plugin</artifactId>
+                <version>2.5</version>
+                <configuration>
+                    <filesets>
+                        <fileset>
+                            <directory>.</directory>
+                            <includes>
+                                <include>**/ldpnr-*</include>
+                            </includes>
+                            <followSymlinks>false</followSymlinks>
+                        </fileset>
+                    </filesets>
                 </configuration>
             </plugin>
         </plugins>
