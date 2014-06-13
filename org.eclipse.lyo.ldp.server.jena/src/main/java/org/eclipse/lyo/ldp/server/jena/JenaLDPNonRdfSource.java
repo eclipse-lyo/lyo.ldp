@@ -130,7 +130,7 @@ public class JenaLDPNonRdfSource extends LDPNonRDFSource {
 	public void delete(String resourceURI) {
 		fGraphStore.writeLock();
 		try {
-			String configURI = JenaLDPResourceManager.mintAssociatedRDFSourceURI(resourceURI);
+			String configURI = JenaLDPResourceManager.mintConfigURI(resourceURI);
 			Model configGraph = fGraphStore.getGraph(configURI);
 			Statement memberOfStatement = configGraph.getProperty(configGraph.createResource(configURI), Lyo.memberOf);
 			String containerURI = memberOfStatement.getResource().getURI();
@@ -139,7 +139,7 @@ public class JenaLDPNonRdfSource extends LDPNonRDFSource {
 			if (!file.isFile()) {
 				throw new WebApplicationException(Response.Status.NOT_FOUND);
 			}
-					
+	
 			boolean successful = file.delete();
 			if (!successful) {
 				throw new WebApplicationException(Response.Status.INTERNAL_SERVER_ERROR);
