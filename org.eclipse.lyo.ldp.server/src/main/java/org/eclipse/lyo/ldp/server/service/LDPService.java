@@ -95,7 +95,7 @@ public abstract class LDPService {
      * @return Does NOT include segment for container, use getRootContainer().getURI() for that.
      */
 	protected String getPublicURI() { return fPublicURI ; }
-
+	
     @GET
     @Produces(LDPConstants.CT_TEXT_TURTLE)
     public Response getContainerTextTurtle() {	
@@ -134,9 +134,9 @@ public abstract class LDPService {
     		return Response.status(Status.NOT_FOUND).build();
     	}
     	
-    	return Response.ok().allow(ldpR.getAllowedMethods()).build();
+    	return ldpR.options(resourceURI);
     }
-    
+ 
     @PUT
     @Consumes({ LDPConstants.CT_APPLICATION_RDFXML, LDPConstants.CT_TEXT_TURTLE, LDPConstants.CT_APPLICATION_XTURTLE })
     public Response updateResource(InputStream content) {

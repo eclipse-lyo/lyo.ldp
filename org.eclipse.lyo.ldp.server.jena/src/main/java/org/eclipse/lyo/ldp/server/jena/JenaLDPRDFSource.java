@@ -283,6 +283,15 @@ public class JenaLDPRDFSource extends LDPRDFSource {
 	}
 
 	@Override
+	public Response options(String resourceURI) {
+    	return Response
+    			.ok()
+    			.allow(getAllowedMethods())
+    			.header(LDPConstants.HDR_LINK, "<" + getTypeURI() + ">; " + LDPConstants.HDR_LINK_TYPE)
+    			.build();
+	}
+
+	@Override
     public Set<String> getAllowedMethods() {
 		HashSet<String> allowedMethods = new HashSet<String>();
 		allowedMethods.add(HttpMethod.GET);

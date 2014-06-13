@@ -241,6 +241,17 @@ public class JenaLDPNonRdfSource extends LDPNonRDFSource {
 	}
 
 	@Override
+	public Response options(String resourceURI) {
+		String associatedURI = JenaLDPResourceManager.mintAssociatedRDFSourceURI(resourceURI);
+		return Response
+				.ok()
+				.allow(getAllowedMethods())
+				.header(LDPConstants.HDR_LINK, "<" + getTypeURI() + ">; " + LDPConstants.HDR_LINK_TYPE)
+				.header(LDPConstants.HDR_LINK, "<" + associatedURI + ">; " + LDPConstants.HDR_LINK_DESCRIBEDBY)
+				.build();
+	}
+
+	@Override
     public Set<String> getAllowedMethods() {
 		HashSet<String> allowedMethods = new HashSet<String>();
 		allowedMethods.add(HttpMethod.GET);

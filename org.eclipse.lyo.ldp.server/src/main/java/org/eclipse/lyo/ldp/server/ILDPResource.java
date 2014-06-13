@@ -73,6 +73,8 @@ public interface ILDPResource {
 	 */
 	public abstract Response get(String resourceURI, String contentType);
 
+	public abstract Response options(String resourceURI);
+
 	/**
 	 * Returns the allowed HTTP methods for this resource as defined in RFC 2616.
 	 * 
