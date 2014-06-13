@@ -83,7 +83,7 @@ public class JenaLDPContainer extends JenaLDPRDFSource implements ILDPContainer
 	 * Create a LDPContainer instance for the specified URI and with the default configuration parameters}.
 	 * @see #LDPContainer(String, String, GraphStore, GraphStore, InputStream)
 	 */
-	public static synchronized JenaLDPContainer create(String containerURI, TDBGraphStore graphStore, GraphStore pageStore)
+	public static synchronized JenaLDPContainer create(String containerURI, TDBGraphStore graphStore)
 	{
 		// Order is important here, need to see if the graph store does NOT an instance of the container
 		// then create a bootstrap container.
@@ -93,7 +93,7 @@ public class JenaLDPContainer extends JenaLDPRDFSource implements ILDPContainer
 		graphStore.readLock();
 		try {
 			graphModel = graphStore.getGraph(containerURI);
-			rootContainer = new JenaLDPContainer(containerURI, graphStore, pageStore);
+			rootContainer = new JenaLDPContainer(containerURI, graphStore);
 		} finally {
 			graphStore.end();
 		}
@@ -112,9 +112,9 @@ public class JenaLDPContainer extends JenaLDPRDFSource implements ILDPContainer
 		return rootContainer;
 	}
 
-	protected JenaLDPContainer(String containerURI, TDBGraphStore graphStore, GraphStore pageStore)
+	protected JenaLDPContainer(String containerURI, TDBGraphStore graphStore)
 	{
-		super(containerURI, graphStore, pageStore);
+		super(containerURI, graphStore);
 		fRDFType = LDPConstants.CLASS_CONTAINER;
 		setConfigParameters();
 	}
@@ -517,10 +517,6 @@ public class JenaLDPContainer extends JenaLDPRDFSource implements ILDPContainer
 		return base.endsWith("/") ? base + append : base + "/" + append;
 	}
 
-	public TDBGraphStore getPagingGraphStore() {
-		return null;
-	}
-	
 	@Override
     public Set<String> getAllowedMethods() {
 		Set<String> allow = super.getAllowedMethods();

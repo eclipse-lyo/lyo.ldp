@@ -40,7 +40,6 @@ import javax.ws.rs.core.StreamingOutput;
 import org.apache.jena.riot.WebContent;
 import org.eclipse.lyo.ldp.server.LDPConstants;
 import org.eclipse.lyo.ldp.server.LDPRDFSource;
-import org.eclipse.lyo.ldp.server.jena.store.GraphStore;
 import org.eclipse.lyo.ldp.server.jena.store.TDBGraphStore;
 import org.eclipse.lyo.ldp.server.jena.vocabulary.LDP;
 import org.eclipse.lyo.ldp.server.jena.vocabulary.Lyo;
@@ -62,7 +61,7 @@ public class JenaLDPRDFSource extends LDPRDFSource {
     protected String fConfigGraphURI;
 	protected final TDBGraphStore fGraphStore; // GraphStore in which to store the container and member resources   
     
-	protected JenaLDPRDFSource(String resourceURI, TDBGraphStore graphStore, GraphStore pageStore)
+	protected JenaLDPRDFSource(String resourceURI, TDBGraphStore graphStore)
 	{
 		super(resourceURI, graphStore);
 		fRDFType = LDPConstants.CLASS_RDFSOURCE;

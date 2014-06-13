@@ -18,14 +18,12 @@ package org.eclipse.lyo.ldp.server.jena;
 
 import org.eclipse.lyo.ldp.server.ILDPBasicContainer;
 import org.eclipse.lyo.ldp.server.LDPConstants;
-import org.eclipse.lyo.ldp.server.jena.store.GraphStore;
 import org.eclipse.lyo.ldp.server.jena.store.TDBGraphStore;
 
 public class JenaLDPBasicContainer extends JenaLDPContainer implements ILDPBasicContainer {
 
-	protected JenaLDPBasicContainer(String containerURI,
-			TDBGraphStore graphStore, GraphStore pageStore) {
-		super(containerURI, graphStore, pageStore);
+	protected JenaLDPBasicContainer(String containerURI, TDBGraphStore graphStore) {
+		super(containerURI, graphStore);
 		fRDFType = LDPConstants.CLASS_BASIC_CONTAINER;
 	}
 }

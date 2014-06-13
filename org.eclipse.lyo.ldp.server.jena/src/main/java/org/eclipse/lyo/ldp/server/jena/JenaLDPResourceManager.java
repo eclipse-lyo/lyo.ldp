@@ -32,11 +32,10 @@ public class JenaLDPResourceManager implements LDPResourceManager {
 	public static final String CONFIG_PARAM = "?_config";
 	public static final String ASSOCIATED_LDP_RS_PARAM = "?_rdf";
 
-	TDBGraphStore gs, ps;
+	TDBGraphStore gs;
 
-	public JenaLDPResourceManager(TDBGraphStore gs, TDBGraphStore ps) {
+	public JenaLDPResourceManager(TDBGraphStore gs) {
 		this.gs = gs;
-		this.ps = ps;
 	}
 
 	@Override
@@ -56,14 +55,14 @@ public class JenaLDPResourceManager implements LDPResourceManager {
 			}
 			Resource r = graph.getResource(resourceURI);
 			if (r.hasProperty(RDF.type, LDP.DirectContainer)) {
-				return new JenaLDPDirectContainer(resourceURI, gs, ps);
+				return new JenaLDPDirectContainer(resourceURI, gs);
 			} else if (r.hasProperty(RDF.type, LDP.BasicContainer)) {
-				return new JenaLDPBasicContainer(resourceURI, gs, ps);			
+				return new JenaLDPBasicContainer(resourceURI, gs);
 			} else if (r.hasProperty(RDF.type, LDP.Container)) {
 				// TODO: SPEC: Should only rdf:type of #Container be treated as RDF Source or error?  Probably an error
 				System.err.println("Received type of ldp:Container but treating as ldp:RDFSource.");
 			}
-			return new JenaLDPRDFSource(resourceURI, gs, ps);
+			return new JenaLDPRDFSource(resourceURI, gs);
 		} finally {
 			gs.end();
 		}
