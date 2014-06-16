@@ -373,7 +373,7 @@ public class JenaLDPContainer extends JenaLDPRDFSource implements ILDPContainer
 				// condition required
 				throw new WebApplicationException(428);
 			}
-			String originalETag = getETag(before.getResource(resourceURI));
+			String originalETag = getETag(before);
 			// FIXME: Does not handle wildcards or comma-separated values...
 			if (!originalETag.equals(ifMatch)) {
 				throw new WebApplicationException(HttpStatus.SC_PRECONDITION_FAILED);

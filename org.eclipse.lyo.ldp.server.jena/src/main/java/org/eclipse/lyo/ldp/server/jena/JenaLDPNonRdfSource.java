@@ -285,7 +285,7 @@ public class JenaLDPNonRdfSource extends LDPNonRDFSource {
 	private String getETag(File file) throws IOException {
 		FileInputStream fis = new FileInputStream(file);
 		try {
-			return org.apache.commons.codec.digest.DigestUtils.md5Hex(fis);
+			return "\"" + org.apache.commons.codec.digest.DigestUtils.md5Hex(fis) + "\"";
 		} finally {
 			fis.close();
 		}

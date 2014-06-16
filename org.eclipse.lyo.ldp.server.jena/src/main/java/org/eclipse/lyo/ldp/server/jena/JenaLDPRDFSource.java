@@ -19,6 +19,7 @@
  *******************************************************************************/
 package org.eclipse.lyo.ldp.server.jena;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -37,6 +38,7 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.StreamingOutput;
 
+import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.jena.riot.WebContent;
 import org.eclipse.lyo.ldp.server.LDPConstants;
 import org.eclipse.lyo.ldp.server.LDPRDFSource;
@@ -47,7 +49,6 @@ import org.eclipse.lyo.ldp.server.jena.vocabulary.Lyo;
 import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.rdf.model.Property;
 import com.hp.hpl.jena.rdf.model.Resource;
-import com.hp.hpl.jena.rdf.model.Statement;
 import com.hp.hpl.jena.rdf.model.StmtIterator;
 import com.hp.hpl.jena.vocabulary.DCTerms;
 
@@ -149,10 +150,8 @@ public class JenaLDPRDFSource extends LDPRDFSource {
 			if (graph == null)
 				throw new WebApplicationException(Status.NOT_FOUND);
 
-			Resource r = graph.getResource(fURI);
 			amendResponseGraph(graph);
-
-			final String eTag = getETag(r);
+			final String eTag = getETag(graph);
 			StreamingOutput out;
 			if (LDPConstants.CT_APPLICATION_JSON.equals(contentType)) {
 				out = getJSONLD(graph);
@@ -179,17 +178,22 @@ public class JenaLDPRDFSource extends LDPRDFSource {
 		}
 	}
 
-	protected String getETag(Resource r) {
-	    Statement s = r.getProperty(DCTerms.modified);
-	    final String eTag;
-	    if (s == null) {
-	    	// uh oh. this should never be null.
-	    	System.err.println("WARNING: Last modified is null for resource! <" + fURI + ">");
-	    	eTag = "<unmodified>";
-	    } else {
-	    	eTag = s.getLiteral().getLexicalForm();
-	    }
-	    return eTag;
+	/**
+	 * Create a weak ETag value from a Jena model.
+	 * 
+	 * @param m the model that represents the HTTP response body
+	 * @return an ETag value
+	 * 
+	 * @see <a href="http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.19">HTTP 1.1: Section 14.19 - ETag</a>
+	 */
+	protected String getETag(Model m) {
+		// Get the MD5 hash of the model as N-Triples.
+		ByteArrayOutputStream out = new ByteArrayOutputStream();
+		m.write(out,  "N-TRIPLE");
+		String md5 = DigestUtils.md5Hex(out.toByteArray());
+
+		// Create a weak entity tag from the MD5 hash.
+	    return "W/\"" + md5 + "\"";
     }
 	
 	/**
