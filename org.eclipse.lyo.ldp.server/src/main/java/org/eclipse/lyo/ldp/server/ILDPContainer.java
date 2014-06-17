@@ -20,6 +20,7 @@ package org.eclipse.lyo.ldp.server;
 import java.io.InputStream;
 import java.io.OutputStream;
 
+import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 
 
@@ -59,5 +60,19 @@ public interface ILDPContainer extends ILDPRDFSource {
 	 * @param nameHint Value from Slug header or other source, used to determine the newly created resource's URL 
 	 * @return the new resource URI
 	 */
-	public abstract Response postLDPNR(InputStream content, String stripCharset, String slug);
+	public abstract Response postNonRDFSource(InputStream content, String stripCharset, String slug);
+	
+	
+	/**
+	 * Creates a new resource at resourceURI with the contents of the specified stream.
+	 * <p>The Content-Type of the input stream is specified by the
+	 * <code>contentType</code> argument.</p>
+	 * @param resourceURI the URI of to-be-created resource.
+	 * @param stream the input stream containing the resource representation.
+	 * @param contentType the Content-Type of the input stream.
+	 * @param requestHeaders the HTTP request headers
+	 * @return true if a new resource was created or false if the resource already existed
+	 */
+	public abstract boolean putCreate(String resourceURI, InputStream stream,
+			String contentType, String user, HttpHeaders requestHeaders);
 }

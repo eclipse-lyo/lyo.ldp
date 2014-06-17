@@ -98,25 +98,25 @@ public abstract class LDPService {
 	
     @GET
     @Produces(LDPConstants.CT_TEXT_TURTLE)
-    public Response getContainerTextTurtle() {	
+    public Response getTextTurtle() {	
         return getResource(LDPConstants.CT_TEXT_TURTLE);
     }
     
     @GET
     @Produces(LDPConstants.CT_APPLICATION_XTURTLE)
-    public Response getContainerApplicationXTurtle() {	
+    public Response getApplicationXTurtle() {	
         return getResource(LDPConstants.CT_APPLICATION_XTURTLE);
     }
 
     @GET
     @Produces({ LDPConstants.CT_APPLICATION_JSON, LDPConstants.CT_APPLICATION_LD_JSON })
-    public Response getContainerJSON() {	
+    public Response getJSON() {	
         return getResource(LDPConstants.CT_APPLICATION_JSON);
     }
 
     @GET
     @Produces(LDPConstants.CT_APPLICATION_RDFXML)
-    public Response getContainerApplicationRDFXML() {	
+    public Response getApplicationRDFXML() {	
         return getResource(LDPConstants.CT_APPLICATION_RDFXML);
     }
 
@@ -134,35 +134,42 @@ public abstract class LDPService {
     		return Response.status(Status.NOT_FOUND).build();
     	}
     	
-    	return ldpR.options(resourceURI);
+    	return ldpR.options();
     }
  
     @PUT
     @Consumes({ LDPConstants.CT_APPLICATION_RDFXML, LDPConstants.CT_TEXT_TURTLE, LDPConstants.CT_APPLICATION_XTURTLE })
-    public Response updateResource(InputStream content) {
+    public Response putRDFSource(InputStream content) {
     	// Set the initial container representation. Should only be called once.
     	// May be invoked when query params are used, like ?_admin or ?_meta.
-    	boolean created = getRootContainer().put(fRequestUrl.getRequestUri().toString(),  content, stripCharset(fRequestHeaders.getMediaType().toString()), null, fRequestHeaders);
-        return Response.status((created) ? Status.CREATED : Status.NO_CONTENT).build();
+    	String resourceURI = getConanicalURL(fRequestUrl.getRequestUri());
+    	ILDPResource ldpR = getResourceManger().get(resourceURI);
+    	boolean created = false;
+    	if (ldpR != null) {
+    		ldpR.putUpdate(content, stripCharset(fRequestHeaders.getMediaType().toString()), null, fRequestHeaders);
+    	} else {
+    		created = getRootContainer().putCreate(fRequestUrl.getRequestUri().toString(),  content, stripCharset(fRequestHeaders.getMediaType().toString()), null, fRequestHeaders);
+    	}
+    	return Response.status((created) ? Status.CREATED : Status.NO_CONTENT).build();
     }
     
     @PUT
     @Consumes("*/*")
-    public Response putLDPNR(InputStream content) {
+    public Response putNonRDFSource(InputStream content) {
     	String resourceURI = getConanicalURL(fRequestUrl.getRequestUri());
     	ILDPResource ldpR = getResourceManger().get(resourceURI);
     	if (ldpR == null) return Response.status(Status.NOT_FOUND).build();
     	// We don't allow changing an LDP-RS to an LDP-NR.
     	if (!(ldpR instanceof LDPNonRDFSource)) return Response.status(Status.CONFLICT).build();
     	
-    	ldpR.put(fRequestUrl.getRequestUri().toString(),  content, stripCharset(fRequestHeaders.getMediaType().toString()), null, fRequestHeaders);
+    	ldpR.putUpdate(content, stripCharset(fRequestHeaders.getMediaType().toString()), null, fRequestHeaders);
 
     	return Response.status(Status.NO_CONTENT).build();
     }
     
     @POST
     @Consumes({ LDPConstants.CT_APPLICATION_RDFXML, LDPConstants.CT_TEXT_TURTLE, LDPConstants.CT_APPLICATION_XTURTLE, LDPConstants.CT_APPLICATION_JSON, LDPConstants.CT_APPLICATION_LD_JSON })
-    public Response createResource(@HeaderParam(LDPConstants.HDR_SLUG) String slug, InputStream content) {
+    public Response post(@HeaderParam(LDPConstants.HDR_SLUG) String slug, InputStream content) {
     	
     	ILDPContainer ldpC = getRequestContainer();
     	
@@ -226,24 +233,24 @@ public abstract class LDPService {
      */
     @POST
     @Consumes("*/*")
-    public Response createLDPNR(@HeaderParam(LDPConstants.HDR_SLUG) String slug, InputStream content) {
-    	return getRequestContainer().postLDPNR(content, stripCharset(fRequestHeaders.getMediaType().toString()), slug);
+    public Response postNonRDFSource(@HeaderParam(LDPConstants.HDR_SLUG) String slug, InputStream content) {
+    	return getRequestContainer().postNonRDFSource(content, stripCharset(fRequestHeaders.getMediaType().toString()), slug);
     }
  
     @DELETE
-    public Response deleteResource() {
+    public Response delete() {
     	String uri = getConanicalURL(fRequestUrl.getRequestUri());
     	ILDPResource ldpR = getResourceManger().get(uri);
     	if (ldpR == null) return Response.status(Status.NOT_FOUND).build();
     	// FIXME: Check if this is the root container before allowing delete.
-    	ldpR.delete(uri);
+    	ldpR.delete();
         return Response.status(Status.NO_CONTENT).build();
     }
     
     @PATCH
     @Path("id")
     @Consumes(LDPConstants.CT_TEXT_TURTLE)    
-    public Response patchResource(final InputStream content, @PathParam("id") String id) {
+    public Response patch(final InputStream content, @PathParam("id") String id) {
     	getRootContainer().patch(getConanicalURL(fRequestUrl.getRequestUri()), content, stripCharset(fRequestHeaders.getMediaType().toString()), null);
 
       	return Response.status(Status.OK).build();
@@ -254,7 +261,7 @@ public abstract class LDPService {
     	ILDPResource ldpR = getResourceManger().get(resourceURI);
     	if (ldpR == null) return Response.status(Status.NOT_FOUND).build();
     	
-    	return ldpR.get(resourceURI, type);
+    	return ldpR.get(type);
     }
 
     String stripCharset(String contentType) {

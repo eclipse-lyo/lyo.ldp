@@ -39,6 +39,7 @@ import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.StreamingOutput;
 
 import org.apache.commons.codec.digest.DigestUtils;
+import org.apache.http.HttpStatus;
 import org.apache.jena.riot.WebContent;
 import org.eclipse.lyo.ldp.server.LDPConstants;
 import org.eclipse.lyo.ldp.server.LDPRDFSource;
@@ -47,6 +48,7 @@ import org.eclipse.lyo.ldp.server.jena.vocabulary.LDP;
 import org.eclipse.lyo.ldp.server.jena.vocabulary.Lyo;
 
 import com.hp.hpl.jena.rdf.model.Model;
+import com.hp.hpl.jena.rdf.model.ModelFactory;
 import com.hp.hpl.jena.rdf.model.Property;
 import com.hp.hpl.jena.rdf.model.Resource;
 import com.hp.hpl.jena.rdf.model.StmtIterator;
@@ -54,7 +56,9 @@ import com.hp.hpl.jena.vocabulary.DCTerms;
 
 
 public class JenaLDPRDFSource extends LDPRDFSource {
-		
+
+	public static String UNSPECIFIED_USER = "http://unspecified.user"; // TODO: How to handle this properly?
+
     /**
      * A companion resource "next to" the "real" resource, used to hold implementation
      * specific data.
@@ -73,30 +77,73 @@ public class JenaLDPRDFSource extends LDPRDFSource {
 	protected Model getConfigModel() {
 		return fGraphStore.getGraph(fConfigGraphURI);
 	}
-	
+
 	@Override
-	public boolean put(String resourceURI, InputStream stream, String contentType,
-			String user, HttpHeaders requestHeaders) {
-		return false;
+	public void putUpdate(InputStream stream, String contentType, String user,
+			HttpHeaders requestHeaders) {
+		fGraphStore.writeLock();
+		try {
+			Model model = readModel(getURI(), stream, contentType);
+			Resource newResource = model.getResource(getURI());
+
+			Model before = fGraphStore.getGraph(getURI());
+			// We shouldn't have gotten this far but to be safe
+			if (before == null)
+				throw new WebApplicationException(HttpStatus.SC_NOT_FOUND);
+
+			updateResource(model, newResource, user, requestHeaders,
+					getETag(before));
+			fGraphStore.commit();
+		} finally {
+			fGraphStore.end();
+		}
+	}
+	
+	/**
+	 * model, newResource and beforeETag must not be null
+	 */
+	protected void updateResource(Model model, Resource newResource, String user, HttpHeaders requestHeaders, String beforeETag) {
+		// Check the If-Match request header.
+		if (requestHeaders != null) {
+			String ifMatch = requestHeaders.getHeaderString(HttpHeaders.IF_MATCH);
+			if (ifMatch == null) {
+				// condition required
+				throw new WebApplicationException(428);
+			}
+			String originalETag = beforeETag;
+			// FIXME: Does not handle wildcards or comma-separated values...
+			if (!originalETag.equals(ifMatch)) {
+				throw new WebApplicationException(HttpStatus.SC_PRECONDITION_FAILED);
+			}
+		}
+
+		// FIXME: Never used?
+		if (user == null) user = UNSPECIFIED_USER;
+
+		// Update dcterms:modified
+		Calendar time = Calendar.getInstance();
+		model.removeAll(newResource, DCTerms.modified, null);
+		model.add(newResource, DCTerms.modified, model.createTypedLiteral(time));
+
+		fGraphStore.putGraph(getURI(), model);
 	}
 
 	@Override
 	public void patch(String resourceURI, InputStream stream,
 			String contentType, String user) {
 		// TODO Auto-generated method stub
-		
 	}
 
 	@Override
-	public void delete(String resourceURI) {
+	public void delete() {
 		// If this is a companion to another resources (e.g., a config graph), don't delete it.
-		if (JenaLDPResourceManager.isCompanion(resourceURI)) {
+		if (JenaLDPResourceManager.isCompanion(getURI())) {
 			throw new WebApplicationException(Status.FORBIDDEN);
 		}
 
 		fGraphStore.writeLock();
 		try {
-			String containerURI = getContainerURIForResource(resourceURI);
+			String containerURI = getContainerURIForResource(getURI());
 			// Remove the resource from the container
 			Model containerModel = fGraphStore.getGraph(containerURI);
 			Resource containerResource = containerModel.getResource(containerURI);
@@ -119,22 +166,22 @@ public class JenaLDPRDFSource extends LDPRDFSource {
 				membershipResource.removeAll(DCTerms.modified);
 				membershipResource.addLiteral(DCTerms.modified, membershipResourceModel.createTypedLiteral(time));
 			}
-			membershipResourceModel.remove(membershipResource, memberRelation, membershipResourceModel.getResource(resourceURI));
+			membershipResourceModel.remove(membershipResource, memberRelation, membershipResourceModel.getResource(getURI()));
 
-			containerModel.remove(containerResource, LDP.contains, containerModel.getResource(resourceURI));
+			containerModel.remove(containerResource, LDP.contains, containerModel.getResource(getURI()));
 			containerResource.removeAll(DCTerms.modified);
 			containerResource.addLiteral(DCTerms.modified, containerModel.createTypedLiteral(time));
 
 			// Delete the resource itself
-			fGraphStore.deleteGraph(resourceURI);
+			fGraphStore.deleteGraph(getURI());
 			
 			// Keep track of the deletion by logging the delete time
-			String configURI = JenaLDPResourceManager.mintConfigURI(resourceURI);
+			String configURI = JenaLDPResourceManager.mintConfigURI(getURI());
 			Model configModel = fGraphStore.getGraph(configURI);
 			if (configModel == null) {
-				configModel = fGraphStore.createCompanionGraph(resourceURI, configURI);
+				configModel = fGraphStore.createCompanionGraph(getURI(), configURI);
 			}
-			configModel.getResource(resourceURI).addLiteral(Lyo.deleted, configModel.createTypedLiteral(time));
+			configModel.getResource(getURI()).addLiteral(Lyo.deleted, configModel.createTypedLiteral(time));
 			
 			fGraphStore.commit();
 		} finally {
@@ -143,7 +190,7 @@ public class JenaLDPRDFSource extends LDPRDFSource {
 	}
 
 	@Override
-	public Response get(String resourceURI, String contentType) {
+	public Response get(String contentType) {
 		fGraphStore.readLock();
 		try {
 			Model graph = fGraphStore.getGraph(fURI);
@@ -286,7 +333,7 @@ public class JenaLDPRDFSource extends LDPRDFSource {
 	}
 
 	@Override
-	public Response options(String resourceURI) {
+	public Response options() {
     	return Response
     			.ok()
     			.allow(getAllowedMethods())
@@ -306,4 +353,37 @@ public class JenaLDPRDFSource extends LDPRDFSource {
 
 	    return allowedMethods;
     }
+	
+	protected Model readModel(String baseURI, InputStream stream, String contentType) {
+		final Model model;
+		if (LDPConstants.CT_APPLICATION_JSON.equals(contentType) || LDPConstants.CT_APPLICATION_LD_JSON.equals(contentType)) {
+			if (!isJSONLDPresent()) {
+				throw new WebApplicationException(Status.UNSUPPORTED_MEDIA_TYPE);
+			}
+
+	        try {
+	        	// Use reflection to invoke the optional jsonld-java dependency.
+	        	Class<?> jsonldTripleCallback = Class.forName("com.github.jsonldjava.core.JSONLDTripleCallback");
+	        	Class<?> jenaTripleCallback = Class.forName("com.github.jsonldjava.impl.JenaTripleCallback");
+				Class<?> jsonldUtilsClass = Class.forName("com.github.jsonldjava.utils.JSONUtils");
+				Class<?> jsonldClass = Class.forName("com.github.jsonldjava.core.JSONLD");
+
+	        	//final JSONLDTripleCallback callback = new JenaTripleCallback();
+				//model = (Model) JSONLD.toRDF(JSONUtils.fromInputStream(stream), callback);
+				Method fromInputStreamMethod = jsonldUtilsClass.getMethod("fromInputStream", InputStream.class);
+				Object input = fromInputStreamMethod.invoke(null, stream);
+				Method toRDFMethod = jsonldClass.getMethod("toRDF", Object.class, jsonldTripleCallback);
+				model = (Model) toRDFMethod.invoke(null, input, jenaTripleCallback.newInstance());
+			} catch (Exception e) {
+				throw new RuntimeException(e);
+			}
+		} else {
+			model = ModelFactory.createDefaultModel();
+			String lang = WebContent.contentTypeToLang(contentType).getName();
+			model.read(stream, baseURI, lang);
+		}
+
+		return model;
+	}
+
 }

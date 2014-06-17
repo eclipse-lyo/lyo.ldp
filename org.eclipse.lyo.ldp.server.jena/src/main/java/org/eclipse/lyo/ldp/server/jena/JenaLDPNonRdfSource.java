@@ -60,16 +60,16 @@ public class JenaLDPNonRdfSource extends LDPNonRDFSource {
 		super(resourceURI, null);
 		fGraphStore = graphStore;
 	}
-
+	
 	@Override
-	public boolean put(String resourceURI, InputStream stream,
+	public void putUpdate(InputStream stream,
 	        String contentType, String user, HttpHeaders requestHeaders) {
 		fGraphStore.writeLock();
 		try {
-			String associatedURI = JenaLDPResourceManager.mintAssociatedRDFSourceURI(resourceURI);
+			String associatedURI = JenaLDPResourceManager.mintAssociatedRDFSourceURI(getURI());
 			Model associatedModel = fGraphStore.getGraph(associatedURI);
 
-			File file = toFile(resourceURI);
+			File file = toFile(getURI());
 			if (!file.isFile()) {
 				throw new WebApplicationException(Response.Status.NOT_FOUND);
 			}
@@ -105,7 +105,6 @@ public class JenaLDPNonRdfSource extends LDPNonRDFSource {
 			associatedResource.addLiteral(DCTerms.modified, associatedModel.createTypedLiteral(time));
 			
 			fGraphStore.commit();
-			return true;
 		} catch (UnsupportedEncodingException e) {
 	        e.printStackTrace();
 	        throw new WebApplicationException(Response.Status.INTERNAL_SERVER_ERROR);
@@ -127,15 +126,15 @@ public class JenaLDPNonRdfSource extends LDPNonRDFSource {
 	}
 
 	@Override
-	public void delete(String resourceURI) {
+	public void delete() {
 		fGraphStore.writeLock();
 		try {
-			String configURI = JenaLDPResourceManager.mintConfigURI(resourceURI);
+			String configURI = JenaLDPResourceManager.mintConfigURI(getURI());
 			Model configGraph = fGraphStore.getGraph(configURI);
 			Statement memberOfStatement = configGraph.getProperty(configGraph.createResource(configURI), Lyo.memberOf);
 			String containerURI = memberOfStatement.getResource().getURI();
 
-			File file = toFile(resourceURI);
+			File file = toFile(getURI());
 			if (!file.isFile()) {
 				throw new WebApplicationException(Response.Status.NOT_FOUND);
 			}
@@ -165,17 +164,17 @@ public class JenaLDPNonRdfSource extends LDPNonRDFSource {
 				membershipResource.removeAll(DCTerms.modified);
 				membershipResource.addLiteral(DCTerms.modified, membershipResourceModel.createTypedLiteral(time));
 			}
-			membershipResourceModel.remove(membershipResource, memberRelation, membershipResourceModel.getResource(resourceURI));
+			membershipResourceModel.remove(membershipResource, memberRelation, membershipResourceModel.getResource(getURI()));
 
-			containerModel.remove(containerResource, LDP.contains, containerModel.getResource(resourceURI));
+			containerModel.remove(containerResource, LDP.contains, containerModel.getResource(getURI()));
 			containerResource.removeAll(DCTerms.modified);
 			containerResource.addLiteral(DCTerms.modified, containerModel.createTypedLiteral(time));
 
 			// Delete the resource itself
-			fGraphStore.deleteGraph(JenaLDPResourceManager.mintAssociatedRDFSourceURI(resourceURI));
+			fGraphStore.deleteGraph(JenaLDPResourceManager.mintAssociatedRDFSourceURI(getURI()));
 
 			// Keep track of the deletion by logging the delete time
-			configGraph.getResource(resourceURI).addLiteral(Lyo.deleted, configGraph.createTypedLiteral(time));
+			configGraph.getResource(getURI()).addLiteral(Lyo.deleted, configGraph.createTypedLiteral(time));
 
 			fGraphStore.commit();
 		} catch (UnsupportedEncodingException e) {
@@ -190,16 +189,16 @@ public class JenaLDPNonRdfSource extends LDPNonRDFSource {
 	}
 
 	@Override
-	public Response get(String uri, String contentType) {
+	public Response get(String contentType) {
 		fGraphStore.readLock();
 		try {
-			String associatedURI = JenaLDPResourceManager.mintAssociatedRDFSourceURI(uri);
+			String associatedURI = JenaLDPResourceManager.mintAssociatedRDFSourceURI(getURI());
 			Model associatedModel = fGraphStore.getGraph(associatedURI);
 			if (associatedModel == null) {
 				return Response.status(Response.Status.NOT_FOUND).build();
 			}
 	
-			File file = toFile(uri);
+			File file = toFile(getURI());
 			if (!file.isFile()) {
 				return Response.status(Response.Status.NOT_FOUND).build();
 			}
@@ -241,8 +240,8 @@ public class JenaLDPNonRdfSource extends LDPNonRDFSource {
 	}
 
 	@Override
-	public Response options(String resourceURI) {
-		String associatedURI = JenaLDPResourceManager.mintAssociatedRDFSourceURI(resourceURI);
+	public Response options() {
+		String associatedURI = JenaLDPResourceManager.mintAssociatedRDFSourceURI(fURI);
 		return Response
 				.ok()
 				.allow(getAllowedMethods())

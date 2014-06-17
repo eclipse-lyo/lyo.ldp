@@ -32,7 +32,6 @@ package org.eclipse.lyo.ldp.server.jena;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.lang.reflect.Method;
 import java.util.Calendar;
 import java.util.HashSet;
 import java.util.List;
@@ -46,7 +45,6 @@ import javax.ws.rs.core.Response.Status;
 
 import org.apache.commons.io.output.ByteArrayOutputStream;
 import org.apache.http.HttpStatus;
-import org.apache.jena.riot.WebContent;
 import org.eclipse.lyo.ldp.server.ILDPContainer;
 import org.eclipse.lyo.ldp.server.LDPConstants;
 import org.eclipse.lyo.ldp.server.jena.store.GraphStore;
@@ -98,7 +96,6 @@ public class JenaLDPContainer extends JenaLDPRDFSource implements ILDPContainer
 			graphStore.end();
 		}
 
-
 		if (graphModel == null) {
 			Model containerModel = ModelFactory.createDefaultModel();
 			Resource containerResource = containerModel.createResource(LDPService.ROOT_CONTAINER_URL);
@@ -107,7 +104,7 @@ public class JenaLDPContainer extends JenaLDPRDFSource implements ILDPContainer
 			containerResource.addProperty(LDP.hasMemberRelation, LDP.member);
 			ByteArrayOutputStream out = new ByteArrayOutputStream();
 			containerModel.write(out, "TURTLE");
-			rootContainer.put(containerURI, new ByteArrayInputStream(out.toByteArray()), LDPConstants.CT_TEXT_TURTLE, null, null);
+			rootContainer.putCreate(containerURI, new ByteArrayInputStream(out.toByteArray()), LDPConstants.CT_TEXT_TURTLE, null, null);
 		}
 		return rootContainer;
 	}
@@ -184,10 +181,27 @@ public class JenaLDPContainer extends JenaLDPRDFSource implements ILDPContainer
 	}
 		
 	/* (non-Javadoc)
-	 * @see org.eclipse.lyo.ldp.server.impl.ILDPContainer#put(java.lang.String, java.io.InputStream, java.lang.String, java.lang.String)
+	 * @see org.eclipse.lyo.ldp.server.impl.ILDPResource#putUpdate(java.io.InputStream, java.lang.String, java.lang.String)
 	 */
 	@Override
-	public boolean put(String resourceURI, InputStream stream, String contentType, String user, HttpHeaders requestHeaders)
+	public void putUpdate(InputStream stream, String contentType, String user, HttpHeaders requestHeaders)
+	{
+		fGraphStore.writeLock();
+		try {
+			if (fGraphStore.getGraph(getURI()) != null) {
+				updateResource(stream, contentType, user, requestHeaders);
+			}
+			fGraphStore.commit();
+		} finally {
+			fGraphStore.end();
+		}
+	}
+	
+	/* (non-Javadoc)
+	 * @see org.eclipse.lyo.ldp.server.impl.ILDPContainer#putCreate(java.lang.String, java.io.InputStream, java.lang.String, java.lang.String)
+	 */
+	@Override
+	public boolean putCreate(String resourceURI, InputStream stream, String contentType, String user, HttpHeaders requestHeaders)
 	{
 		boolean create = false;
 
@@ -204,7 +218,7 @@ public class JenaLDPContainer extends JenaLDPRDFSource implements ILDPContainer
 				addResource(resourceURI, false, stream, contentType, user);	
 				create = true;
 			} else {
-				updateResource(resourceURI, resourceURI, stream, contentType, user, requestHeaders);
+				updateResource(stream, contentType, user, requestHeaders);
 			}
 			fGraphStore.commit();
 		} finally {
@@ -232,8 +246,6 @@ public class JenaLDPContainer extends JenaLDPRDFSource implements ILDPContainer
 		}
 	}
 
-	protected static String UNSPECIFIED_USER = "http://unspecified.user"; // TODO: How to handle this properly?
-	
 	/**
 	 * Create resource and add membership triples
 	 * @param resourceURI The NEW resource being added (including any query params, etc)
@@ -312,83 +324,29 @@ public class JenaLDPContainer extends JenaLDPRDFSource implements ILDPContainer
 	    containerResource.removeAll(DCTerms.modified);
 	    containerResource.addLiteral(DCTerms.modified, containerModel.createTypedLiteral(time));
     }
+	
+	protected void updateResource(InputStream stream, String contentType, String user, HttpHeaders requestHeaders)
+	{
+		Model model = readModel(getURI(), stream, contentType);
+		Resource newResource = model.getResource(getURI());
 
-	private Model readModel(String baseURI, InputStream stream, String contentType) {
-		final Model model;
-		if (LDPConstants.CT_APPLICATION_JSON.equals(contentType) || LDPConstants.CT_APPLICATION_LD_JSON.equals(contentType)) {
-			if (!isJSONLDPresent()) {
-				throw new WebApplicationException(Status.UNSUPPORTED_MEDIA_TYPE);
-			}
-
-	        try {
-	        	// Use reflection to invoke the optional jsonld-java dependency.
-	        	Class<?> jsonldTripleCallback = Class.forName("com.github.jsonldjava.core.JSONLDTripleCallback");
-	        	Class<?> jenaTripleCallback = Class.forName("com.github.jsonldjava.impl.JenaTripleCallback");
-				Class<?> jsonldUtilsClass = Class.forName("com.github.jsonldjava.utils.JSONUtils");
-				Class<?> jsonldClass = Class.forName("com.github.jsonldjava.core.JSONLD");
-
-	        	//final JSONLDTripleCallback callback = new JenaTripleCallback();
-				//model = (Model) JSONLD.toRDF(JSONUtils.fromInputStream(stream), callback);
-				Method fromInputStreamMethod = jsonldUtilsClass.getMethod("fromInputStream", InputStream.class);
-				Object input = fromInputStreamMethod.invoke(null, stream);
-				Method toRDFMethod = jsonldClass.getMethod("toRDF", Object.class, jsonldTripleCallback);
-				model = (Model) toRDFMethod.invoke(null, input, jenaTripleCallback.newInstance());
-			} catch (Exception e) {
-				throw new RuntimeException(e);
-			}
-		} else {
-			model = ModelFactory.createDefaultModel();
-			String lang = WebContent.contentTypeToLang(contentType).getName();
-			model.read(stream, baseURI, lang);
+		Model before = fGraphStore.getGraph(getURI());
+		// We shouldn't have gotten this far but to be safe
+		if (before == null) throw new WebApplicationException(HttpStatus.SC_NOT_FOUND);
+		
+		// Make sure we're not updating any containment triples.
+		List<Statement> originalContainmentTriples = before.listStatements(before.getResource(getURI()), LDP.contains, (RDFNode) null).toList();
+		List<Statement> newContainmentTriples = newResource.listProperties(LDP.contains).toList();
+		if (newContainmentTriples.size() != originalContainmentTriples.size()) {
+			throw new WebApplicationException(HttpStatus.SC_CONFLICT);
 		}
 
-		return model;
-	}
-	
-	protected void updateResource(String resourceURI, String baseURI, InputStream stream, String contentType, String user, HttpHeaders requestHeaders)
-	{
-		Model model = readModel(baseURI, stream, contentType);
-		Resource subject = model.getResource(resourceURI);
-
-		Model before = fGraphStore.getGraph(resourceURI);
-		if (resourceURI.equals(fURI)) {
-			// Make sure we're not updating any containment triples.
-			List<Statement> originalContainmentTriples = before.listStatements(before.getResource(resourceURI), LDP.contains, (RDFNode) null).toList();
-			List<Statement> newContainmentTriples = subject.listProperties(LDP.contains).toList();
-			if (newContainmentTriples.size() != originalContainmentTriples.size()) {
+		for (Statement s : originalContainmentTriples) {
+			if (!newResource.hasProperty(s.getPredicate(), s.getResource())) {
 				throw new WebApplicationException(HttpStatus.SC_CONFLICT);
 			}
-	
-			for (Statement s : originalContainmentTriples) {
-				if (!subject.hasProperty(s.getPredicate(), s.getResource())) {
-					throw new WebApplicationException(HttpStatus.SC_CONFLICT);
-				}
-			}
 		}
-		
-		// Check the If-Match request header.
-		if (requestHeaders != null) {
-			String ifMatch = requestHeaders.getHeaderString(HttpHeaders.IF_MATCH);
-			if (ifMatch == null) {
-				// condition required
-				throw new WebApplicationException(428);
-			}
-			String originalETag = getETag(before);
-			// FIXME: Does not handle wildcards or comma-separated values...
-			if (!originalETag.equals(ifMatch)) {
-				throw new WebApplicationException(HttpStatus.SC_PRECONDITION_FAILED);
-			}
-		}
-
-		// FIXME: Never used?
-		if (user == null) user = UNSPECIFIED_USER;
-
-		// Update dcterms:modified
-		Calendar time = Calendar.getInstance();
-		model.removeAll(subject, DCTerms.modified, null);
-		model.add(subject, DCTerms.modified, model.createTypedLiteral(time));
-
-		fGraphStore.putGraph(resourceURI, model);
+		updateResource(model, newResource, user, requestHeaders, getETag(before));
 	}
 	
 	protected void patchResource(String resourceURI, String baseURI, InputStream stream, String contentType, String user)
@@ -411,10 +369,10 @@ public class JenaLDPContainer extends JenaLDPRDFSource implements ILDPContainer
 	/* (non-Javadoc)
 	 * @see org.eclipse.lyo.ldp.server.impl.ILDPContainer#delete(java.lang.String)
 	 */
-	public void delete(String resourceURI)
+	public void delete()
 	{
 		// TODO: Need to determine if we need any other Container-specific
-		super.delete(resourceURI);
+		super.delete();
 	}
 
 	/* (non-Javadoc)
@@ -525,7 +483,7 @@ public class JenaLDPContainer extends JenaLDPRDFSource implements ILDPContainer
     }
 
 	@Override
-    public Response postLDPNR(InputStream content, String stripCharset, String slug) {
+    public Response postNonRDFSource(InputStream content, String stripCharset, String slug) {
 		fGraphStore.writeLock();
 		try {
 			String uri = fGraphStore.mintURI(fURI, fResourceURIPrefix, slug);

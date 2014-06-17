@@ -35,19 +35,16 @@ public interface ILDPResource {
 	public abstract void setModel(Object model);
 
 	public abstract String getTypeURI();
-	
+
 	/**
-	 * Set the value of the container or member resource to the content of the specified stream.
+	 * Updates state of the resource with the contents of the specified stream.
 	 * <p>The Content-Type of the input stream is specified by the
-	 * <code>contentType</code> argument. Supported values are "application/rdf+xml",
-	 * "text/turtle", and "application/x-turtle".</p>
-	 * @param resourceURI the URI of the BPC or a member resource.
+	 * <code>contentType</code> argument.</p>
 	 * @param stream the input stream containing the resource representation.
 	 * @param contentType the Content-Type of the input stream.
 	 * @param requestHeaders the HTTP request headers
-	 * @return true if a new resource was created or false if the resource already existed
 	 */
-	public abstract boolean put(String resourceURI, InputStream stream,
+	public abstract void putUpdate(InputStream stream,
 			String contentType, String user, HttpHeaders requestHeaders);
 
 	public abstract void patch(String resourceURI, InputStream stream,
@@ -55,25 +52,22 @@ public interface ILDPResource {
 
 	/**
 	 * Delete the specified member resource and remove it from the container.
-	 * @param resourceURI the URI of the resource to delete.
 	 */
-	public abstract void delete(String resourceURI);
+	public abstract void delete();
 
 	/**
-	 * Get the container or member resource with the specified URI.
+	 * Get the current state of resource with the specified content type.
 	 * <p>The Content-Type of which to write the model is specified by the
-	 * <code>contentType</code> argument. Supported values are "application/rdf+xml",
-	 * "text/turtle", and "application/x-turtle".</p>
-	 * @param resourceURI the URI of the BPC (or one of its pages) or a member resource.
+	 * <code>contentType</code> argument.</p>
 	 * @param contentType the Content-Type of which to write the model.
 	 * @return the HTTP response
 	 * @throws IOException 
 	 * @throws JsonMappingException 
 	 * @throws JsonGenerationException 
 	 */
-	public abstract Response get(String resourceURI, String contentType);
+	public abstract Response get(String contentType);
 
-	public abstract Response options(String resourceURI);
+	public abstract Response options();
 
 	/**
 	 * Returns the allowed HTTP methods for this resource as defined in RFC 2616.
