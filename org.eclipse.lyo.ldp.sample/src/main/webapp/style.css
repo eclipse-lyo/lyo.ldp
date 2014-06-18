@@ -62,3 +62,12 @@ text {
   pointer-events: none;
 }
 
+label {
+	font-size: 80%;
+}
+
+input[type=checkbox] {
+    vertical-align: middle;
+    position: relative;
+    bottom: 1px;
+}

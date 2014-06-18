@@ -22,10 +22,12 @@ import java.util.HashMap;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 
 import org.apache.jena.atlas.json.JsonArray;
 import org.apache.jena.atlas.json.JsonObject;
+import org.eclipse.lyo.ldp.server.jena.JenaLDPResourceManager;
 import org.eclipse.lyo.ldp.server.jena.JenaLDPService;
 import org.eclipse.lyo.ldp.server.jena.store.TDBGraphStore;
 import org.eclipse.lyo.ldp.server.service.LDPService;
@@ -43,7 +45,7 @@ public class VisualizationService {
 	    
 	@GET
 	@Produces(MediaType.APPLICATION_JSON)
-	public String getVisualization() {
+	public String getVisualization(@QueryParam("showConfig") boolean showConfig) {
 		TDBGraphStore store = JenaLDPService.getStore();
 		store.readLock();
 		try {
@@ -65,6 +67,15 @@ public class VisualizationService {
 			ResIterator subjects = m.listSubjects();
 			while (subjects.hasNext()) {
 				Resource subject = subjects.next();
+				
+				// Should we show the internal "?_config" resources... ?
+				if (!showConfig) {
+				    String uri = subject.getURI();
+				    if (uri != null && JenaLDPResourceManager.isConfigURI(uri)) {
+				        continue;
+				    }
+				}
+
 				JsonObject node = new JsonObject();
 				nodes.add(node);
 				String name = getNodeName(subject);
@@ -97,10 +108,12 @@ public class VisualizationService {
 						if (targetIndex != null) {
 							JsonObject link = new JsonObject();
 							Integer sourceIndex = resourceToNodeIndex.get(getNodeName(subject));
-							link.put("source", sourceIndex.intValue());
-							link.put("target", targetIndex.intValue());
-							link.put("value", 1);
-							links.add(link);
+							if (sourceIndex != null) {
+							    link.put("source", sourceIndex.intValue());
+							    link.put("target", targetIndex.intValue());
+							    link.put("value", 1);
+							    links.add(link);
+							}
 						}
 					}
 				}
