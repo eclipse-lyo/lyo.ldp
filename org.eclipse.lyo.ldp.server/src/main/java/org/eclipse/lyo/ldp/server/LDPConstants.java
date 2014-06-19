@@ -61,7 +61,7 @@ public class LDPConstants
 	public static final String HDR_LINK_NEXT = "rel=\"next\"";
 	public static final String HDR_SLUG = "Slug";
 	public static final String HDR_PREFER = "Prefer";
-	public static final String HDR_PREFERENCE_APPLIED = "PreferenceApplied";
+	public static final String HDR_PREFERENCE_APPLIED = "Preference-Applied";
 	
 	// RDF Property names both namespace and local
 	public static final String PROP_LNAME_MEMBERSHIP_RESOURCE = "membershipResource";
