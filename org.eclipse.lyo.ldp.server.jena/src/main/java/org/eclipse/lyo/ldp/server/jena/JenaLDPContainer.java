@@ -26,6 +26,7 @@
  *     Samuel Padgett - check If-Match header on PUT requests
  *     Samuel Padgett - fix null resource prefix for root container
  *     Samuel Padgett - add support for LDP Non-RDF Source
+ *     Samuel Padgett - support Prefer header
  *******************************************************************************/
 package org.eclipse.lyo.ldp.server.jena;
 
@@ -33,14 +34,15 @@ import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Calendar;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
 import javax.ws.rs.HttpMethod;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.Response.ResponseBuilder;
 import javax.ws.rs.core.Response.Status;
 
 import org.apache.commons.io.output.ByteArrayOutputStream;
@@ -55,13 +57,10 @@ import org.eclipse.lyo.ldp.server.service.LDPService;
 
 import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.rdf.model.ModelFactory;
-import com.hp.hpl.jena.rdf.model.NodeIterator;
 import com.hp.hpl.jena.rdf.model.Property;
 import com.hp.hpl.jena.rdf.model.RDFNode;
 import com.hp.hpl.jena.rdf.model.Resource;
-import com.hp.hpl.jena.rdf.model.ResourceFactory;
 import com.hp.hpl.jena.rdf.model.Statement;
-import com.hp.hpl.jena.rdf.model.StmtIterator;
 import com.hp.hpl.jena.vocabulary.DCTerms;
 import com.hp.hpl.jena.vocabulary.RDF;
 
@@ -74,8 +73,6 @@ public class JenaLDPContainer extends JenaLDPRDFSource implements ILDPContainer
     public static final String DEFAULT_RESOURCE_PREFIX = "res";
 
 	protected String fResourceURIPrefix; // New resource name template, default is "res" + N
-	protected boolean fMemberInfo; // include member info in container representation
-	protected Set<Property> fMemberFilter; // filtered list of members to include
 
 	/**
 	 * Create a LDPContainer instance for the specified URI and with the default configuration parameters}.
@@ -126,29 +123,9 @@ public class JenaLDPContainer extends JenaLDPRDFSource implements ILDPContainer
 
 		Resource containerResource = configGraph.getResource(fConfigGraphURI);
 
-		// Get member info boolean value
-		Statement stmt = containerResource.getProperty(JenaLDPImpl.memberInfo);
-		if (stmt != null) {
-			fMemberInfo = stmt.getObject().asLiteral().getBoolean();
-		} else {
-			fMemberInfo = false;
-		}
-
-		// Get member filter Property values
-		NodeIterator iter = configGraph.listObjectsOfProperty(containerResource, JenaLDPImpl.memberFilter);
-		if (iter.hasNext()) {
-			fMemberFilter = new HashSet<Property>();
-			do {
-				String uri = iter.next().asResource().getURI();
-				fMemberFilter.add(ResourceFactory.createProperty(uri));
-			} while (iter.hasNext());
-		}
-		else
-			fMemberFilter = null;
-
 		// Get resource URI prefix string value
 		String prefix = DEFAULT_RESOURCE_PREFIX;
-		stmt = containerResource.getProperty(JenaLDPImpl.resourceURIPrefix);
+		Statement stmt = containerResource.getProperty(JenaLDPImpl.resourceURIPrefix);
 		if (stmt != null) {
 			prefix = stmt.getObject().asLiteral().getString();
 		}
@@ -292,7 +269,7 @@ public class JenaLDPContainer extends JenaLDPRDFSource implements ILDPContainer
 
 	    // model is null for non-RDF source
 	    if (memberOfRelation != null && model != null) {
-	    	model.add(model.getResource(resourceURI), memberOfRelation, model.getResource(containerResource.getURI()));
+	    	model.add(model.getResource(resourceURI), memberOfRelation, membershipResource);
 	    }
 
 	    // If membership resource is NOT the same as the container
@@ -374,55 +351,47 @@ public class JenaLDPContainer extends JenaLDPRDFSource implements ILDPContainer
 		// TODO: Need to determine if we need any other Container-specific
 		super.delete();
 	}
+	
 
-	/* (non-Javadoc)
-	 * @see org.eclipse.lyo.ldp.server.impl.ILDPContainer#get(java.lang.String, java.io.OutputStream, java.lang.String)
-	 */
-	protected void amendResponseGraph(Model graph)
+	@Override
+	protected Model amendResponseGraph(Model container, MultivaluedMap<String, String> preferences)
 	{
-		Resource r = graph.getResource(fURI);
-			// TODO: Determine if getMembersQuery() is needed
-			// graph.add(fGraphStore.construct(getMembersQuery(resourceURI)));
-			if (fMemberInfo)
-				graph = addMemberInformation(graph, r);
-	}
-
-	protected Model addMemberInformation(Model container, Resource containerResource)
-	{
-		Model result = ModelFactory.createDefaultModel();
+        // Create a copy of the container graph. We don't want to modify what is
+        // saved in TDB, only amend the response graph.
+		final Model result = ModelFactory.createDefaultModel();
 		result.add(container);
 
-    	Property isMemberOfRelation = getIsMemberOfRelation(container, containerResource);
-        Resource membershipResource = getMembershipResource(container, containerResource);
-
-        if (isMemberOfRelation != null) {
-        	// Handling ldp:isMemberOfRelation, where all membership triples are stored in member resource graphs
-        	Model globalModel = fGraphStore.getGraph("urn:x-arq:UnionGraph"); 
-        	result.add(globalModel.listStatements(null, isMemberOfRelation, membershipResource));
-        } else {
-    		Property memberRelation = getMemberRelation(container, containerResource);
-			for (NodeIterator iter = container.listObjectsOfProperty(membershipResource, memberRelation); iter.hasNext(); ) {
-				Resource member = iter.next().asResource();
-				if (fMemberFilter == null) {
-					// Add all the triples from the member
-					result.add(fGraphStore.getGraph(member.getURI()));
-				}
-				else {
-					// Filter the triples to be added
-					Model memberGraph = fGraphStore.getGraph(member.getURI());
-					//for (StmtIterator siter = memberGraph.listStatements(member, null, (RDFNode)null); siter.hasNext(); ) {
-					for (StmtIterator siter = memberGraph.listStatements(); siter.hasNext(); ) {
-						Statement stmt = siter.next();
-						if (fMemberFilter.contains(stmt.getPredicate()))
-							result.add(stmt);
-					}
-				}
-			}
+		// Determine whether to include containment triples from the Prefer header.
+        if (!includeContainment(preferences)) {
+            result.getResource(fURI).removeAll(LDP.contains);
         }
+        
 		return result;
 	}
+	
+	protected boolean isReturnRepresentationPreferenceApplied(MultivaluedMap<String, String> preferences) {
+	    // Return true if any recognized include or omit preferences are in the request.
+	    final List<String> include = preferences.get(LDPConstants.PREFER_INCLUDE);
+	    final List<String> omit = preferences.get(LDPConstants.PREFER_OMIT);
+	    
+	    if (include != null
+	            && (include.contains(LDPConstants.PREFER_MINIMAL_CONTAINER) || include.contains(LDPConstants.PREFER_CONTAINMENT))) {
+	        return true;
+	    }
 
-	protected String fMembersQuery = null;
+	    return omit != null && omit.contains(LDPConstants.PREFER_CONTAINMENT);
+	}
+
+	@Override
+    protected void amendResponse(ResponseBuilder response,
+            MultivaluedMap<String, String> preferences) {
+	    if (isReturnRepresentationPreferenceApplied(preferences)) {
+	        response.header(LDPConstants.HDR_PREFERENCE_APPLIED, LDPConstants.PREFER_RETURN_REPRESENTATION);
+	    }
+        super.amendResponse(response, preferences);
+    }
+
+    protected String fMembersQuery = null;
 	protected String getMembersQuery(String containerURI)
 	{
 		if (fMembersQuery == null) {
@@ -524,4 +493,23 @@ public class JenaLDPContainer extends JenaLDPRDFSource implements ILDPContainer
 			fGraphStore.end();
 		}
     }
+
+    protected boolean includeContainment(MultivaluedMap<String, String> preferences) {
+        final List<String> include = preferences.get(LDPConstants.PREFER_INCLUDE);
+        final List<String> omit = preferences.get(LDPConstants.PREFER_OMIT);
+        
+        final boolean omitContainment = (omit != null && omit.contains(LDPConstants.PREFER_CONTAINMENT));
+        if (include != null) {
+            if (include.contains(LDPConstants.PREFER_CONTAINMENT)) {
+                return true;
+            }
+    
+            if (include.contains(LDPConstants.PREFER_MINIMAL_CONTAINER) ||
+                    include.contains(LDPConstants.DEPRECATED_PREFER_EMPTY_CONTAINER)) {
+                return false;
+            }
+        }
+        
+        return !omitContainment;
+     }
 }

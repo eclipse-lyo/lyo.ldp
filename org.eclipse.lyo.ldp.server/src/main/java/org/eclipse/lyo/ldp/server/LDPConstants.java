@@ -19,6 +19,7 @@
  *     Samuel Padgett - add constant for ETag header
  *     Samuel Padgett - add Accept-Patch header constants
  *     Samuel Padgett - add Allow header to GET responses
+ *     Samuel Padgett - support Prefer header
  *******************************************************************************/
 package org.eclipse.lyo.ldp.server;
 
@@ -59,7 +60,8 @@ public class LDPConstants
 	public static final String HDR_LINK_TYPE = "rel=\"type\"";
 	public static final String HDR_LINK_NEXT = "rel=\"next\"";
 	public static final String HDR_SLUG = "Slug";
-	
+	public static final String HDR_PREFER = "Prefer";
+	public static final String HDR_PREFERENCE_APPLIED = "PreferenceApplied";
 	
 	// RDF Property names both namespace and local
 	public static final String PROP_LNAME_MEMBERSHIP_RESOURCE = "membershipResource";
@@ -100,6 +102,21 @@ public class LDPConstants
 	// Only container types that resource can be for, doesn't include #Container
 	public static final String [] CONTAINER_TYPES = {CLASS_BASIC_CONTAINER, CLASS_DIRECT_CONTAINER, CLASS_INDIRECT_CONTAINER};
 	
+    // Prefer header preferences
+    public static final String PREFER_RETURN_REPRESENTATION = "return=representation";
+    public static final String PREFER_INCLUDE = "include";
+    public static final String PREFER_OMIT = "omit";
+    public static final String PREFER_CONTAINMENT = nsName("PreferContainment");
+    public static final String PREFER_MEMBERSHIP = nsName("PreferMembership");
+    public static final String PREFER_MINIMAL_CONTAINER = nsName("PreferMinimalContainer");
+
+    /**
+     * Deprecated in LDP, but still supported by this reference implementation. The
+     * equivalent term that should be used instead is
+     * {@link #PREFER_MINIMAL_CONTAINER}.
+     */
+    public static final String DEPRECATED_PREFER_EMPTY_CONTAINER = nsName("PreferEmptyContainer");
+    
 	public static String nsName(String local) {
 		return NS + local;
 	}

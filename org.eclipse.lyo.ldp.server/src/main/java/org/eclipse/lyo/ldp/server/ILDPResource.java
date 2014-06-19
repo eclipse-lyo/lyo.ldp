@@ -14,6 +14,7 @@
  *     Steve Speicher - support for various container types
  *     Samuel Padgett - return accurate Allow header values for HTTP OPTIONS
  *     Samuel Padgett - pass request headers on HTTP PUT
+ *     Samuel Padgett - support Prefer header
  *******************************************************************************/
 package org.eclipse.lyo.ldp.server;
 
@@ -22,6 +23,7 @@ import java.io.InputStream;
 import java.util.Set;
 
 import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 
 public interface ILDPResource {
@@ -60,12 +62,13 @@ public interface ILDPResource {
 	 * <p>The Content-Type of which to write the model is specified by the
 	 * <code>contentType</code> argument.</p>
 	 * @param contentType the Content-Type of which to write the model.
+	 * @param preferences the preferences from the HTTP <code>Prefer</code> header
 	 * @return the HTTP response
 	 * @throws IOException 
 	 * @throws JsonMappingException 
 	 * @throws JsonGenerationException 
 	 */
-	public abstract Response get(String contentType);
+	public abstract Response get(String contentType, MultivaluedMap<String, String> preferences);
 
 	public abstract Response options();
 

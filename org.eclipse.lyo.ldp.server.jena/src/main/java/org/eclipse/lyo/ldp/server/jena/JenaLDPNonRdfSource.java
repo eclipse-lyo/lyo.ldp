@@ -29,6 +29,7 @@ import java.util.Set;
 import javax.ws.rs.HttpMethod;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.ResponseBuilder;
 import javax.ws.rs.core.Response.Status;
@@ -189,7 +190,7 @@ public class JenaLDPNonRdfSource extends LDPNonRDFSource {
 	}
 
 	@Override
-	public Response get(String contentType) {
+	public Response get(String contentType, MultivaluedMap<String, String> preferences) {
 		fGraphStore.readLock();
 		try {
 			String associatedURI = JenaLDPResourceManager.mintAssociatedRDFSourceURI(getURI());

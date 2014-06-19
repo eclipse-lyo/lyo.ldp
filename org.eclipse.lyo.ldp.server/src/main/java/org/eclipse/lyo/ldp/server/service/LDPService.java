@@ -23,6 +23,7 @@
  *     Samuel Padgett - return 201 status when PUT is used to create a resource
  *     Samuel Padgett - add support for LDP Non-RDF Source
  *     Samuel Padgett - respond with text/turtle when Accept header missing
+ *     Samuel Padgett - support Prefer header
  *******************************************************************************/
 package org.eclipse.lyo.ldp.server.service;
 
@@ -31,6 +32,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URI;
+import java.util.List;
 
 import javax.servlet.ServletContext;
 import javax.ws.rs.Consumes;
@@ -46,6 +48,8 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.MultivaluedHashMap;
+import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.StreamingOutput;
@@ -260,8 +264,47 @@ public abstract class LDPService {
     	String resourceURI = getConanicalURL(fRequestUrl.getRequestUri());
     	ILDPResource ldpR = getResourceManger().get(resourceURI);
     	if (ldpR == null) return Response.status(Status.NOT_FOUND).build();
-    	
-    	return ldpR.get(type);
+    	return ldpR.get(type, getPreferencesFromRequest());
+    }
+
+    /**
+     * Gets the <code>include</code> and <code>omit</code> values in the
+     * HTTP <code>Prefer</code> header for this request.
+     * 
+     * @param include a list of include values to populate
+     * @param omit a list of omit values to populate
+     * 
+     * @see <a href="http://tools.ietf.org/html/draft-snell-http-prefer-12">Prefer Header for HTTP</a>
+     */
+    protected MultivaluedMap<String, String> getPreferencesFromRequest() {
+        MultivaluedHashMap<String, String> preferencesMap = new MultivaluedHashMap<String, String>();
+        List<String> preferences = fRequestHeaders.getRequestHeaders().get(LDPConstants.HDR_PREFER);
+        if (preferences != null) {
+            for (String preference : preferences) {
+                // for example...
+                // Prefer: return=representation; omit="http://www.w3.org/ns/ldp#PreferMembership http://www.w3.org/ns/ldp#PreferContainment"
+                // Split tokens separated by ";"
+                String[] tokens = preference.split(";");
+                for (String token : tokens) {
+                    // for example, token might be...
+                    //  omit="http://www.w3.org/ns/ldp#PreferMembership http://www.w3.org/ns/ldp#PreferContainment"
+                    // Trim leading and trailing whitespace and split on the first "="
+                    String[] nameAndValues = token.trim().split("=", 2);
+                    if (nameAndValues.length == 2) {
+                        String name = nameAndValues[0].trim();
+
+                        // for example, nameAndValues[1] might be....
+                        // "http://www.w3.org/ns/ldp#PreferMembership http://www.w3.org/ns/ldp#PreferContainment"
+                        // Remove leading and trailing quotation marks and split on spaces
+                        String[] values = nameAndValues[1].replaceAll("^\"|\"$", "").split(" ");
+
+                        preferencesMap.addAll(name, values);
+                    }
+                }
+            }
+        }
+ 
+        return preferencesMap;
     }
 
     String stripCharset(String contentType) {

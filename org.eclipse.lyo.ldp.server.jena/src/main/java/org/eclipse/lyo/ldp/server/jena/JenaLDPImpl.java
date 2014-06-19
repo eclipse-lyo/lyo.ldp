@@ -41,17 +41,8 @@ public class JenaLDPImpl
 	 */
 	public static final Resource NAMESPACE = ResourceFactory.createResource(NS);
 	
-	public static final Property memberInfo = property("memberInfo"); // Include member info in BPC rep (default: false)
-	public static final Property memberFilter = property("memberFilter"); // Filter for member info (default: include all members)
-	public static final Property pageSize = property("pageSize"); // Page size for paged representation (default: 100)
-	public static final Property pageSortPredicates = property("pageSortPredicates"); // Sort predicates for paged representation (default: not sorted)
 	public static final Property resourceURIPrefix = property("resourceURIPrefix"); // Prefix used for POSTED resource URIs (default: "res")
 	 
-    //protected static final Resource resource(String local)
-    //{
-    //	return ResourceFactory.createResource(NS + local); 
-    //}
-
     protected static final Property property(String local)
     { 
     	return ResourceFactory.createProperty(NS, local);

@@ -34,7 +34,9 @@ import java.util.Set;
 import javax.ws.rs.HttpMethod;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.Response.ResponseBuilder;
 import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.StreamingOutput;
 
@@ -190,15 +192,15 @@ public class JenaLDPRDFSource extends LDPRDFSource {
 	}
 
 	@Override
-	public Response get(String contentType) {
+	public Response get(String contentType, MultivaluedMap<String, String> preferences) {
 		fGraphStore.readLock();
 		try {
 			Model graph = fGraphStore.getGraph(fURI);
 			if (graph == null)
 				throw new WebApplicationException(Status.NOT_FOUND);
 
-			amendResponseGraph(graph);
 			final String eTag = getETag(graph);
+			graph = amendResponseGraph(graph, preferences);
 			StreamingOutput out;
 			if (LDPConstants.CT_APPLICATION_JSON.equals(contentType)) {
 				out = getJSONLD(graph);
@@ -216,16 +218,23 @@ public class JenaLDPRDFSource extends LDPRDFSource {
 			// Determine the right type for the Link response header.
 			String type = getTypeURI();
 
-			return Response.ok(out)
+			ResponseBuilder response = Response.ok(out)
 					.header(LDPConstants.HDR_ETAG, eTag)
 					.header(LDPConstants.HDR_LINK, "<" + type + ">; " + LDPConstants.HDR_LINK_TYPE)
-					.allow(getAllowedMethods()).build();
+					.allow(getAllowedMethods());
+			
+			amendResponse(response, preferences);
+			
+			return response.build();
 		} finally {
 			fGraphStore.end();
 		}
 	}
 
-	/**
+	protected void amendResponse(ResponseBuilder response, MultivaluedMap<String, String> preferences) {
+    }
+
+    /**
 	 * Create a weak ETag value from a Jena model.
 	 * 
 	 * @param m the model that represents the HTTP response body
@@ -247,8 +256,13 @@ public class JenaLDPRDFSource extends LDPRDFSource {
 	 * For sub-classes to implement, given the graph for resource R, amend some triples before
 	 * response set to client
 	 * @param graph
+	 * @param preferences 
+	 * @return the amended model
 	 */
-	protected void amendResponseGraph(Model graph) { }
+	protected Model amendResponseGraph(Model graph, MultivaluedMap<String, String> preferences) {
+	    // Nothing to do unless we're a container, which is handled by subclasses.
+	    return graph;
+	}
 	
 	private StreamingOutput getJSONLD(Model graph) {
 	    if (!isJSONLDPresent()) {
