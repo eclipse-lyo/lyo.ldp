@@ -130,43 +130,37 @@ public class JenaLDPNonRdfSource extends LDPNonRDFSource {
 	public void delete() {
 		fGraphStore.writeLock();
 		try {
-			String configURI = JenaLDPResourceManager.mintConfigURI(getURI());
-			Model configGraph = fGraphStore.getGraph(configURI);
-			Statement memberOfStatement = configGraph.getProperty(configGraph.createResource(configURI), Lyo.memberOf);
-			String containerURI = memberOfStatement.getResource().getURI();
-
-			File file = toFile(getURI());
+			// Delete the file.
+			final File file = toFile(getURI());
 			if (!file.isFile()) {
 				throw new WebApplicationException(Response.Status.NOT_FOUND);
 			}
 	
-			boolean successful = file.delete();
-			if (!successful) {
+			if (!file.delete()) {
 				throw new WebApplicationException(Response.Status.INTERNAL_SERVER_ERROR);
 			}
 
-			// Remove the resource from the container
-			Model containerModel = fGraphStore.getGraph(containerURI);
-			Resource containerResource = containerModel.getResource(containerURI);
-			Model membershipResourceModel = containerModel;
-			Property memberRelation = JenaLDPContainer.getMemberRelation(containerModel, containerResource);
-			Resource membershipResource = JenaLDPContainer.getMembershipResource(containerModel, containerResource);
-			Calendar time = Calendar.getInstance();
-
-			if (!membershipResource.asResource().getURI().equals(containerURI)) {
-				membershipResourceModel = fGraphStore.getGraph(membershipResource.asResource().getURI());
-				if (membershipResourceModel == null) {
-					membershipResourceModel = containerModel;
-				} else {
-					membershipResource = membershipResourceModel.getResource(membershipResource.asResource().getURI());
-					if (memberRelation != null)
-						memberRelation = membershipResourceModel.getProperty(memberRelation.asResource().getURI());        			
-				}
-				membershipResource.removeAll(DCTerms.modified);
-				membershipResource.addLiteral(DCTerms.modified, membershipResourceModel.createTypedLiteral(time));
+			// FIXME: Move this logic into JenaLDPContainer and subclasses
+			final String configURI = JenaLDPResourceManager.mintConfigURI(getURI());
+			final Model configGraph = fGraphStore.getGraph(configURI);
+			final Resource configResource = configGraph.getResource(configURI);
+			final String containerURI = configResource.getPropertyResourceValue(Lyo.memberOf).getURI();
+			final Model containerModel = fGraphStore.getGraph(containerURI);
+			final Resource containerResource = containerModel.getResource(containerURI);
+			final Calendar time = Calendar.getInstance();
+			
+			// First remove the membership triples
+			final Property memberRelation = JenaLDPDirectContainer.getMemberRelation(containerModel, containerResource);
+			if (memberRelation != null) {
+			    final String membershipResourceURI = JenaLDPDirectContainer.getMembershipResourceURI(containerModel, containerResource);
+			    final Model membershipResourceModel = (membershipResourceURI.equals(containerURI)) ? containerModel : fGraphStore.getGraph(membershipResourceURI);
+			    final Resource membershipResource = membershipResourceModel.getResource(membershipResourceURI);
+			    membershipResource.removeAll(DCTerms.modified);
+			    membershipResource.addLiteral(DCTerms.modified, containerModel.createTypedLiteral(time));
+			    membershipResourceModel.remove(membershipResource, memberRelation, containerModel.getResource(getURI()));
 			}
-			membershipResourceModel.remove(membershipResource, memberRelation, membershipResourceModel.getResource(getURI()));
 
+			// Next remove the containment triples
 			containerModel.remove(containerResource, LDP.contains, containerModel.getResource(getURI()));
 			containerResource.removeAll(DCTerms.modified);
 			containerResource.addLiteral(DCTerms.modified, containerModel.createTypedLiteral(time));

@@ -145,31 +145,24 @@ public class JenaLDPRDFSource extends LDPRDFSource {
 
 		fGraphStore.writeLock();
 		try {
-			String containerURI = getContainerURIForResource(getURI());
-			// Remove the resource from the container
-			Model containerModel = fGraphStore.getGraph(containerURI);
-			Resource containerResource = containerModel.getResource(containerURI);
-			Model membershipResourceModel = containerModel;
-			Property memberRelation = JenaLDPContainer.getMemberRelation(containerModel, containerResource);
-			Resource membershipResource = JenaLDPContainer.getMembershipResource(containerModel, containerResource);
-			Calendar time = Calendar.getInstance();
+		    // FIXME: Logic to remove containment and membership triples should really be in JenaLDPContainer and subclasses.
+			final String containerURI = getContainerURIForResource(getURI());
+			final Model containerModel = fGraphStore.getGraph(containerURI);
+			final Resource containerResource = containerModel.getResource(containerURI);
+			final Property memberRelation = JenaLDPDirectContainer.getMemberRelation(containerModel, containerResource);
+			final Calendar time = Calendar.getInstance();
 
-			if (!membershipResource.asResource().getURI().equals(containerURI)) {
-				membershipResourceModel = fGraphStore.getGraph(membershipResource.asResource().getURI());
-				if (membershipResourceModel == null) {
-					membershipResourceModel = containerModel;
-				} else {
-					membershipResource = membershipResourceModel.getResource(membershipResource.asResource().getURI());
-					// If isMemberOfRelation then membership triple will be nuked with the LDPR graph
-					if (memberRelation != null)
-						memberRelation = membershipResourceModel.getProperty(memberRelation.asResource().getURI());        			
-					// Update dcterms:modified
-				}
-				membershipResource.removeAll(DCTerms.modified);
-				membershipResource.addLiteral(DCTerms.modified, membershipResourceModel.createTypedLiteral(time));
+			// Remove the membership triples.
+			if (memberRelation != null) {
+			    final String membershipResourceURI = JenaLDPDirectContainer.getMembershipResourceURI(containerModel, containerResource);
+			    final Model membershipResourceModel = (membershipResourceURI.equals(containerURI)) ? containerModel : fGraphStore.getGraph(membershipResourceURI);
+			    final Resource membershipResource = membershipResourceModel.getResource(membershipResourceURI);
+			    membershipResource.removeAll(DCTerms.modified);
+			    membershipResource.addLiteral(DCTerms.modified, membershipResourceModel.createTypedLiteral(time));
+			    membershipResourceModel.remove(membershipResource, memberRelation, membershipResourceModel.getResource(getURI()));
 			}
-			membershipResourceModel.remove(membershipResource, memberRelation, membershipResourceModel.getResource(getURI()));
 
+			// Remove containment triples.
 			containerModel.remove(containerResource, LDP.contains, containerModel.getResource(getURI()));
 			containerResource.removeAll(DCTerms.modified);
 			containerResource.addLiteral(DCTerms.modified, containerModel.createTypedLiteral(time));
@@ -178,7 +171,7 @@ public class JenaLDPRDFSource extends LDPRDFSource {
 			fGraphStore.deleteGraph(getURI());
 			
 			// Keep track of the deletion by logging the delete time
-			String configURI = JenaLDPResourceManager.mintConfigURI(getURI());
+			final String configURI = JenaLDPResourceManager.mintConfigURI(getURI());
 			Model configModel = fGraphStore.getGraph(configURI);
 			if (configModel == null) {
 				configModel = fGraphStore.createCompanionGraph(getURI(), configURI);

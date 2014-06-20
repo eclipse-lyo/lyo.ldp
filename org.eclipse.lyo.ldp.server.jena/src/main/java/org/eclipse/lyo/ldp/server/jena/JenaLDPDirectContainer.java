@@ -17,9 +17,15 @@
  *******************************************************************************/
 package org.eclipse.lyo.ldp.server.jena;
 
+import java.io.InputStream;
 import java.util.List;
+import java.util.Set;
 
+import javax.ws.rs.HttpMethod;
+import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MultivaluedMap;
+import javax.ws.rs.core.Response.Status;
 
 import org.eclipse.lyo.ldp.server.ILDPDirectContainer;
 import org.eclipse.lyo.ldp.server.LDPConstants;
@@ -35,6 +41,12 @@ public class JenaLDPDirectContainer extends JenaLDPContainer implements ILDPDire
     protected JenaLDPDirectContainer(String containerURI, TDBGraphStore graphStore) {
         super(containerURI, graphStore);
         fRDFType = LDPConstants.CLASS_DIRECT_CONTAINER;
+    }
+
+    @Override
+    public void putUpdate(InputStream stream, String contentType, String user, HttpHeaders requestHeaders) {
+        // Not supported for now due to complexity of managing membership triples.
+        throw new WebApplicationException(Status.METHOD_NOT_ALLOWED);
     }
 
     protected boolean includeMembers(MultivaluedMap<String, String> preferences) {
@@ -78,8 +90,7 @@ public class JenaLDPDirectContainer extends JenaLDPContainer implements ILDPDire
         // The super implementation makes a copy we can modify.
         Model result = super.amendResponseGraph(container, preferences);
         final Resource containerResource = container.getResource(fURI);
-        final Resource membershipResource = getMembershipResource(container, containerResource);
-        final String memberURI = membershipResource.getURI();
+        final String membershipResourceURI = getMembershipResourceURI(container, containerResource);
         final Property isMemberOfRelation = getIsMemberOfRelation(container, containerResource);
 
         // Determine whether to include membership triples from the Prefer header.
@@ -87,14 +98,14 @@ public class JenaLDPDirectContainer extends JenaLDPContainer implements ILDPDire
             if (isMemberOfRelation != null) {
                 // Handling ldp:isMemberOfRelation, where all membership triples are stored in member resource graphs
                 Model globalModel = fGraphStore.getGraph("urn:x-arq:UnionGraph"); 
-                result.add(globalModel.listStatements(null, isMemberOfRelation, membershipResource));
-            } else if (!fURI.equals(memberURI)) {
+                result.add(globalModel.listStatements(null, isMemberOfRelation, globalModel.createResource(membershipResourceURI)));
+            } else if (!fURI.equals(membershipResourceURI)) {
                 // Add in the membership resource 
-                Model memberGraph = fGraphStore.getGraph(memberURI);
+                Model memberGraph = fGraphStore.getGraph(membershipResourceURI);
                 Property memberRelation = getMemberRelation(container, containerResource);
-                result.add(memberGraph.listStatements(memberGraph.getResource(memberURI), memberRelation, (RDFNode) null));
+                result.add(memberGraph.listStatements(memberGraph.getResource(membershipResourceURI), memberRelation, (RDFNode) null));
             }
-        } else if (isMemberOfRelation == null && fURI.equals(memberURI)) {
+        } else if (isMemberOfRelation == null && fURI.equals(membershipResourceURI)) {
             // If the container itself holds the member properties, we need to remove them.
             // (For all other cases, we simply don't add them.)
             Property memberRelation = getMemberRelation(container, containerResource);
@@ -102,5 +113,13 @@ public class JenaLDPDirectContainer extends JenaLDPContainer implements ILDPDire
         }
 
         return result;
+    }
+    
+    @Override
+    public Set<String> getAllowedMethods() {
+        Set<String> allow = super.getAllowedMethods();
+        // Not supported for now due to complexity of managing membership triples.
+        allow.remove(HttpMethod.PUT);
+        return allow;
     }
 }
