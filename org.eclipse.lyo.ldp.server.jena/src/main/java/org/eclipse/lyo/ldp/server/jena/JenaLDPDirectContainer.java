@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.Set;
 
 import javax.ws.rs.HttpMethod;
-import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response.Status;
@@ -46,7 +45,7 @@ public class JenaLDPDirectContainer extends JenaLDPContainer implements ILDPDire
     @Override
     public void putUpdate(InputStream stream, String contentType, String user, HttpHeaders requestHeaders) {
         // Not supported for now due to complexity of managing membership triples.
-        throw new WebApplicationException(Status.METHOD_NOT_ALLOWED);
+        fail(Status.METHOD_NOT_ALLOWED);
     }
 
     protected boolean includeMembers(MultivaluedMap<String, String> preferences) {

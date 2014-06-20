@@ -35,7 +35,6 @@ import javax.ws.rs.core.Response.ResponseBuilder;
 import javax.ws.rs.core.Response.Status;
 
 import org.apache.commons.io.IOUtils;
-import org.apache.http.HttpStatus;
 import org.eclipse.lyo.ldp.server.LDPConstants;
 import org.eclipse.lyo.ldp.server.LDPNonRDFSource;
 import org.eclipse.lyo.ldp.server.jena.store.TDBGraphStore;
@@ -80,12 +79,12 @@ public class JenaLDPNonRdfSource extends LDPNonRDFSource {
 				String ifMatch = requestHeaders.getHeaderString(HttpHeaders.IF_MATCH);
 				if (ifMatch == null) {
 					// condition required
-					throw new WebApplicationException(428);
+					throw new WebApplicationException(build(Response.status(428)));
 				}
 				String originalETag = getETag(file);
 				// FIXME: Does not handle wildcards or comma-separated values...
 				if (!originalETag.equals(ifMatch)) {
-					throw new WebApplicationException(HttpStatus.SC_PRECONDITION_FAILED);
+				    fail(Status.PRECONDITION_FAILED);
 				}
 			}
 
@@ -108,13 +107,13 @@ public class JenaLDPNonRdfSource extends LDPNonRDFSource {
 			fGraphStore.commit();
 		} catch (UnsupportedEncodingException e) {
 	        e.printStackTrace();
-	        throw new WebApplicationException(Response.Status.INTERNAL_SERVER_ERROR);
+        	fail(Status.INTERNAL_SERVER_ERROR);
         } catch (NoSuchAlgorithmException e) {
 	        e.printStackTrace();
-	        throw new WebApplicationException(Response.Status.INTERNAL_SERVER_ERROR);
+        	fail(Status.INTERNAL_SERVER_ERROR);
         } catch (IOException e) {
 	        e.printStackTrace();
-	        throw new WebApplicationException(Response.Status.INTERNAL_SERVER_ERROR);
+        	fail(Status.INTERNAL_SERVER_ERROR);
         } finally {
 			fGraphStore.end();
 		}
@@ -123,7 +122,7 @@ public class JenaLDPNonRdfSource extends LDPNonRDFSource {
 	@Override
 	public void patch(String resourceURI, InputStream stream,
 	        String contentType, String user) {
-		throw new WebApplicationException(Status.METHOD_NOT_ALLOWED);
+	    fail(Status.METHOD_NOT_ALLOWED);
 	}
 
 	@Override
@@ -137,7 +136,7 @@ public class JenaLDPNonRdfSource extends LDPNonRDFSource {
 			}
 	
 			if (!file.delete()) {
-				throw new WebApplicationException(Response.Status.INTERNAL_SERVER_ERROR);
+			    fail(Status.INTERNAL_SERVER_ERROR);
 			}
 
 			// FIXME: Move this logic into JenaLDPContainer and subclasses
@@ -174,10 +173,10 @@ public class JenaLDPNonRdfSource extends LDPNonRDFSource {
 			fGraphStore.commit();
 		} catch (UnsupportedEncodingException e) {
 	        e.printStackTrace();
-	        throw new WebApplicationException(Response.Status.INTERNAL_SERVER_ERROR);
+            fail(Status.INTERNAL_SERVER_ERROR);
         } catch (NoSuchAlgorithmException e) {
 	        e.printStackTrace();
-	        throw new WebApplicationException(Response.Status.INTERNAL_SERVER_ERROR);
+            fail(Status.INTERNAL_SERVER_ERROR);
         } finally {
 			fGraphStore.end();
 		}
@@ -199,8 +198,6 @@ public class JenaLDPNonRdfSource extends LDPNonRDFSource {
 			}
 	
 	        ResponseBuilder response = Response.ok(file);
-			response.header(LDPConstants.HDR_LINK, "<" + LDPConstants.CLASS_NONRDFSOURCE + ">; " + LDPConstants.HDR_LINK_TYPE);
-			response.header(LDPConstants.HDR_LINK, "<" + associatedURI + ">; " + LDPConstants.HDR_LINK_DESCRIBEDBY);
 	        response.header(LDPConstants.HDR_ETAG, getETag(file));
 	        
 			Resource configResource = associatedModel.getResource(associatedURI);
@@ -219,16 +216,19 @@ public class JenaLDPNonRdfSource extends LDPNonRDFSource {
 				response.header("Content-Disposition", "attachment; filename=\"" + filename + "\"");
 			}
 	
-			return response.allow(getAllowedMethods()).build();
+			return build(response);
         } catch (UnsupportedEncodingException e) {
         	e.printStackTrace();
-        	return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
+        	fail(Status.INTERNAL_SERVER_ERROR);
+        	return null;
         } catch (NoSuchAlgorithmException e) {
         	e.printStackTrace();
-        	return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
+        	fail(Status.INTERNAL_SERVER_ERROR);
+        	return null;
         } catch (IOException e) {
         	e.printStackTrace();
-        	return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
+        	fail(Status.INTERNAL_SERVER_ERROR);
+        	return null;
         } finally {
         	fGraphStore.end();
         }
@@ -236,13 +236,7 @@ public class JenaLDPNonRdfSource extends LDPNonRDFSource {
 
 	@Override
 	public Response options() {
-		String associatedURI = JenaLDPResourceManager.mintAssociatedRDFSourceURI(fURI);
-		return Response
-				.ok()
-				.allow(getAllowedMethods())
-				.header(LDPConstants.HDR_LINK, "<" + getTypeURI() + ">; " + LDPConstants.HDR_LINK_TYPE)
-				.header(LDPConstants.HDR_LINK, "<" + associatedURI + ">; " + LDPConstants.HDR_LINK_DESCRIBEDBY)
-				.build();
+	    return build(Response.ok());
 	}
 
 	@Override
@@ -337,5 +331,30 @@ public class JenaLDPNonRdfSource extends LDPNonRDFSource {
     	} finally {
     		out.close();
     	}
+    }
+    
+    protected void fail(Status status) {
+        throw new WebApplicationException(build(Response.status(status)));
+    }
+ 
+    @Override
+    public String getTypeURI() {
+        return  LDPConstants.CLASS_NONRDFSOURCE;
+    }
+
+    /**
+     * Helper to add standard content (Allow header, Link header) to this response.
+     * 
+     * @param response
+     *            the response builder to add to
+     * @return the response with additional content common to all responses
+     */
+    protected Response build(ResponseBuilder response) {
+        String associatedURI = JenaLDPResourceManager.mintAssociatedRDFSourceURI(fURI);
+        return response
+                .allow(getAllowedMethods())
+                .header(LDPConstants.HDR_LINK, "<" + getTypeURI() + ">; " + LDPConstants.HDR_LINK_TYPE)
+				.header(LDPConstants.HDR_LINK, "<" + associatedURI + ">; " + LDPConstants.HDR_LINK_DESCRIBEDBY)
+                .build();
     }
 }

@@ -316,12 +316,12 @@ public class JenaLDPContainer extends JenaLDPRDFSource implements ILDPContainer
 		List<Statement> originalContainmentTriples = before.listStatements(before.getResource(getURI()), LDP.contains, (RDFNode) null).toList();
 		List<Statement> newContainmentTriples = newResource.listProperties(LDP.contains).toList();
 		if (newContainmentTriples.size() != originalContainmentTriples.size()) {
-			throw new WebApplicationException(HttpStatus.SC_FORBIDDEN);
+			fail(Status.FORBIDDEN);
 		}
 
 		for (Statement s : originalContainmentTriples) {
 		    if (!newResource.hasProperty(s.getPredicate(), s.getResource())) {
-		        throw new WebApplicationException(HttpStatus.SC_FORBIDDEN);
+		        fail(Status.FORBIDDEN);
 		    }
 		}
 
@@ -452,12 +452,10 @@ public class JenaLDPContainer extends JenaLDPRDFSource implements ILDPContainer
 			
 			fGraphStore.commit();
 
-			return Response
-					.status(Status.CREATED)
-					.header(HttpHeaders.LOCATION, uri)
-					.header(LDPConstants.HDR_LINK, "<" + getTypeURI() + ">; " + LDPConstants.HDR_LINK_TYPE)
-					.header(LDPConstants.HDR_LINK, "<" + associatedURI + ">; " + LDPConstants.HDR_LINK_DESCRIBEDBY)
-					.build();
+			return build(Response
+			        .status(Status.CREATED)
+			        .header(HttpHeaders.LOCATION, uri)
+			        .header(LDPConstants.HDR_LINK, "<" + associatedURI + ">; " + LDPConstants.HDR_LINK_DESCRIBEDBY));
         } finally {
 			fGraphStore.end();
 		}

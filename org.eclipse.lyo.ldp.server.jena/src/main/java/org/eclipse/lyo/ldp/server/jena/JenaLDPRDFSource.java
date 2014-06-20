@@ -110,12 +110,12 @@ public class JenaLDPRDFSource extends LDPRDFSource {
 			String ifMatch = requestHeaders.getHeaderString(HttpHeaders.IF_MATCH);
 			if (ifMatch == null) {
 				// condition required
-				throw new WebApplicationException(428);
+				throw new WebApplicationException(build(Response.status(428)));
 			}
 			String originalETag = beforeETag;
 			// FIXME: Does not handle wildcards or comma-separated values...
 			if (!originalETag.equals(ifMatch)) {
-				throw new WebApplicationException(HttpStatus.SC_PRECONDITION_FAILED);
+			    fail(Status.PRECONDITION_FAILED);
 			}
 		}
 
@@ -140,7 +140,7 @@ public class JenaLDPRDFSource extends LDPRDFSource {
 	public void delete() {
 		// If this is a companion to another resources (e.g., a config graph), don't delete it.
 		if (JenaLDPResourceManager.isCompanion(getURI())) {
-			throw new WebApplicationException(Status.FORBIDDEN);
+		    fail(Status.FORBIDDEN);
 		}
 
 		fGraphStore.writeLock();
@@ -208,17 +208,10 @@ public class JenaLDPRDFSource extends LDPRDFSource {
 				};
 			}
 
-			// Determine the right type for the Link response header.
-			String type = getTypeURI();
-
-			ResponseBuilder response = Response.ok(out)
-					.header(LDPConstants.HDR_ETAG, eTag)
-					.header(LDPConstants.HDR_LINK, "<" + type + ">; " + LDPConstants.HDR_LINK_TYPE)
-					.allow(getAllowedMethods());
-			
+			ResponseBuilder response = Response.ok(out).header(LDPConstants.HDR_ETAG, eTag);
 			amendResponse(response, preferences);
-			
-			return response.build();
+
+			return build(response);
 		} finally {
 			fGraphStore.end();
 		}
@@ -259,7 +252,8 @@ public class JenaLDPRDFSource extends LDPRDFSource {
 	
 	private StreamingOutput getJSONLD(Model graph) {
 	    if (!isJSONLDPresent()) {
-	    	throw new WebApplicationException(Status.UNSUPPORTED_MEDIA_TYPE);
+	        fail(Status.UNSUPPORTED_MEDIA_TYPE);
+	        return null;
 	    }
 
 	    try {
@@ -294,14 +288,15 @@ public class JenaLDPRDFSource extends LDPRDFSource {
 	    			try {
 	                    writePrettyPrintMethod.invoke(null, new PrintWriter(output), compactedJson);
 	                } catch (Exception e) {
-	        			throw new WebApplicationException(e, Response.status(Status.INTERNAL_SERVER_ERROR).build()); 
+	                    fail(Status.INTERNAL_SERVER_ERROR);
 	                }
 	            }
 	        };
 	        
 	        return out;
 	    } catch (Exception e) {
-	    	throw new WebApplicationException(e, Response.status(Status.INTERNAL_SERVER_ERROR).build()); 
+	        fail(Status.INTERNAL_SERVER_ERROR);
+	        return null;
 	    }
     }
 	
@@ -338,16 +333,30 @@ public class JenaLDPRDFSource extends LDPRDFSource {
 		}
 		return containerURI;
 	}
-
-	@Override
-	public Response options() {
-    	return Response
-    			.ok()
+	
+	protected void fail(Status status) {
+	    throw new WebApplicationException(build(Response.status(status)));
+	}
+	
+	/**
+     * Helper to add standard content (Allow header, Link header) to this response.
+     * 
+     * @param response
+     *            the response builder to add to
+     * @return the response with additional content common to all responses
+     */
+	protected Response build(ResponseBuilder response) {
+	   return response
     			.allow(getAllowedMethods())
     			.header(LDPConstants.HDR_LINK, "<" + getTypeURI() + ">; " + LDPConstants.HDR_LINK_TYPE)
     			.build();
 	}
 
+	@Override
+	public Response options() {
+    	return build(Response.ok());
+	}
+	
 	@Override
     public Set<String> getAllowedMethods() {
 		HashSet<String> allowedMethods = new HashSet<String>();
@@ -365,7 +374,8 @@ public class JenaLDPRDFSource extends LDPRDFSource {
 		final Model model;
 		if (LDPConstants.CT_APPLICATION_JSON.equals(contentType) || LDPConstants.CT_APPLICATION_LD_JSON.equals(contentType)) {
 			if (!isJSONLDPresent()) {
-				throw new WebApplicationException(Status.UNSUPPORTED_MEDIA_TYPE);
+			    fail(Status.UNSUPPORTED_MEDIA_TYPE);
+			    return null;
 			}
 
 	        try {
@@ -382,7 +392,8 @@ public class JenaLDPRDFSource extends LDPRDFSource {
 				Method toRDFMethod = jsonldClass.getMethod("toRDF", Object.class, jsonldTripleCallback);
 				model = (Model) toRDFMethod.invoke(null, input, jenaTripleCallback.newInstance());
 			} catch (Exception e) {
-				throw new RuntimeException(e);
+			    fail(Status.INTERNAL_SERVER_ERROR);
+			    return null;
 			}
 		} else {
 			model = ModelFactory.createDefaultModel();
@@ -392,5 +403,4 @@ public class JenaLDPRDFSource extends LDPRDFSource {
 
 		return model;
 	}
-
 }
