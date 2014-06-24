@@ -30,6 +30,7 @@ import org.apache.jena.atlas.json.JsonObject;
 import org.eclipse.lyo.ldp.server.jena.JenaLDPResourceManager;
 import org.eclipse.lyo.ldp.server.jena.JenaLDPService;
 import org.eclipse.lyo.ldp.server.jena.store.TDBGraphStore;
+import org.eclipse.lyo.ldp.server.jena.vocabulary.Lyo;
 import org.eclipse.lyo.ldp.server.service.LDPService;
 
 import com.hp.hpl.jena.rdf.model.Model;
@@ -74,6 +75,10 @@ public class VisualizationService {
 				    if (uri != null && JenaLDPResourceManager.isConfigURI(uri)) {
 				        continue;
 				    }
+				}
+				
+				if (subject.hasProperty(Lyo.deleted)) {
+				    continue;
 				}
 
 				JsonObject node = new JsonObject();
