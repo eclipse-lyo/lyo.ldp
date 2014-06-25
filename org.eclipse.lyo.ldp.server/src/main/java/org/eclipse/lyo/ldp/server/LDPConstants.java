@@ -94,7 +94,7 @@ public class LDPConstants
 	public static final String CLASS_INDIRECT_CONTAINER = nsName(CLASS_LNAME_INDIRECT_CONTAINER);
 	public static final String CLASS_LNAME_RESOURCE = "Resource";
 	public static final String CLASS_RESOURCE = nsName(CLASS_LNAME_RESOURCE);
-	public static final String CLASS_LNAME_RDFSOURCE = "RDFResource";
+	public static final String CLASS_LNAME_RDFSOURCE = "RDFSource";
 	public static final String CLASS_RDFSOURCE = nsName(CLASS_LNAME_RDFSOURCE);
 	public static final String CLASS_LNAME_NONRDFSOURCE = "NonRDFSource";
 	public static final String CLASS_NONRDFSOURCE = nsName(CLASS_LNAME_NONRDFSOURCE);

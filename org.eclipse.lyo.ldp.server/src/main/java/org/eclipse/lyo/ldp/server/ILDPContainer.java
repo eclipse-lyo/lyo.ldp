@@ -47,10 +47,11 @@ public interface ILDPContainer extends ILDPRDFSource {
 	 * @param contentType the Content-Type of the input stream.
 	 * @param user The user URI to use for dcterms:creator
 	 * @param nameHint Value from Slug header or other source, used to determine the newly created resource's URL 
+	 * @param isResourceInteractionModel If true, treat container as resource (don't allow POST)
 	 * @return the new resource URI
 	 */
 	public abstract String post(InputStream stream, String contentType,
-			String user, String nameHint);
+			String user, String nameHint, boolean isResourceInteractionModel);
 
 	/**
 	 * Post a new LDP-NR (non-RDF source) to the container.

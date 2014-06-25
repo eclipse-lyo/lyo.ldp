@@ -32,6 +32,9 @@ public class Lyo {
 	public static final String PROP_DELETED = "deleted";
 	public static final String PROP_DELETED_RESOURCE = nsName(PROP_DELETED);
 	public static final Property deleted = property(PROP_DELETED_RESOURCE);
+	public static final String PROP_IS_RES_INTERACT = "isResourceInteractionModel";
+	public static final String PROP_IS_RES_INTERACT_RESOURCE = nsName(PROP_IS_RES_INTERACT);
+	public static final Property isResourceInteractionModel = property(PROP_IS_RES_INTERACT_RESOURCE);	
 
 	/**
 	 * Config graph property describing the container an LDP-NR belongs to.

@@ -143,13 +143,18 @@ public class JenaLDPContainer extends JenaLDPRDFSource implements ILDPContainer
 	/* (non-Javadoc)
 	 * @see org.eclipse.lyo.ldp.server.impl.ILDPContainer#post(java.io.InputStream, java.lang.String, java.lang.String)
 	 */
-	public String post(InputStream stream, String contentType, String user, String nameHint)
+	public String post(InputStream stream, String contentType, String user, String nameHint, boolean isResourceInteractionModel)
 	{
 		fGraphStore.writeLock();
 		try {
 			String resourceURI = fGraphStore.createGraph(fURI, fResourceURIPrefix, nameHint);
-			fGraphStore.createCompanionGraph(resourceURI, JenaLDPResourceManager.mintConfigURI(resourceURI));
+			Model configModel = fGraphStore.createCompanionGraph(resourceURI, JenaLDPResourceManager.mintConfigURI(resourceURI));
 			String result = createResource(resourceURI, true, stream, contentType, user);
+			// Only if request header is sent of rel='type' <ldp#Resource> do we set this (and use it), all other values
+			// are ignored and fall back to default behavior.
+			if (isResourceInteractionModel) {
+				configModel.addLiteral(configModel.createResource(resourceURI), Lyo.isResourceInteractionModel, true);
+			}
 			fGraphStore.commit();
 			return result;
 		} finally {

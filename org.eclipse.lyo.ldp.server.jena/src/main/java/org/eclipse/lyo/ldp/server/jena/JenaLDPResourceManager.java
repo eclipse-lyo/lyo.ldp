@@ -22,6 +22,7 @@ import org.eclipse.lyo.ldp.server.ILDPResource;
 import org.eclipse.lyo.ldp.server.LDPResourceManager;
 import org.eclipse.lyo.ldp.server.jena.store.TDBGraphStore;
 import org.eclipse.lyo.ldp.server.jena.vocabulary.LDP;
+import org.eclipse.lyo.ldp.server.jena.vocabulary.Lyo;
 
 import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.rdf.model.Resource;
@@ -54,13 +55,15 @@ public class JenaLDPResourceManager implements LDPResourceManager {
 				return null;
 			}
 			Resource r = graph.getResource(resourceURI);
-			if (r.hasProperty(RDF.type, LDP.DirectContainer)) {
-				return new JenaLDPDirectContainer(resourceURI, gs);
-			} else if (r.hasProperty(RDF.type, LDP.BasicContainer)) {
-				return new JenaLDPBasicContainer(resourceURI, gs);
-			} else if (r.hasProperty(RDF.type, LDP.Container)) {
-				// TODO: SPEC: Should only rdf:type of #Container be treated as RDF Source or error?  Probably an error
-				System.err.println("Received type of ldp:Container but treating as ldp:RDFSource.");
+			if (!isResourceInteractionModel(resourceURI)) {
+				if (r.hasProperty(RDF.type, LDP.DirectContainer)) {
+					return new JenaLDPDirectContainer(resourceURI, gs);
+				} else if (r.hasProperty(RDF.type, LDP.BasicContainer)) {
+					return new JenaLDPBasicContainer(resourceURI, gs);
+				} else if (r.hasProperty(RDF.type, LDP.Container)) {
+					// TODO: SPEC: Should only rdf:type of #Container be treated as RDF Source or error?  Probably an error
+					System.err.println("Received type of ldp:Container but treating as ldp:RDFSource.");
+				}
 			}
 			return new JenaLDPRDFSource(resourceURI, gs);
 		} finally {
@@ -101,5 +104,15 @@ public class JenaLDPResourceManager implements LDPResourceManager {
 				r.hasProperty(RDF.type, LDP.BasicContainer) ||
 				r.hasProperty(RDF.type, LDP.DirectContainer) ||
 				r.hasProperty(RDF.type, LDP.IndirectContainer);
+    }
+	
+	public boolean isResourceInteractionModel(String resourceURI) {
+		Model graph = gs.getGraph(mintConfigURI(resourceURI));
+		if (graph == null) return false;
+		
+		Resource r = graph.getResource(resourceURI);
+		if (r == null) return false;
+		
+	    return r.hasLiteral(Lyo.isResourceInteractionModel, true);
     }
 }

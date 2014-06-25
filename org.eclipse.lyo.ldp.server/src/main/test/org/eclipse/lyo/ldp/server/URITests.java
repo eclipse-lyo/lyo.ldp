@@ -16,11 +16,10 @@
 package org.eclipse.lyo.ldp.server;
 
 import static org.junit.Assert.*;
+import junit.framework.TestSuite;
 
 import org.eclipse.lyo.ldp.server.service.LDPService;
 import org.junit.Test;
-
-import junit.framework.TestSuite;
 
 public class URITests extends TestSuite {
 	
@@ -40,5 +39,29 @@ public class URITests extends TestSuite {
 	public void testURITools3 () {
 		String res = LDPService.wrapPathSeg("foo/bar//");
 		assertEquals("/foo/bar/", res);
+	}
+	
+	@Test
+	public void testLinkTypeSuccess() {
+		// typical success case
+		assertTrue(LDPService.isLinkTypeResource("<http://www.w3.org/ns/ldp#Resource>; rel='type'"));
+		
+		// reverse order, no problem
+		assertTrue(LDPService.isLinkTypeResource("rel='type'; <http://www.w3.org/ns/ldp#Resource>"));
+
+		// no trailing '
+		assertTrue(LDPService.isLinkTypeResource("<http://www.w3.org/ns/ldp#Resource>; rel='type"));
+		
+		// extra segments
+		assertTrue(LDPService.isLinkTypeResource("<http://www.w3.org/ns/ldp#Resource>; rel='type'; title='I have a title'"));
+	}
+	
+	@Test
+	public void testLinkTypeFailures() {
+		// wrong URL type
+		assertFalse(LDPService.isLinkTypeResource("<http://www.w3.org/ns/ldp#BasicContainer>; rel='type'"));
+
+		// wrong rel value of 'next'
+		assertFalse(LDPService.isLinkTypeResource("<http://www.w3.org/ns/ldp#Resource>; rel='next'"));
 	}
 }

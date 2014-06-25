@@ -174,26 +174,60 @@ public abstract class LDPService {
     @POST
     @Consumes({ LDPConstants.CT_APPLICATION_RDFXML, LDPConstants.CT_TEXT_TURTLE, LDPConstants.CT_APPLICATION_XTURTLE, LDPConstants.CT_APPLICATION_JSON, LDPConstants.CT_APPLICATION_LD_JSON })
     public Response post(@HeaderParam(LDPConstants.HDR_SLUG) String slug, InputStream content) {
-    	
     	ILDPContainer ldpC = getRequestContainer();
-    	
-    	//  Look at headers (rel='type') and content to determine kind + interaction model
-    	/* List<String> typeHeaders = getLDPTypesFromTypeHeader(fRequestHeaders); */
-    	
-    	//   if null/no-type and RDF content then create LDP-RR
-    	/* @SuppressWarnings("rawtypes")
-		Class interactionModel = LDPRDFResource.class; */
-    	
-    	//   TODO: if LDPC/w-LDPR interaction model, create container and mark as LDPR model
-    	
-    	//   else create LDPC with default interaction model (based on rdf:type)
-    	String loc = ldpC.post(content, stripCharset(fRequestHeaders.getMediaType().toString()), null, slug);
+    	String loc = ldpC.post(content, stripCharset(fRequestHeaders.getMediaType().toString()), null, slug, hasResourceTypeHeader(fRequestHeaders) );
     	if (loc != null)
     		return Response.status(Status.CREATED).header(HttpHeaders.LOCATION, loc)
 					.header(LDPConstants.HDR_LINK, "<" + ldpC.getTypeURI() + ">; " + LDPConstants.HDR_LINK_TYPE).build();
     	else
     		return Response.status(Status.CONFLICT).build();
     }
+    
+    /**
+     * Given a set of request headers, return true if any of them are (roughly):
+     *   Link: <http://www.w3.org/ns/ldp#Resource>; rel='type'
+     */
+    public static boolean hasResourceTypeHeader(HttpHeaders headers) {
+    	List<String> linkHeaders = headers.getRequestHeader(LDPConstants.HDR_LINK);
+        for (String header : linkHeaders) {
+            for (String s : header.split(",")) {
+                if (isLinkTypeResource(s)) {
+                    return true;
+                }
+            }
+        }
+    	return false;
+    }
+    
+    /**
+     * Given a specific Link request header value, return true if any of them are (roughly):
+     *   <http://www.w3.org/ns/ldp#Resource>; rel='type'
+     */
+    public static boolean isLinkTypeResource(String s) {
+    	String[] parts = s.split(";");
+    	if (parts.length < 2) return false;
+    	String p0 = parts[0].trim();
+    	String p1 = parts[1].trim();
+    	if (p0.contains(LDPConstants.CLASS_RESOURCE)) {
+    		return isRelType(p1);
+    	} else if (p1.contains(LDPConstants.CLASS_RESOURCE)) {
+    		return isRelType(p0);
+    	}
+    	return false;
+    }
+
+	protected static boolean isRelType(String p0) {
+		String[] type = p0.split("=");
+		if (type.length == 2)
+			if (type[0].toLowerCase().contains("type")) {
+				if (type[1].toLowerCase().contains("rel"))
+					return true;
+			} else if (type[1].toLowerCase().contains("type")) {
+				if (type[0].toLowerCase().contains("rel"))
+					return true;
+			}
+		return false;
+	}
 
 	protected ILDPContainer getRequestContainer() {
 	    // Look up content at Request-URI
@@ -205,7 +239,6 @@ public abstract class LDPService {
     	else if (!(ldpR instanceof ILDPContainer)) throw new WebApplicationException(Status.BAD_REQUEST);  // TODO: Provide some details in response
     	
     	//   else follow model for POST against container
-    	
     	ILDPContainer ldpC = (ILDPContainer)ldpR;
 	    return ldpC;
     }

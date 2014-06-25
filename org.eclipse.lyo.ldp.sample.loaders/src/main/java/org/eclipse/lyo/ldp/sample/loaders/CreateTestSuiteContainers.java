@@ -37,18 +37,18 @@ public class CreateTestSuiteContainers {
 				.println("Populating test suite data to LDP container: "
 						+ rootContainer);
 		
-		String mr1 = post(rootContainer, asStream("diffmr.ttl"), "diffmr1");
+		String mr1 = post(rootContainer, asStream("diffmr.ttl"), "diffmr1", false);
 		System.out.println("Created ldp:RDFSource at: \t\t" + mr1);
-		String mr2 = post(rootContainer, asStream("diffmr.ttl"), "diffmr2");
+		String mr2 = post(rootContainer, asStream("diffmr.ttl"), "diffmr2", false);
 		System.out.println("Created ldp:RDFSource at: \t\t" + mr2);
 		
-		String c = post(rootContainer, asStream("bc.ttl"), "bc/");
+		String c = post(rootContainer, asStream("bc.ttl"), "bc/", false);
 		System.out.println("Created ldp:BasicContainer at: \t\t" + c);
 
-		c = post(rootContainer, asStream("dc-simple.ttl"), "dc-simple/");
+		c = post(rootContainer, asStream("dc-simple.ttl"), "dc-simple/", false);
 		System.out.println("Created ldp:DirectContainer (simple) at: \t" + c);
 
-		c = post(rootContainer, asStream("dc-invmbr.ttl"), "dc-invmbr/");
+		c = post(rootContainer, asStream("dc-invmbr.ttl"), "dc-invmbr/", false);
 		System.out.println("Created ldp:DirectContainer (inverse mbr) at: \t" + c);
 
 		Model m = ModelFactory.createDefaultModel();
@@ -60,7 +60,7 @@ public class CreateTestSuiteContainers {
 		StringWriter stringWriter = new StringWriter();
 		m.write(stringWriter, "TURTLE", "");
 
-		c = post(rootContainer, stringWriter.toString(), "dc-diffmr/");
+		c = post(rootContainer, stringWriter.toString(), "dc-diffmr/", false);
 		System.out.println("Created ldp:DirectContainer (diff mbrshp res) at: \t" + c);
 		
 		m = ModelFactory.createDefaultModel();
@@ -72,16 +72,23 @@ public class CreateTestSuiteContainers {
 		stringWriter = new StringWriter();
 		m.write(stringWriter, "TURTLE", "");
 
-		c = post(rootContainer, stringWriter.toString(), "dc-invmbr-diffmr/");
+		c = post(rootContainer, stringWriter.toString(), "dc-invmbr-diffmr/", false);
 		System.out.println("Created ldp:DirectContainer (diff mbrshp res + inv mbr) at: \t" + c);
+		
+		c = post(rootContainer, asStream("bc.ttl"), "bc-asres/", true);
+		System.out.println("Created ldp:BasicContainer (interaction model of ldp:Resource) at: \t\t" + c);
 
 		System.out.println("Completed successfully!");
 	}
 
-	private static String post(String uri, Object requestEntity, String slug) {
-		org.apache.wink.client.Resource resource = client.resource(uri);
-		ClientResponse response = resource.contentType("text/turtle")
-				.header("Slug", slug).post(requestEntity);
+	private static String post(String uri, Object requestEntity, String slug, boolean asRes) {
+		org.apache.wink.client.Resource resource = 
+					client.resource(uri).contentType("text/turtle").header("Slug", slug);
+		
+		if (asRes)
+			resource.header("Link", "<http://www.w3.org/ns/ldp#Resource>; rel='type'");
+			
+		ClientResponse response = resource.post(requestEntity);
 		if (response.getStatusCode() != HttpStatus.SC_CREATED) {
 			System.err.println("ERROR: Failed to create resource. Status: "
 					+ response.getStatusCode());
