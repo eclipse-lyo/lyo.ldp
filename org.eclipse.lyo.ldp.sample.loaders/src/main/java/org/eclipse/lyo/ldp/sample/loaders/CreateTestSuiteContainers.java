@@ -54,6 +54,7 @@ public class CreateTestSuiteContainers {
 		Model m = ModelFactory.createDefaultModel();
 		Resource r = m.getResource("");
 		r.addProperty(RDF.type,	LDP.DirectContainer);
+		r.addProperty(RDF.type,	LDP.Container);
 		r.addProperty(LDP.membershipResource, m.getResource(mr1));
 		r.addProperty(LDP.hasMemberRelation, LDP.member);
 
@@ -66,6 +67,7 @@ public class CreateTestSuiteContainers {
 		m = ModelFactory.createDefaultModel();
 		r = m.getResource("");
 		r.addProperty(RDF.type,	LDP.DirectContainer);
+		r.addProperty(RDF.type,	LDP.Container);
 		r.addProperty(LDP.membershipResource, m.getResource(mr2));
 		r.addProperty(LDP.isMemberOfRelation, m.createResource("http://www.w3.org/2004/02/skos/core#inScheme"));
 
