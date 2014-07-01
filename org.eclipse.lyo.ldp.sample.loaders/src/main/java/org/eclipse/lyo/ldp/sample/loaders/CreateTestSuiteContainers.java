@@ -1,17 +1,17 @@
 /*******************************************************************************
  * Copyright (c) 2014 IBM Corporation.
  *
- *  All rights reserved. This program and the accompanying materials
- *  are made available under the terms of the Eclipse Public License v1.0
- *  and Eclipse Distribution License v. 1.0 which accompanies this distribution.
- *  
- *  The Eclipse Public License is available at http://www.eclipse.org/legal/epl-v10.html
- *  and the Eclipse Distribution License is available at
- *  http://www.eclipse.org/org/documents/edl-v10.php.
- *  
- *  Contributors:
- *  
-\ *     Steve Speicher - initial implementation
+ *	All rights reserved. This program and the accompanying materials
+ *	are made available under the terms of the Eclipse Public License v1.0
+ *	and Eclipse Distribution License v. 1.0 which accompanies this distribution.
+ *	
+ *	The Eclipse Public License is available at http://www.eclipse.org/legal/epl-v10.html
+ *	and the Eclipse Distribution License is available at
+ *	http://www.eclipse.org/org/documents/edl-v10.php.
+ *	
+ *	Contributors:
+ *	
+\ *		Steve Speicher - initial implementation
  *******************************************************************************/
 package org.eclipse.lyo.ldp.sample.loaders;
 
@@ -53,8 +53,8 @@ public class CreateTestSuiteContainers {
 
 		Model m = ModelFactory.createDefaultModel();
 		Resource r = m.getResource("");
-		r.addProperty(RDF.type,	LDP.DirectContainer);
-		r.addProperty(RDF.type,	LDP.Container);
+		r.addProperty(RDF.type, LDP.DirectContainer);
+		r.addProperty(RDF.type, LDP.Container);
 		r.addProperty(LDP.membershipResource, m.getResource(mr1));
 		r.addProperty(LDP.hasMemberRelation, LDP.member);
 
@@ -66,8 +66,8 @@ public class CreateTestSuiteContainers {
 		
 		m = ModelFactory.createDefaultModel();
 		r = m.getResource("");
-		r.addProperty(RDF.type,	LDP.DirectContainer);
-		r.addProperty(RDF.type,	LDP.Container);
+		r.addProperty(RDF.type, LDP.DirectContainer);
+		r.addProperty(RDF.type, LDP.Container);
 		r.addProperty(LDP.membershipResource, m.getResource(mr2));
 		r.addProperty(LDP.isMemberOfRelation, m.createResource("http://www.w3.org/2004/02/skos/core#inScheme"));
 

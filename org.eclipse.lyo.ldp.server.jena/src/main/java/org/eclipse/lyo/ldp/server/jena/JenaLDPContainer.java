@@ -1,33 +1,33 @@
 /*******************************************************************************
  * Copyright (c) 2013, 2014 IBM Corporation.
  *
- *  All rights reserved. This program and the accompanying materials
- *  are made available under the terms of the Eclipse Public License v1.0
- *  and Eclipse Distribution License v. 1.0 which accompanies this distribution.
- *  
- *  The Eclipse Public License is available at http://www.eclipse.org/legal/epl-v10.html
- *  and the Eclipse Distribution License is available at
- *  http://www.eclipse.org/org/documents/edl-v10.php.
- *  
- *  Contributors:
- *  
- *     Frank Budinsky - initial API and implementation
- *     Steve Speicher - initial API and implementation
- *     Samuel Padgett - initial API and implementation
- *     Samuel Padgett - make jsonld-java dependency optional
- *     Steve Speicher - updates for recent LDP spec changes
- *     Steve Speicher - make root URI configurable 
- *     Samuel Padgett - remove membership and containment triples on delete and update dcterms:modified
- *     Samuel Padgett - add ETag and Link headers with correct types on GET requests
- *     Samuel Padgett - fix NPEx creating root container on first launch
- *     Samuel Padgett - use TDB transactions
- *     Samuel Padgett - add Allow header to GET responses
- *     Samuel Padgett - reject PUT requests that modify containment triples
- *     Samuel Padgett - check If-Match header on PUT requests
- *     Samuel Padgett - fix null resource prefix for root container
- *     Samuel Padgett - add support for LDP Non-RDF Source
- *     Samuel Padgett - support Prefer header
- *     Samuel Padgett - support read-only properties and rel="describedby"
+ *	All rights reserved. This program and the accompanying materials
+ *	are made available under the terms of the Eclipse Public License v1.0
+ *	and Eclipse Distribution License v. 1.0 which accompanies this distribution.
+ *	
+ *	The Eclipse Public License is available at http://www.eclipse.org/legal/epl-v10.html
+ *	and the Eclipse Distribution License is available at
+ *	http://www.eclipse.org/org/documents/edl-v10.php.
+ *	
+ *	Contributors:
+ *	
+ *	   Frank Budinsky - initial API and implementation
+ *	   Steve Speicher - initial API and implementation
+ *	   Samuel Padgett - initial API and implementation
+ *	   Samuel Padgett - make jsonld-java dependency optional
+ *	   Steve Speicher - updates for recent LDP spec changes
+ *	   Steve Speicher - make root URI configurable 
+ *	   Samuel Padgett - remove membership and containment triples on delete and update dcterms:modified
+ *	   Samuel Padgett - add ETag and Link headers with correct types on GET requests
+ *	   Samuel Padgett - fix NPEx creating root container on first launch
+ *	   Samuel Padgett - use TDB transactions
+ *	   Samuel Padgett - add Allow header to GET responses
+ *	   Samuel Padgett - reject PUT requests that modify containment triples
+ *	   Samuel Padgett - check If-Match header on PUT requests
+ *	   Samuel Padgett - fix null resource prefix for root container
+ *	   Samuel Padgett - add support for LDP Non-RDF Source
+ *	   Samuel Padgett - support Prefer header
+ *	   Samuel Padgett - support read-only properties and rel="describedby"
  *******************************************************************************/
 package org.eclipse.lyo.ldp.server.jena;
 
@@ -69,7 +69,7 @@ import com.hp.hpl.jena.vocabulary.RDF;
  */
 public class JenaLDPContainer extends JenaLDPRDFSource implements ILDPContainer
 {
-    public static final String DEFAULT_RESOURCE_PREFIX = "res";
+	public static final String DEFAULT_RESOURCE_PREFIX = "res";
 
 	protected String fResourceURIPrefix; // New resource name template, default is "res" + N
 
@@ -249,67 +249,67 @@ public class JenaLDPContainer extends JenaLDPRDFSource implements ILDPContainer
 
 		fGraphStore.putGraph(resourceURI, model);
 
-		return resourceURI;	
+		return resourceURI; 
 	}
 
 	/**
-     * Adds containment triples and, if a direct container, membership triples
-     * for this resource.
-     * 
-     * @param resourceURI the URI of the resource to add
-     * @param resourceModel the RDF content or null for non-RDF source (needed for the ldp:isMemberOfRelation)
-     * @param time the current time (for dcterms:modified properties)
-     */
+	 * Adds containment triples and, if a direct container, membership triples
+	 * for this resource.
+	 * 
+	 * @param resourceURI the URI of the resource to add
+	 * @param resourceModel the RDF content or null for non-RDF source (needed for the ldp:isMemberOfRelation)
+	 * @param time the current time (for dcterms:modified properties)
+	 */
 	protected void addToContainer(String resourceURI, Model resourceModel, Calendar time) {
-	    final String containerURI = getContainerURIForResource(resourceURI);
-	    final Model containerModel = fGraphStore.getGraph(containerURI);
-	    final Resource containerResource = containerModel.getResource(containerURI);
-	    
-        // TODO: Push direct container specific logic down to JeanLDPDirectContainer.
+		final String containerURI = getContainerURIForResource(resourceURI);
+		final Model containerModel = fGraphStore.getGraph(containerURI);
+		final Resource containerResource = containerModel.getResource(containerURI);
+		
+		// TODO: Push direct container specific logic down to JeanLDPDirectContainer.
 
-        // Can't do it yet since this might not be the container for the resource. PATCH and PUT to create
-        // always are called on the root container, even when the resource is created in a child container.
+		// Can't do it yet since this might not be the container for the resource. PATCH and PUT to create
+		// always are called on the root container, even when the resource is created in a child container.
 
-	    final Property memberRelation = getMemberRelation(containerModel, containerResource);
-	    final Property memberOfRelation = getIsMemberOfRelation(containerModel, containerResource);
-	    final String membershipResourceURI = getMembershipResourceURI(containerModel, containerResource);
+		final Property memberRelation = getMemberRelation(containerModel, containerResource);
+		final Property memberOfRelation = getIsMemberOfRelation(containerModel, containerResource);
+		final String membershipResourceURI = getMembershipResourceURI(containerModel, containerResource);
 
-	    // resourceModel is null for non-RDF source
-	    if (memberOfRelation != null && resourceModel != null) {
-	    	resourceModel.add(resourceModel.getResource(resourceURI), memberOfRelation, resourceModel.createResource(membershipResourceURI));
-	    } else {
-	        final Model membershipResourceModel = (membershipResourceURI.equals(containerURI)) ? containerModel : fGraphStore.getGraph(membershipResourceURI);
-	        final Resource subject = membershipResourceModel.createResource(resourceURI);
-	        final Resource membershipResource = membershipResourceModel.getResource(membershipResourceURI);
-	        if (memberRelation != null) {
-	            membershipResource.addProperty(memberRelation, subject);
+		// resourceModel is null for non-RDF source
+		if (memberOfRelation != null && resourceModel != null) {
+			resourceModel.add(resourceModel.getResource(resourceURI), memberOfRelation, resourceModel.createResource(membershipResourceURI));
+		} else {
+			final Model membershipResourceModel = (membershipResourceURI.equals(containerURI)) ? containerModel : fGraphStore.getGraph(membershipResourceURI);
+			final Resource subject = membershipResourceModel.createResource(resourceURI);
+			final Resource membershipResource = membershipResourceModel.getResource(membershipResourceURI);
+			if (memberRelation != null) {
+				membershipResource.addProperty(memberRelation, subject);
 
-	            // Update dcterms:modified
-	            membershipResource.removeAll(DCTerms.modified);
-	            membershipResource.addLiteral(DCTerms.modified, membershipResourceModel.createTypedLiteral(time));
-	        }
-	    }
+				// Update dcterms:modified
+				membershipResource.removeAll(DCTerms.modified);
+				membershipResource.addLiteral(DCTerms.modified, membershipResourceModel.createTypedLiteral(time));
+			}
+		}
 
-	    // Put containment triples in container
-	    containerResource.addProperty(LDP.contains, containerModel.createResource(resourceURI));
-	    containerResource.removeAll(DCTerms.modified);
-	    containerResource.addLiteral(DCTerms.modified, containerModel.createTypedLiteral(time));
-    }
+		// Put containment triples in container
+		containerResource.addProperty(LDP.contains, containerModel.createResource(resourceURI));
+		containerResource.removeAll(DCTerms.modified);
+		containerResource.addLiteral(DCTerms.modified, containerModel.createTypedLiteral(time));
+	}
 	
 	protected void patchResource(String resourceURI, String baseURI, InputStream stream, String contentType, String user)
 	{
 		Model model = readModel(baseURI, stream, contentType);
-        Resource subject = model.getResource(resourceURI);
+		Resource subject = model.getResource(resourceURI);
 		
-        // Update dcterms:modified
+		// Update dcterms:modified
 
-        Calendar time = Calendar.getInstance();
-        subject.removeAll(DCTerms.modified);
-        subject.addLiteral(DCTerms.modified, model.createTypedLiteral(time));
+		Calendar time = Calendar.getInstance();
+		subject.removeAll(DCTerms.modified);
+		subject.addLiteral(DCTerms.modified, model.createTypedLiteral(time));
 
 		// TODO: Process patch contents
-       
-        /*fGraphStore.putGraph(resourceURI, model);
+	   
+		/*fGraphStore.putGraph(resourceURI, model);
 		model.close(); */
 	}
 	
@@ -325,38 +325,38 @@ public class JenaLDPContainer extends JenaLDPRDFSource implements ILDPContainer
 	@Override
 	protected Model amendResponseGraph(Model container, MultivaluedMap<String, String> preferences)
 	{
-	    final Model result = ModelFactory.createDefaultModel();
-	    result.add(container);
+		final Model result = ModelFactory.createDefaultModel();
+		result.add(container);
 
 		// Determine whether to include containment triples from the Prefer header.
-        if (!includeContainment(preferences)) {
-            result.getResource(fURI).removeAll(LDP.contains);
-        }
-        
+		if (!includeContainment(preferences)) {
+			result.getResource(fURI).removeAll(LDP.contains);
+		}
+		
 		return result;
 	}
 	
 	protected boolean isReturnRepresentationPreferenceApplied(MultivaluedMap<String, String> preferences) {
-	    // Return true if any recognized include or omit preferences are in the request.
-	    final List<String> include = preferences.get(LDPConstants.PREFER_INCLUDE);
-	    final List<String> omit = preferences.get(LDPConstants.PREFER_OMIT);
-	    
-	    if (include != null
-	            && (include.contains(LDPConstants.PREFER_MINIMAL_CONTAINER) || include.contains(LDPConstants.PREFER_CONTAINMENT))) {
-	        return true;
-	    }
+		// Return true if any recognized include or omit preferences are in the request.
+		final List<String> include = preferences.get(LDPConstants.PREFER_INCLUDE);
+		final List<String> omit = preferences.get(LDPConstants.PREFER_OMIT);
+		
+		if (include != null
+				&& (include.contains(LDPConstants.PREFER_MINIMAL_CONTAINER) || include.contains(LDPConstants.PREFER_CONTAINMENT))) {
+			return true;
+		}
 
-	    return omit != null && omit.contains(LDPConstants.PREFER_CONTAINMENT);
+		return omit != null && omit.contains(LDPConstants.PREFER_CONTAINMENT);
 	}
 
 	@Override
-    protected void amendResponse(ResponseBuilder response,
-            MultivaluedMap<String, String> preferences) {
-	    if (isReturnRepresentationPreferenceApplied(preferences)) {
-	        response.header(LDPConstants.HDR_PREFERENCE_APPLIED, LDPConstants.PREFER_RETURN_REPRESENTATION);
-	    }
-        super.amendResponse(response, preferences);
-    }
+	protected void amendResponse(ResponseBuilder response,
+			MultivaluedMap<String, String> preferences) {
+		if (isReturnRepresentationPreferenceApplied(preferences)) {
+			response.header(LDPConstants.HDR_PREFERENCE_APPLIED, LDPConstants.PREFER_RETURN_REPRESENTATION);
+		}
+		super.amendResponse(response, preferences);
+	}
 
 	public static Property getMemberRelation(Model containerGraph, Resource containerResource)
 	{
@@ -372,8 +372,8 @@ public class JenaLDPContainer extends JenaLDPRDFSource implements ILDPContainer
 
 	public static String getMembershipResourceURI(Model containerGraph, Resource containerResource)
 	{
-        Resource membershipResource = containerResource.getPropertyResourceValue(LDP.membershipResource);
-        return membershipResource != null ? membershipResource.getURI() : containerResource.getURI();
+		Resource membershipResource = containerResource.getPropertyResourceValue(LDP.membershipResource);
+		return membershipResource != null ? membershipResource.getURI() : containerResource.getURI();
 	}
 
 	public static String appendURISegment(String base, String append)
@@ -382,23 +382,23 @@ public class JenaLDPContainer extends JenaLDPRDFSource implements ILDPContainer
 	}
 
 	@Override
-    public Set<String> getAllowedMethods() {
+	public Set<String> getAllowedMethods() {
 		Set<String> allow = super.getAllowedMethods();
 		allow.add(HttpMethod.POST);
 
-	    return allow;
-    }
+		return allow;
+	}
 	
 	@Override
-    protected Set<String> getReadOnlyProperties() {
+	protected Set<String> getReadOnlyProperties() {
 		Set<String> readOnly = super.getReadOnlyProperties();
 		readOnly.add(LDP.contains.getURI());
 
-	    return readOnly;
-    }
+		return readOnly;
+	}
 
 	@Override
-    public Response postNonRDFSource(InputStream content, String stripCharset, String slug) {
+	public Response postNonRDFSource(InputStream content, String stripCharset, String slug) {
 		fGraphStore.writeLock();
 		try {
 			String uri = fGraphStore.mintURI(fURI, fResourceURIPrefix, slug);
@@ -430,30 +430,30 @@ public class JenaLDPContainer extends JenaLDPRDFSource implements ILDPContainer
 			fGraphStore.commit();
 
 			return build(Response
-			        .status(Status.CREATED)
-			        .header(HttpHeaders.LOCATION, uri)
-			        .header(LDPConstants.HDR_LINK, "<" + associatedURI + ">; " + LDPConstants.HDR_LINK_DESCRIBEDBY));
-        } finally {
+					.status(Status.CREATED)
+					.header(HttpHeaders.LOCATION, uri)
+					.header(LDPConstants.HDR_LINK, "<" + associatedURI + ">; " + LDPConstants.HDR_LINK_DESCRIBEDBY));
+		} finally {
 			fGraphStore.end();
 		}
-    }
+	}
 
-    protected boolean includeContainment(MultivaluedMap<String, String> preferences) {
-        final List<String> include = preferences.get(LDPConstants.PREFER_INCLUDE);
-        final List<String> omit = preferences.get(LDPConstants.PREFER_OMIT);
-        
-        final boolean omitContainment = (omit != null && omit.contains(LDPConstants.PREFER_CONTAINMENT));
-        if (include != null) {
-            if (include.contains(LDPConstants.PREFER_CONTAINMENT)) {
-                return true;
-            }
-    
-            if (include.contains(LDPConstants.PREFER_MINIMAL_CONTAINER) ||
-                    include.contains(LDPConstants.DEPRECATED_PREFER_EMPTY_CONTAINER)) {
-                return false;
-            }
-        }
-        
-        return !omitContainment;
-     }
+	protected boolean includeContainment(MultivaluedMap<String, String> preferences) {
+		final List<String> include = preferences.get(LDPConstants.PREFER_INCLUDE);
+		final List<String> omit = preferences.get(LDPConstants.PREFER_OMIT);
+		
+		final boolean omitContainment = (omit != null && omit.contains(LDPConstants.PREFER_CONTAINMENT));
+		if (include != null) {
+			if (include.contains(LDPConstants.PREFER_CONTAINMENT)) {
+				return true;
+			}
+	
+			if (include.contains(LDPConstants.PREFER_MINIMAL_CONTAINER) ||
+					include.contains(LDPConstants.DEPRECATED_PREFER_EMPTY_CONTAINER)) {
+				return false;
+			}
+		}
+		
+		return !omitContainment;
+	 }
 }

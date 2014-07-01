@@ -1,22 +1,22 @@
 /*******************************************************************************
  * Copyright (c) 2014 IBM Corporation.
  *
- *  All rights reserved. This program and the accompanying materials
- *  are made available under the terms of the Eclipse Public License v1.0
- *  and Eclipse Distribution License v. 1.0 which accompanies this distribution.
- *  
- *  The Eclipse Public License is available at http://www.eclipse.org/legal/epl-v10.html
- *  and the Eclipse Distribution License is available at
- *  http://www.eclipse.org/org/documents/edl-v10.php.
- *  
- *  Contributors:
- *  
- *     Steve Speicher - support for various container types
- *     Samuel Padgett - use TDB transactions
- *     Samuel Padgett - add Allow header to GET responses
- *     Samuel Padgett - add request headers to put() parameters
- *     Samuel Padgett - add support for LDP Non-RDF Source
- *     Samuel Padgett - support read-only properties and rel="describedby"
+ *	All rights reserved. This program and the accompanying materials
+ *	are made available under the terms of the Eclipse Public License v1.0
+ *	and Eclipse Distribution License v. 1.0 which accompanies this distribution.
+ *	
+ *	The Eclipse Public License is available at http://www.eclipse.org/legal/epl-v10.html
+ *	and the Eclipse Distribution License is available at
+ *	http://www.eclipse.org/org/documents/edl-v10.php.
+ *	
+ *	Contributors:
+ *	
+ *	   Steve Speicher - support for various container types
+ *	   Samuel Padgett - use TDB transactions
+ *	   Samuel Padgett - add Allow header to GET responses
+ *	   Samuel Padgett - add request headers to put() parameters
+ *	   Samuel Padgett - add support for LDP Non-RDF Source
+ *	   Samuel Padgett - support read-only properties and rel="describedby"
  *******************************************************************************/
 package org.eclipse.lyo.ldp.server.jena;
 
@@ -69,13 +69,13 @@ public class JenaLDPRDFSource extends LDPRDFSource {
 	public static final String CONSTRAINTS_URI =
 			UriBuilder.fromPath(LDPService.ROOT_APP_URL).path("constraints.ttl").build().toString();
 
-    /**
-     * A companion resource "next to" the "real" resource, used to hold implementation
-     * specific data.
-     */
-    protected String fConfigGraphURI;
-	protected final TDBGraphStore fGraphStore; // GraphStore in which to store the container and member resources   
-    
+	/**
+	 * A companion resource "next to" the "real" resource, used to hold implementation
+	 * specific data.
+	 */
+	protected String fConfigGraphURI;
+	protected final TDBGraphStore fGraphStore; // GraphStore in which to store the container and member resources	
+	
 	protected JenaLDPRDFSource(String resourceURI, TDBGraphStore graphStore)
 	{
 		super(resourceURI, graphStore);
@@ -100,43 +100,43 @@ public class JenaLDPRDFSource extends LDPRDFSource {
 	}
 
 	protected void updateResource(InputStream stream, String contentType, HttpHeaders requestHeaders) {
-	    Model model = readModel(getURI(), stream, contentType);
+		Model model = readModel(getURI(), stream, contentType);
 
-	    Model before = fGraphStore.getGraph(getURI());
-	    // We shouldn't have gotten this far but to be safe
-	    if (before == null)
-	    	throw new WebApplicationException(HttpStatus.SC_NOT_FOUND);
+		Model before = fGraphStore.getGraph(getURI());
+		// We shouldn't have gotten this far but to be safe
+		if (before == null)
+			throw new WebApplicationException(HttpStatus.SC_NOT_FOUND);
 
-	    // Check the If-Match request header.
-	    checkIfMatch(requestHeaders, before);
+		// Check the If-Match request header.
+		checkIfMatch(requestHeaders, before);
 
-	    for (String property : getReadOnlyProperties()) {
-	    	failIfReadOnlyPropertyChanged(before, model, property);
-	    }
+		for (String property : getReadOnlyProperties()) {
+			failIfReadOnlyPropertyChanged(before, model, property);
+		}
 
-	    // Update dcterms:modified
-	    Calendar time = Calendar.getInstance();
-	    Resource newResource = model.getResource(getURI());
-	    model.removeAll(newResource, DCTerms.modified, null);
-	    model.add(newResource, DCTerms.modified, model.createTypedLiteral(time));
+		// Update dcterms:modified
+		Calendar time = Calendar.getInstance();
+		Resource newResource = model.getResource(getURI());
+		model.removeAll(newResource, DCTerms.modified, null);
+		model.add(newResource, DCTerms.modified, model.createTypedLiteral(time));
 
-	    fGraphStore.putGraph(getURI(), model);
-    }
+		fGraphStore.putGraph(getURI(), model);
+	}
 
 	protected void checkIfMatch(HttpHeaders requestHeaders, Model before) {
-	    if (requestHeaders != null) {
-	    	String ifMatch = requestHeaders.getHeaderString(HttpHeaders.IF_MATCH);
-	    	if (ifMatch == null) {
-	    		// condition required
-	    		throw new WebApplicationException(build(Response.status(428)));
-	    	}
-	    	final String originalETag = getETag(before);
-	    	// FIXME: Does not handle wildcards or comma-separated values...
-	    	if (!originalETag.equals(ifMatch)) {
-	    	    fail(Status.PRECONDITION_FAILED);
-	    	}
-	    }
-    }
+		if (requestHeaders != null) {
+			String ifMatch = requestHeaders.getHeaderString(HttpHeaders.IF_MATCH);
+			if (ifMatch == null) {
+				// condition required
+				throw new WebApplicationException(build(Response.status(428)));
+			}
+			final String originalETag = getETag(before);
+			// FIXME: Does not handle wildcards or comma-separated values...
+			if (!originalETag.equals(ifMatch)) {
+				fail(Status.PRECONDITION_FAILED);
+			}
+		}
+	}
 	
 	@Override
 	public void patch(String resourceURI, InputStream stream,
@@ -148,12 +148,12 @@ public class JenaLDPRDFSource extends LDPRDFSource {
 	public void delete() {
 		// If this is a companion to another resources (e.g., a config graph), don't delete it.
 		if (JenaLDPResourceManager.isCompanion(getURI())) {
-		    fail(Status.FORBIDDEN);
+			fail(Status.FORBIDDEN);
 		}
 
 		fGraphStore.writeLock();
 		try {
-		    // FIXME: Logic to remove containment and membership triples should really be in JenaLDPContainer and subclasses.
+			// FIXME: Logic to remove containment and membership triples should really be in JenaLDPContainer and subclasses.
 			final String containerURI = getContainerURIForResource(getURI());
 			final Model containerModel = fGraphStore.getGraph(containerURI);
 			final Resource containerResource = containerModel.getResource(containerURI);
@@ -162,12 +162,12 @@ public class JenaLDPRDFSource extends LDPRDFSource {
 
 			// Remove the membership triples.
 			if (memberRelation != null) {
-			    final String membershipResourceURI = JenaLDPDirectContainer.getMembershipResourceURI(containerModel, containerResource);
-			    final Model membershipResourceModel = (membershipResourceURI.equals(containerURI)) ? containerModel : fGraphStore.getGraph(membershipResourceURI);
-			    final Resource membershipResource = membershipResourceModel.getResource(membershipResourceURI);
-			    membershipResource.removeAll(DCTerms.modified);
-			    membershipResource.addLiteral(DCTerms.modified, membershipResourceModel.createTypedLiteral(time));
-			    membershipResourceModel.remove(membershipResource, memberRelation, membershipResourceModel.getResource(getURI()));
+				final String membershipResourceURI = JenaLDPDirectContainer.getMembershipResourceURI(containerModel, containerResource);
+				final Model membershipResourceModel = (membershipResourceURI.equals(containerURI)) ? containerModel : fGraphStore.getGraph(membershipResourceURI);
+				final Resource membershipResource = membershipResourceModel.getResource(membershipResourceURI);
+				membershipResource.removeAll(DCTerms.modified);
+				membershipResource.addLiteral(DCTerms.modified, membershipResourceModel.createTypedLiteral(time));
+				membershipResourceModel.remove(membershipResource, memberRelation, membershipResourceModel.getResource(getURI()));
 			}
 
 			// Remove containment triples.
@@ -226,9 +226,9 @@ public class JenaLDPRDFSource extends LDPRDFSource {
 	}
 
 	protected void amendResponse(ResponseBuilder response, MultivaluedMap<String, String> preferences) {
-    }
+	}
 
-    /**
+	/**
 	 * Create a weak ETag value from a Jena model.
 	 * 
 	 * @param m the model that represents the HTTP response body
@@ -243,8 +243,8 @@ public class JenaLDPRDFSource extends LDPRDFSource {
 		String md5 = DigestUtils.md5Hex(out.toByteArray());
 
 		// Create a weak entity tag from the MD5 hash.
-	    return "W/\"" + md5 + "\"";
-    }
+		return "W/\"" + md5 + "\"";
+	}
 	
 	/**
 	 * For sub-classes to implement, given the graph for resource R, amend some triples before
@@ -254,59 +254,59 @@ public class JenaLDPRDFSource extends LDPRDFSource {
 	 * @return the amended model
 	 */
 	protected Model amendResponseGraph(Model graph, MultivaluedMap<String, String> preferences) {
-	    // Nothing to do unless we're a container, which is handled by subclasses.
-	    return graph;
+		// Nothing to do unless we're a container, which is handled by subclasses.
+		return graph;
 	}
 	
 	private StreamingOutput getJSONLD(Model graph) {
-	    if (!isJSONLDPresent()) {
-	        fail(Status.UNSUPPORTED_MEDIA_TYPE);
-	        return null;
-	    }
+		if (!isJSONLDPresent()) {
+			fail(Status.UNSUPPORTED_MEDIA_TYPE);
+			return null;
+		}
 
-	    try {
-	    	// Use Java reflection for the optional jsonld-java depedency.
-	    	Class<?> jsonldClass = Class.forName("com.github.jsonldjava.core.JSONLD");
-	    	Class<?> rdfParserClass = Class.forName("com.github.jsonldjava.core.RDFParser");
-	    	Class<?> jsonldUtilsClass = Class.forName("com.github.jsonldjava.utils.JSONUtils");
-	    	Class<?> jenaRDFParserClass = Class.forName("com.github.jsonldjava.impl.JenaRDFParser");
-	    	Class<?> optionsClass = Class.forName("com.github.jsonldjava.core.Options");
+		try {
+			// Use Java reflection for the optional jsonld-java depedency.
+			Class<?> jsonldClass = Class.forName("com.github.jsonldjava.core.JSONLD");
+			Class<?> rdfParserClass = Class.forName("com.github.jsonldjava.core.RDFParser");
+			Class<?> jsonldUtilsClass = Class.forName("com.github.jsonldjava.utils.JSONUtils");
+			Class<?> jenaRDFParserClass = Class.forName("com.github.jsonldjava.impl.JenaRDFParser");
+			Class<?> optionsClass = Class.forName("com.github.jsonldjava.core.Options");
 
-	    	//Object json = JSONLD.fromRDF(graph, new JenaRDFParser());
-	    	Method fromRDFMethod = jsonldClass.getMethod("fromRDF", Object.class, rdfParserClass);
-	    	Object json = fromRDFMethod.invoke(null, graph, jenaRDFParserClass.newInstance());
+			//Object json = JSONLD.fromRDF(graph, new JenaRDFParser());
+			Method fromRDFMethod = jsonldClass.getMethod("fromRDF", Object.class, rdfParserClass);
+			Object json = fromRDFMethod.invoke(null, graph, jenaRDFParserClass.newInstance());
 
-	    	InputStream is = getClass().getClassLoader().getResourceAsStream("context.jsonld");
+			InputStream is = getClass().getClassLoader().getResourceAsStream("context.jsonld");
 
-	    	//Object context = JSONUtils.fromInputStream(is);
-	    	Method fromInputStreamMethod = jsonldUtilsClass.getMethod("fromInputStream", InputStream.class);
-	    	Object context = fromInputStreamMethod.invoke(null, is);
-	    	
-	    	//json = JSONLD.compact(json, context, new Options("", true));
-	    	Method compactMethod = jsonldClass.getMethod("compact", Object.class, Object.class, optionsClass);
-	    	Constructor<?> optionsContructor = optionsClass.getDeclaredConstructor(String.class, Boolean.class);
-	    	Object options = optionsContructor.newInstance("", true);
-	    	final Object compactedJson = compactMethod.invoke(null, json, context, options);
+			//Object context = JSONUtils.fromInputStream(is);
+			Method fromInputStreamMethod = jsonldUtilsClass.getMethod("fromInputStream", InputStream.class);
+			Object context = fromInputStreamMethod.invoke(null, is);
+			
+			//json = JSONLD.compact(json, context, new Options("", true));
+			Method compactMethod = jsonldClass.getMethod("compact", Object.class, Object.class, optionsClass);
+			Constructor<?> optionsContructor = optionsClass.getDeclaredConstructor(String.class, Boolean.class);
+			Object options = optionsContructor.newInstance("", true);
+			final Object compactedJson = compactMethod.invoke(null, json, context, options);
 
-	    	//JSONUtils.writePrettyPrint(new PrintWriter(outStream), json);
-	    	final Method writePrettyPrintMethod = jsonldUtilsClass.getMethod("writePrettyPrint", Writer.class, Object.class);
-	    	StreamingOutput out = new StreamingOutput() {
-	    		@Override
-	            public void write(OutputStream output) throws IOException, WebApplicationException {
-	    			try {
-	                    writePrettyPrintMethod.invoke(null, new PrintWriter(output), compactedJson);
-	                } catch (Exception e) {
-	                    fail(Status.INTERNAL_SERVER_ERROR);
-	                }
-	            }
-	        };
-	        
-	        return out;
-	    } catch (Exception e) {
-	        fail(Status.INTERNAL_SERVER_ERROR);
-	        return null;
-	    }
-    }
+			//JSONUtils.writePrettyPrint(new PrintWriter(outStream), json);
+			final Method writePrettyPrintMethod = jsonldUtilsClass.getMethod("writePrettyPrint", Writer.class, Object.class);
+			StreamingOutput out = new StreamingOutput() {
+				@Override
+				public void write(OutputStream output) throws IOException, WebApplicationException {
+					try {
+						writePrettyPrintMethod.invoke(null, new PrintWriter(output), compactedJson);
+					} catch (Exception e) {
+						fail(Status.INTERNAL_SERVER_ERROR);
+					}
+				}
+			};
+			
+			return out;
+		} catch (Exception e) {
+			fail(Status.INTERNAL_SERVER_ERROR);
+			return null;
+		}
+	}
 	
 	public TDBGraphStore getGraphStore() {
 		return fGraphStore;
@@ -331,7 +331,7 @@ public class JenaLDPRDFSource extends LDPRDFSource {
 	 */
 	protected String getContainerURIForResource(String resourceURI) {
 		// Determine which container this resource belongs (so we can remove the right membership and containment triples)
-		Model globalModel = fGraphStore.getGraph("urn:x-arq:UnionGraph");     	
+		Model globalModel = fGraphStore.getGraph("urn:x-arq:UnionGraph");		
 		StmtIterator stmts = globalModel.listStatements(null, LDP.contains, globalModel.getResource(resourceURI));
 		String containerURI = null;
 		if (stmts.hasNext()) {
@@ -343,30 +343,30 @@ public class JenaLDPRDFSource extends LDPRDFSource {
 	}
 	
 	protected void fail(Status status) {
-	    throw new WebApplicationException(build(Response.status(status)));
+		throw new WebApplicationException(build(Response.status(status)));
 	}
 	
 	/**
-     * Helper to add standard content (Allow header, Link header) to this response.
-     * 
-     * @param response
-     *            the response builder to add to
-     * @return the response with additional content common to all responses
-     */
+	 * Helper to add standard content (Allow header, Link header) to this response.
+	 * 
+	 * @param response
+	 *			  the response builder to add to
+	 * @return the response with additional content common to all responses
+	 */
 	protected Response build(ResponseBuilder response) {
 	   return response
-    			.allow(getAllowedMethods())
-    			.header(LDPConstants.HDR_LINK, "<" + getTypeURI() + ">; " + LDPConstants.HDR_LINK_TYPE)
-    			.build();
+				.allow(getAllowedMethods())
+				.header(LDPConstants.HDR_LINK, "<" + getTypeURI() + ">; " + LDPConstants.HDR_LINK_TYPE)
+				.build();
 	}
 
 	@Override
 	public Response options() {
-    	return build(Response.ok());
+		return build(Response.ok());
 	}
 	
 	@Override
-    public Set<String> getAllowedMethods() {
+	public Set<String> getAllowedMethods() {
 		HashSet<String> allowedMethods = new HashSet<String>();
 		allowedMethods.add(HttpMethod.GET);
 		allowedMethods.add(HttpMethod.PUT);
@@ -375,8 +375,8 @@ public class JenaLDPRDFSource extends LDPRDFSource {
 		allowedMethods.add(HttpMethod.OPTIONS);
 		allowedMethods.add("PATCH");
 
-	    return allowedMethods;
-    }
+		return allowedMethods;
+	}
 	
 	protected Set<String> getReadOnlyProperties() {
 		HashSet<String> readOnly = new HashSet<String>();
@@ -390,26 +390,26 @@ public class JenaLDPRDFSource extends LDPRDFSource {
 		final Model model;
 		if (LDPConstants.CT_APPLICATION_JSON.equals(contentType) || LDPConstants.CT_APPLICATION_LD_JSON.equals(contentType)) {
 			if (!isJSONLDPresent()) {
-			    fail(Status.UNSUPPORTED_MEDIA_TYPE);
-			    return null;
+				fail(Status.UNSUPPORTED_MEDIA_TYPE);
+				return null;
 			}
 
-	        try {
-	        	// Use reflection to invoke the optional jsonld-java dependency.
-	        	Class<?> jsonldTripleCallback = Class.forName("com.github.jsonldjava.core.JSONLDTripleCallback");
-	        	Class<?> jenaTripleCallback = Class.forName("com.github.jsonldjava.impl.JenaTripleCallback");
+			try {
+				// Use reflection to invoke the optional jsonld-java dependency.
+				Class<?> jsonldTripleCallback = Class.forName("com.github.jsonldjava.core.JSONLDTripleCallback");
+				Class<?> jenaTripleCallback = Class.forName("com.github.jsonldjava.impl.JenaTripleCallback");
 				Class<?> jsonldUtilsClass = Class.forName("com.github.jsonldjava.utils.JSONUtils");
 				Class<?> jsonldClass = Class.forName("com.github.jsonldjava.core.JSONLD");
 
-	        	//final JSONLDTripleCallback callback = new JenaTripleCallback();
+				//final JSONLDTripleCallback callback = new JenaTripleCallback();
 				//model = (Model) JSONLD.toRDF(JSONUtils.fromInputStream(stream), callback);
 				Method fromInputStreamMethod = jsonldUtilsClass.getMethod("fromInputStream", InputStream.class);
 				Object input = fromInputStreamMethod.invoke(null, stream);
 				Method toRDFMethod = jsonldClass.getMethod("toRDF", Object.class, jsonldTripleCallback);
 				model = (Model) toRDFMethod.invoke(null, input, jenaTripleCallback.newInstance());
 			} catch (Exception e) {
-			    fail(Status.INTERNAL_SERVER_ERROR);
-			    return null;
+				fail(Status.INTERNAL_SERVER_ERROR);
+				return null;
 			}
 		} else {
 			model = ModelFactory.createDefaultModel();
@@ -429,9 +429,9 @@ public class JenaLDPRDFSource extends LDPRDFSource {
 		}
 
 		for (Statement s : originalTriples) {
-		    if (!newResource.hasProperty(s.getPredicate(), s.getObject())) {
-		    	failReadOnlyProperty(property);
-		    }
+			if (!newResource.hasProperty(s.getPredicate(), s.getObject())) {
+				failReadOnlyProperty(property);
+			}
 		}
 	}
 
@@ -440,8 +440,8 @@ public class JenaLDPRDFSource extends LDPRDFSource {
 		body.write(out, "TURTLE");
 
 		return build(Response.status(Status.CONFLICT)
-		        .link(CONSTRAINTS_URI, "\"describedby\"")
-		        .entity(out.toByteArray()));
+				.link(CONSTRAINTS_URI, "\"describedby\"")
+				.entity(out.toByteArray()));
 	}
 	
 	protected void failReadOnlyProperty(String uri) {
@@ -449,8 +449,8 @@ public class JenaLDPRDFSource extends LDPRDFSource {
 		Resource error = responseBody.createResource(Lyo.Error);
 		error.addProperty(DCTerms.title, "Cannot change property");
 		error.addProperty(
-		        DCTerms.description,
-		        "The property <" + uri + "> is read-only and cannot be assigned by clients.");
+				DCTerms.description,
+				"The property <" + uri + "> is read-only and cannot be assigned by clients.");
 
 		throw new WebApplicationException(buildErrorResponse(responseBody));
 	}

@@ -1,21 +1,21 @@
 /*******************************************************************************
  * Copyright (c) 2013, 2014 IBM Corporation.
  *
- *  All rights reserved. This program and the accompanying materials
- *  are made available under the terms of the Eclipse Public License v1.0
- *  and Eclipse Distribution License v. 1.0 which accompanies this distribution.
- *  
- *  The Eclipse Public License is available at http://www.eclipse.org/legal/epl-v10.html
- *  and the Eclipse Distribution License is available at
- *  http://www.eclipse.org/org/documents/edl-v10.php.
- *  
- *  Contributors:
- *  
- *     Frank Budinsky - initial API and implementation
- *     Steve Speicher - initial API and implementation
- *     Samuel Padgett - initial API and implementation
- *     Samuel Padgett - add different LDP container types
- *     Samuel Padgett - add ldp:contains property
+ *	All rights reserved. This program and the accompanying materials
+ *	are made available under the terms of the Eclipse Public License v1.0
+ *	and Eclipse Distribution License v. 1.0 which accompanies this distribution.
+ *	
+ *	The Eclipse Public License is available at http://www.eclipse.org/legal/epl-v10.html
+ *	and the Eclipse Distribution License is available at
+ *	http://www.eclipse.org/org/documents/edl-v10.php.
+ *	
+ *	Contributors:
+ *	
+ *	   Frank Budinsky - initial API and implementation
+ *	   Steve Speicher - initial API and implementation
+ *	   Samuel Padgett - initial API and implementation
+ *	   Samuel Padgett - add different LDP container types
+ *	   Samuel Padgett - add ldp:contains property
  *******************************************************************************/
 package org.eclipse.lyo.ldp.server.jena.vocabulary;
 
@@ -50,14 +50,14 @@ public class LDP
 	public static final Resource IndirectContainer = resource(LDPConstants.CLASS_INDIRECT_CONTAINER);
 	public static final Resource Page = resource(LDPConstants.CLASS_PAGE);
 
-    protected static final Resource resource(String name)
-    {
-    	return ResourceFactory.createResource(name); 
-    }
+	protected static final Resource resource(String name)
+	{
+		return ResourceFactory.createResource(name); 
+	}
 
-    protected static final Property property(String name)
-    { 
-    	return ResourceFactory.createProperty(name);
-    }
+	protected static final Property property(String name)
+	{ 
+		return ResourceFactory.createProperty(name);
+	}
 
 }

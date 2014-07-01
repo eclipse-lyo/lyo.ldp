@@ -1,22 +1,22 @@
 /*******************************************************************************
  * Copyright (c) 2013, 2014 IBM Corporation.
  *
- *  All rights reserved. This program and the accompanying materials
- *  are made available under the terms of the Eclipse Public License v1.0
- *  and Eclipse Distribution License v. 1.0 which accompanies this distribution.
- *  
- *  The Eclipse Public License is available at http://www.eclipse.org/legal/epl-v10.html
- *  and the Eclipse Distribution License is available at
- *  http://www.eclipse.org/org/documents/edl-v10.php.
- *  
- *  Contributors:
- *  
- *     Frank Budinsky - initial API and implementation
- *     Steve Speicher - initial API and implementation
- *     Samuel Padgett - initial API and implementation
- *     Steve Speicher - updates for recent LDP spec changes
- *     Steve Speicher - make root URI configurable 
- *     Samuel Padgett - add support for LDP Non-RDF Source
+ *	All rights reserved. This program and the accompanying materials
+ *	are made available under the terms of the Eclipse Public License v1.0
+ *	and Eclipse Distribution License v. 1.0 which accompanies this distribution.
+ *	
+ *	The Eclipse Public License is available at http://www.eclipse.org/legal/epl-v10.html
+ *	and the Eclipse Distribution License is available at
+ *	http://www.eclipse.org/org/documents/edl-v10.php.
+ *	
+ *	Contributors:
+ *	
+ *	   Frank Budinsky - initial API and implementation
+ *	   Steve Speicher - initial API and implementation
+ *	   Samuel Padgett - initial API and implementation
+ *	   Steve Speicher - updates for recent LDP spec changes
+ *	   Steve Speicher - make root URI configurable 
+ *	   Samuel Padgett - add support for LDP Non-RDF Source
  *******************************************************************************/
 package org.eclipse.lyo.ldp.server.jena.store;
 
@@ -55,8 +55,8 @@ public class TDBGraphStore implements GraphStore
 		fDatasetDir = System.getProperty(LDP_DATASET_DIR);
 		TDB.getContext().set(TDB.symUnionDefaultGraph, true);
 		TDB.setOptimizerWarningFlag(false);
-        SystemTDB.setFileMode(FileMode.direct) ;
-        System.out.println("Using dataset directory: " + fDatasetDir);
+		SystemTDB.setFileMode(FileMode.direct) ;
+		System.out.println("Using dataset directory: " + fDatasetDir);
 	}
 	
 	protected Dataset fDataset; // Dataset to store the graphs
@@ -139,7 +139,7 @@ public class TDBGraphStore implements GraphStore
 	}
 
 	public String mintURI(String containerURI, String graphURIPrefix, String nameHint) {
-	    String graphURI = null;
+		String graphURI = null;
 		if (nameHint != null && nameHint.length() > 0) {
 			graphURI = appendURISegment(containerURI,  nameHint);
 			if (previouslyUsed(graphURI)) graphURI = null;
@@ -151,8 +151,8 @@ public class TDBGraphStore implements GraphStore
 				if (!previouslyUsed(graphURI)) break;
 			}
 		}
-	    return graphURI;
-    }
+		return graphURI;
+	}
 	
 	/**
 	 * Companion graph to the one identified by uri

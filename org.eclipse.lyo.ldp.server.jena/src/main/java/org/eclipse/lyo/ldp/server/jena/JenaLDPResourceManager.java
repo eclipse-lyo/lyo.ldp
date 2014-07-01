@@ -1,20 +1,20 @@
 /*******************************************************************************
  * Copyright (c) 2014 IBM Corporation.
  *
- *  All rights reserved. This program and the accompanying materials
- *  are made available under the terms of the Eclipse Public License v1.0
- *  and Eclipse Distribution License v. 1.0 which accompanies this distribution.
- *  
- *  The Eclipse Public License is available at http://www.eclipse.org/legal/epl-v10.html
- *  and the Eclipse Distribution License is available at
- *  http://www.eclipse.org/org/documents/edl-v10.php.
- *  
- *  Contributors:
- *  
- *     Steve Speicher - Updates for recent LDP spec changes
- *     Samuel Padgett - Look for all LDP container types
- *     Samuel Padgett - use TDB transactions
- *     Samuel Padgett - add support for LDP Non-RDF Source
+ *	All rights reserved. This program and the accompanying materials
+ *	are made available under the terms of the Eclipse Public License v1.0
+ *	and Eclipse Distribution License v. 1.0 which accompanies this distribution.
+ *	
+ *	The Eclipse Public License is available at http://www.eclipse.org/legal/epl-v10.html
+ *	and the Eclipse Distribution License is available at
+ *	http://www.eclipse.org/org/documents/edl-v10.php.
+ *	
+ *	Contributors:
+ *	
+ *	   Steve Speicher - Updates for recent LDP spec changes
+ *	   Samuel Padgett - Look for all LDP container types
+ *	   Samuel Padgett - use TDB transactions
+ *	   Samuel Padgett - add support for LDP Non-RDF Source
  *******************************************************************************/
 package org.eclipse.lyo.ldp.server.jena;
 
@@ -72,11 +72,11 @@ public class JenaLDPResourceManager implements LDPResourceManager {
 	}
 
 	public static String mintConfigURI(String uri) {
-		return 	uri + CONFIG_PARAM;
+		return	uri + CONFIG_PARAM;
 	}
 	
 	public static String mintAssociatedRDFSourceURI(String uri) {
-		return 	uri + ASSOCIATED_LDP_RS_PARAM;
+		return	uri + ASSOCIATED_LDP_RS_PARAM;
 	}
 	
 	public static boolean isConfigURI(String uri) {
@@ -100,11 +100,11 @@ public class JenaLDPResourceManager implements LDPResourceManager {
 	}
 	
 	public static boolean isContainer(Resource r) {
-	    return r.hasProperty(RDF.type, LDP.Container) ||
+		return r.hasProperty(RDF.type, LDP.Container) ||
 				r.hasProperty(RDF.type, LDP.BasicContainer) ||
 				r.hasProperty(RDF.type, LDP.DirectContainer) ||
 				r.hasProperty(RDF.type, LDP.IndirectContainer);
-    }
+	}
 	
 	public boolean isResourceInteractionModel(String resourceURI) {
 		Model graph = gs.getGraph(mintConfigURI(resourceURI));
@@ -113,6 +113,6 @@ public class JenaLDPResourceManager implements LDPResourceManager {
 		Resource r = graph.getResource(resourceURI);
 		if (r == null) return false;
 		
-	    return r.hasLiteral(Lyo.isResourceInteractionModel, true);
-    }
+		return r.hasLiteral(Lyo.isResourceInteractionModel, true);
+	}
 }

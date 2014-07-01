@@ -1,19 +1,19 @@
 /*******************************************************************************
  * Copyright (c) 2013, 2014 IBM Corporation.
  *
- *  All rights reserved. This program and the accompanying materials
- *  are made available under the terms of the Eclipse Public License v1.0
- *  and Eclipse Distribution License v. 1.0 which accompanies this distribution.
- *  
- *  The Eclipse Public License is available at http://www.eclipse.org/legal/epl-v10.html
- *  and the Eclipse Distribution License is available at
- *  http://www.eclipse.org/org/documents/edl-v10.php.
- *  
- *  Contributors:
- *  
- *     Frank Budinsky - initial API and implementation
- *     Steve Speicher - initial API and implementation
- *     Samuel Padgett - initial API and implementation
+ *	All rights reserved. This program and the accompanying materials
+ *	are made available under the terms of the Eclipse Public License v1.0
+ *	and Eclipse Distribution License v. 1.0 which accompanies this distribution.
+ *	
+ *	The Eclipse Public License is available at http://www.eclipse.org/legal/epl-v10.html
+ *	and the Eclipse Distribution License is available at
+ *	http://www.eclipse.org/org/documents/edl-v10.php.
+ *	
+ *	Contributors:
+ *	
+ *	   Frank Budinsky - initial API and implementation
+ *	   Steve Speicher - initial API and implementation
+ *	   Samuel Padgett - initial API and implementation
  *******************************************************************************/
 package org.eclipse.lyo.ldp.sample;
 
@@ -43,7 +43,7 @@ import com.hp.hpl.jena.vocabulary.RDF;
 
 @Path("/visualization")
 public class VisualizationService {
-	    
+		
 	@GET
 	@Produces(MediaType.APPLICATION_JSON)
 	public String getVisualization(@QueryParam("showConfig") boolean showConfig) {
@@ -71,14 +71,14 @@ public class VisualizationService {
 				
 				// Should we show the internal "?_config" resources... ?
 				if (!showConfig) {
-				    String uri = subject.getURI();
-				    if (uri != null && JenaLDPResourceManager.isConfigURI(uri)) {
-				        continue;
-				    }
+					String uri = subject.getURI();
+					if (uri != null && JenaLDPResourceManager.isConfigURI(uri)) {
+						continue;
+					}
 				}
 				
 				if (subject.hasProperty(Lyo.deleted)) {
-				    continue;
+					continue;
 				}
 
 				JsonObject node = new JsonObject();
@@ -114,10 +114,10 @@ public class VisualizationService {
 							JsonObject link = new JsonObject();
 							Integer sourceIndex = resourceToNodeIndex.get(getNodeName(subject));
 							if (sourceIndex != null) {
-							    link.put("source", sourceIndex.intValue());
-							    link.put("target", targetIndex.intValue());
-							    link.put("value", 1);
-							    links.add(link);
+								link.put("source", sourceIndex.intValue());
+								link.put("target", targetIndex.intValue());
+								link.put("value", 1);
+								links.add(link);
 							}
 						}
 					}

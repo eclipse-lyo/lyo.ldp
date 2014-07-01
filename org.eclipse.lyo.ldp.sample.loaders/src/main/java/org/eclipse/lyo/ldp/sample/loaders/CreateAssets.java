@@ -1,19 +1,19 @@
 /*******************************************************************************
  * Copyright (c) 2014 IBM Corporation.
  *
- *  All rights reserved. This program and the accompanying materials
- *  are made available under the terms of the Eclipse Public License v1.0
- *  and Eclipse Distribution License v. 1.0 which accompanies this distribution.
- *  
- *  The Eclipse Public License is available at http://www.eclipse.org/legal/epl-v10.html
- *  and the Eclipse Distribution License is available at
- *  http://www.eclipse.org/org/documents/edl-v10.php.
- *  
- *  Contributors:
- *  
- *     Frank Budinsky - initial API and implementation
- *     Steve Speicher - initial API and implementation
- *     Samuel Padgett - initial API and implementation
+ *	All rights reserved. This program and the accompanying materials
+ *	are made available under the terms of the Eclipse Public License v1.0
+ *	and Eclipse Distribution License v. 1.0 which accompanies this distribution.
+ *	
+ *	The Eclipse Public License is available at http://www.eclipse.org/legal/epl-v10.html
+ *	and the Eclipse Distribution License is available at
+ *	http://www.eclipse.org/org/documents/edl-v10.php.
+ *	
+ *	Contributors:
+ *	
+ *	   Frank Budinsky - initial API and implementation
+ *	   Steve Speicher - initial API and implementation
+ *	   Samuel Padgett - initial API and implementation
  *******************************************************************************/
 package org.eclipse.lyo.ldp.sample.loaders;
 
@@ -82,13 +82,13 @@ public class CreateAssets {
 	}
 
 	private static String getRootContainerURI(String[] args) {
-	    if (args.length != 1) {
+		if (args.length != 1) {
 			System.err.println("Usage: java com.eclipse.lyo.ldp.sample.networth.CreateAssets <container_url>");
 			System.exit(1);
 		}
 
 		return args[0];
-    }
+	}
 	
 	private static InputStream asStream(String resource) {
 		return CreateAssets.class.getClassLoader().getResourceAsStream("networth/"+resource);

@@ -1,17 +1,17 @@
 /*******************************************************************************
  * Copyright (c) 2014 IBM Corporation.
  *
- *  All rights reserved. This program and the accompanying materials
- *  are made available under the terms of the Eclipse Public License v1.0
- *  and Eclipse Distribution License v. 1.0 which accompanies this distribution.
- *  
- *  The Eclipse Public License is available at http://www.eclipse.org/legal/epl-v10.html
- *  and the Eclipse Distribution License is available at
- *  http://www.eclipse.org/org/documents/edl-v10.php.
- *  
- *  Contributors:
- *  
- *     Samuel Padgett - add support for LDP Non-RDF Source
+ *	All rights reserved. This program and the accompanying materials
+ *	are made available under the terms of the Eclipse Public License v1.0
+ *	and Eclipse Distribution License v. 1.0 which accompanies this distribution.
+ *	
+ *	The Eclipse Public License is available at http://www.eclipse.org/legal/epl-v10.html
+ *	and the Eclipse Distribution License is available at
+ *	http://www.eclipse.org/org/documents/edl-v10.php.
+ *	
+ *	Contributors:
+ *	
+ *	   Samuel Padgett - add support for LDP Non-RDF Source
  *******************************************************************************/
 package org.eclipse.lyo.ldp.server.jena;
 
@@ -49,7 +49,7 @@ import com.hp.hpl.jena.vocabulary.DCTerms;
 import com.hp.hpl.jena.vocabulary.RDF;
 
 public class JenaLDPNonRdfSource extends LDPNonRDFSource {
-	protected final TDBGraphStore fGraphStore; // GraphStore in which to store the container and member resources   
+	protected final TDBGraphStore fGraphStore; // GraphStore in which to store the container and member resources	
 
 	/**
 	 * Directory for non-RDF resources.
@@ -63,7 +63,7 @@ public class JenaLDPNonRdfSource extends LDPNonRDFSource {
 	
 	@Override
 	public void putUpdate(InputStream stream,
-	        String contentType, String user, HttpHeaders requestHeaders) {
+			String contentType, String user, HttpHeaders requestHeaders) {
 		fGraphStore.writeLock();
 		try {
 			String associatedURI = JenaLDPResourceManager.mintAssociatedRDFSourceURI(getURI());
@@ -84,7 +84,7 @@ public class JenaLDPNonRdfSource extends LDPNonRDFSource {
 				String originalETag = getETag(file);
 				// FIXME: Does not handle wildcards or comma-separated values...
 				if (!originalETag.equals(ifMatch)) {
-				    fail(Status.PRECONDITION_FAILED);
+					fail(Status.PRECONDITION_FAILED);
 				}
 			}
 
@@ -106,23 +106,23 @@ public class JenaLDPNonRdfSource extends LDPNonRDFSource {
 			
 			fGraphStore.commit();
 		} catch (UnsupportedEncodingException e) {
-	        e.printStackTrace();
-        	fail(Status.INTERNAL_SERVER_ERROR);
-        } catch (NoSuchAlgorithmException e) {
-	        e.printStackTrace();
-        	fail(Status.INTERNAL_SERVER_ERROR);
-        } catch (IOException e) {
-	        e.printStackTrace();
-        	fail(Status.INTERNAL_SERVER_ERROR);
-        } finally {
+			e.printStackTrace();
+			fail(Status.INTERNAL_SERVER_ERROR);
+		} catch (NoSuchAlgorithmException e) {
+			e.printStackTrace();
+			fail(Status.INTERNAL_SERVER_ERROR);
+		} catch (IOException e) {
+			e.printStackTrace();
+			fail(Status.INTERNAL_SERVER_ERROR);
+		} finally {
 			fGraphStore.end();
 		}
 	}
 
 	@Override
 	public void patch(String resourceURI, InputStream stream,
-	        String contentType, String user) {
-	    fail(Status.METHOD_NOT_ALLOWED);
+			String contentType, String user) {
+		fail(Status.METHOD_NOT_ALLOWED);
 	}
 
 	@Override
@@ -136,7 +136,7 @@ public class JenaLDPNonRdfSource extends LDPNonRDFSource {
 			}
 	
 			if (!file.delete()) {
-			    fail(Status.INTERNAL_SERVER_ERROR);
+				fail(Status.INTERNAL_SERVER_ERROR);
 			}
 
 			// FIXME: Move this logic into JenaLDPContainer and subclasses
@@ -151,12 +151,12 @@ public class JenaLDPNonRdfSource extends LDPNonRDFSource {
 			// First remove the membership triples
 			final Property memberRelation = JenaLDPDirectContainer.getMemberRelation(containerModel, containerResource);
 			if (memberRelation != null) {
-			    final String membershipResourceURI = JenaLDPDirectContainer.getMembershipResourceURI(containerModel, containerResource);
-			    final Model membershipResourceModel = (membershipResourceURI.equals(containerURI)) ? containerModel : fGraphStore.getGraph(membershipResourceURI);
-			    final Resource membershipResource = membershipResourceModel.getResource(membershipResourceURI);
-			    membershipResource.removeAll(DCTerms.modified);
-			    membershipResource.addLiteral(DCTerms.modified, containerModel.createTypedLiteral(time));
-			    membershipResourceModel.remove(membershipResource, memberRelation, containerModel.getResource(getURI()));
+				final String membershipResourceURI = JenaLDPDirectContainer.getMembershipResourceURI(containerModel, containerResource);
+				final Model membershipResourceModel = (membershipResourceURI.equals(containerURI)) ? containerModel : fGraphStore.getGraph(membershipResourceURI);
+				final Resource membershipResource = membershipResourceModel.getResource(membershipResourceURI);
+				membershipResource.removeAll(DCTerms.modified);
+				membershipResource.addLiteral(DCTerms.modified, containerModel.createTypedLiteral(time));
+				membershipResourceModel.remove(membershipResource, memberRelation, containerModel.getResource(getURI()));
 			}
 
 			// Next remove the containment triples
@@ -172,12 +172,12 @@ public class JenaLDPNonRdfSource extends LDPNonRDFSource {
 
 			fGraphStore.commit();
 		} catch (UnsupportedEncodingException e) {
-	        e.printStackTrace();
-            fail(Status.INTERNAL_SERVER_ERROR);
-        } catch (NoSuchAlgorithmException e) {
-	        e.printStackTrace();
-            fail(Status.INTERNAL_SERVER_ERROR);
-        } finally {
+			e.printStackTrace();
+			fail(Status.INTERNAL_SERVER_ERROR);
+		} catch (NoSuchAlgorithmException e) {
+			e.printStackTrace();
+			fail(Status.INTERNAL_SERVER_ERROR);
+		} finally {
 			fGraphStore.end();
 		}
 	}
@@ -197,9 +197,9 @@ public class JenaLDPNonRdfSource extends LDPNonRDFSource {
 				return Response.status(Response.Status.NOT_FOUND).build();
 			}
 	
-	        ResponseBuilder response = Response.ok(file);
-	        response.header(LDPConstants.HDR_ETAG, getETag(file));
-	        
+			ResponseBuilder response = Response.ok(file);
+			response.header(LDPConstants.HDR_ETAG, getETag(file));
+			
 			Resource configResource = associatedModel.getResource(associatedURI);
 			Statement contentTypeStatement = configResource.getProperty(DCTerms.format);
 			if (contentTypeStatement != null) {
@@ -217,30 +217,30 @@ public class JenaLDPNonRdfSource extends LDPNonRDFSource {
 			}
 	
 			return build(response);
-        } catch (UnsupportedEncodingException e) {
-        	e.printStackTrace();
-        	fail(Status.INTERNAL_SERVER_ERROR);
-        	return null;
-        } catch (NoSuchAlgorithmException e) {
-        	e.printStackTrace();
-        	fail(Status.INTERNAL_SERVER_ERROR);
-        	return null;
-        } catch (IOException e) {
-        	e.printStackTrace();
-        	fail(Status.INTERNAL_SERVER_ERROR);
-        	return null;
-        } finally {
-        	fGraphStore.end();
-        }
+		} catch (UnsupportedEncodingException e) {
+			e.printStackTrace();
+			fail(Status.INTERNAL_SERVER_ERROR);
+			return null;
+		} catch (NoSuchAlgorithmException e) {
+			e.printStackTrace();
+			fail(Status.INTERNAL_SERVER_ERROR);
+			return null;
+		} catch (IOException e) {
+			e.printStackTrace();
+			fail(Status.INTERNAL_SERVER_ERROR);
+			return null;
+		} finally {
+			fGraphStore.end();
+		}
 	}
 
 	@Override
 	public Response options() {
-	    return build(Response.ok());
+		return build(Response.ok());
 	}
 
 	@Override
-    public Set<String> getAllowedMethods() {
+	public Set<String> getAllowedMethods() {
 		HashSet<String> allowedMethods = new HashSet<String>();
 		allowedMethods.add(HttpMethod.GET);
 		allowedMethods.add(HttpMethod.PUT);
@@ -248,8 +248,8 @@ public class JenaLDPNonRdfSource extends LDPNonRDFSource {
 		allowedMethods.add(HttpMethod.HEAD);
 		allowedMethods.add(HttpMethod.OPTIONS);
 
-	    return allowedMethods;
-    }
+		return allowedMethods;
+	}
 	
 	/**
 	 * Saves an LDP-NR to the local filesystem.
@@ -280,16 +280,16 @@ public class JenaLDPNonRdfSource extends LDPNonRDFSource {
 	}
 	
 	public static boolean isLDPNR(String uri) {
-        try {
-	        File file = toFile(uri);
-	        return file.isFile();
-        } catch (UnsupportedEncodingException e) {
-	        e.printStackTrace();
-        	throw new WebApplicationException(Response.Status.INTERNAL_SERVER_ERROR);
-        } catch (NoSuchAlgorithmException e) {
-	        e.printStackTrace();
-        	throw new WebApplicationException(Response.Status.INTERNAL_SERVER_ERROR);
-        }
+		try {
+			File file = toFile(uri);
+			return file.isFile();
+		} catch (UnsupportedEncodingException e) {
+			e.printStackTrace();
+			throw new WebApplicationException(Response.Status.INTERNAL_SERVER_ERROR);
+		} catch (NoSuchAlgorithmException e) {
+			e.printStackTrace();
+			throw new WebApplicationException(Response.Status.INTERNAL_SERVER_ERROR);
+		}
 	}
 	
 	private static File toFile(String uri) throws UnsupportedEncodingException, NoSuchAlgorithmException {
@@ -313,48 +313,48 @@ public class JenaLDPNonRdfSource extends LDPNonRDFSource {
 		return "ldpnr-" + org.apache.commons.codec.digest.DigestUtils.md5Hex(uri);
 	}
 
-    private static File getLDPNRDirectory() {
-    	// Use LDP_NR_DIR property if set. If not, fall back to user.dir.
-    	String path = System.getProperty(LDP_NR_DIR, System.getProperty("user.dir"));
-    	File f = new File(path);
-    	if (!f.isDirectory()) {
-    		throw new IllegalArgumentException("Not directory: " + path);
-    	}
-    		
-    	return f;
-    }
+	private static File getLDPNRDirectory() {
+		// Use LDP_NR_DIR property if set. If not, fall back to user.dir.
+		String path = System.getProperty(LDP_NR_DIR, System.getProperty("user.dir"));
+		File f = new File(path);
+		if (!f.isDirectory()) {
+			throw new IllegalArgumentException("Not directory: " + path);
+		}
+			
+		return f;
+	}
 
-    private static void writeToFile(InputStream content, File file) throws IOException {
-    	FileOutputStream out = new FileOutputStream(file);
-    	try {
-    		IOUtils.copy(content, out);
-    	} finally {
-    		out.close();
-    	}
-    }
-    
-    protected void fail(Status status) {
-        throw new WebApplicationException(build(Response.status(status)));
-    }
+	private static void writeToFile(InputStream content, File file) throws IOException {
+		FileOutputStream out = new FileOutputStream(file);
+		try {
+			IOUtils.copy(content, out);
+		} finally {
+			out.close();
+		}
+	}
+	
+	protected void fail(Status status) {
+		throw new WebApplicationException(build(Response.status(status)));
+	}
  
-    @Override
-    public String getTypeURI() {
-        return  LDPConstants.CLASS_NONRDFSOURCE;
-    }
+	@Override
+	public String getTypeURI() {
+		return	LDPConstants.CLASS_NONRDFSOURCE;
+	}
 
-    /**
-     * Helper to add standard content (Allow header, Link header) to this response.
-     * 
-     * @param response
-     *            the response builder to add to
-     * @return the response with additional content common to all responses
-     */
-    protected Response build(ResponseBuilder response) {
-        String associatedURI = JenaLDPResourceManager.mintAssociatedRDFSourceURI(fURI);
-        return response
-                .allow(getAllowedMethods())
-                .header(LDPConstants.HDR_LINK, "<" + getTypeURI() + ">; " + LDPConstants.HDR_LINK_TYPE)
+	/**
+	 * Helper to add standard content (Allow header, Link header) to this response.
+	 * 
+	 * @param response
+	 *			  the response builder to add to
+	 * @return the response with additional content common to all responses
+	 */
+	protected Response build(ResponseBuilder response) {
+		String associatedURI = JenaLDPResourceManager.mintAssociatedRDFSourceURI(fURI);
+		return response
+				.allow(getAllowedMethods())
+				.header(LDPConstants.HDR_LINK, "<" + getTypeURI() + ">; " + LDPConstants.HDR_LINK_TYPE)
 				.header(LDPConstants.HDR_LINK, "<" + associatedURI + ">; " + LDPConstants.HDR_LINK_DESCRIBEDBY)
-                .build();
-    }
+				.build();
+	}
 }

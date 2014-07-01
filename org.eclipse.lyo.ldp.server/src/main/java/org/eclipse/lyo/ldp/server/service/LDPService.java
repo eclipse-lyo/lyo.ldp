@@ -1,29 +1,29 @@
 /*******************************************************************************
  * Copyright (c) 2013, 2014 IBM Corporation.
  *
- *  All rights reserved. This program and the accompanying materials
- *  are made available under the terms of the Eclipse Public License v1.0
- *  and Eclipse Distribution License v. 1.0 which accompanies this distribution.
- *  
- *  The Eclipse Public License is available at http://www.eclipse.org/legal/epl-v10.html
- *  and the Eclipse Distribution License is available at
- *  http://www.eclipse.org/org/documents/edl-v10.php.
- *  
- *  Contributors:
- *  
- *     Frank Budinsky - initial API and implementation
- *     Steve Speicher - initial API and implementation
- *     Samuel Padgett - initial API and implementation
- *     Steve Speicher - updates for recent LDP spec changes
- *     Steve Speicher - make root URI configurable 
- *     Samuel Padgett - add LDP-RS Link header to responses
- *     Samuel Padgett - allow implementations to set response headers using Response
- *     Samuel Padgett - add Accept-Patch header constants
- *     Samuel Padgett - pass request headers on HTTP PUT
- *     Samuel Padgett - return 201 status when PUT is used to create a resource
- *     Samuel Padgett - add support for LDP Non-RDF Source
- *     Samuel Padgett - respond with text/turtle when Accept header missing
- *     Samuel Padgett - support Prefer header
+ *	All rights reserved. This program and the accompanying materials
+ *	are made available under the terms of the Eclipse Public License v1.0
+ *	and Eclipse Distribution License v. 1.0 which accompanies this distribution.
+ *	
+ *	The Eclipse Public License is available at http://www.eclipse.org/legal/epl-v10.html
+ *	and the Eclipse Distribution License is available at
+ *	http://www.eclipse.org/org/documents/edl-v10.php.
+ *	
+ *	Contributors:
+ *	
+ *	   Frank Budinsky - initial API and implementation
+ *	   Steve Speicher - initial API and implementation
+ *	   Samuel Padgett - initial API and implementation
+ *	   Steve Speicher - updates for recent LDP spec changes
+ *	   Steve Speicher - make root URI configurable 
+ *	   Samuel Padgett - add LDP-RS Link header to responses
+ *	   Samuel Padgett - allow implementations to set response headers using Response
+ *	   Samuel Padgett - add Accept-Patch header constants
+ *	   Samuel Padgett - pass request headers on HTTP PUT
+ *	   Samuel Padgett - return 201 status when PUT is used to create a resource
+ *	   Samuel Padgett - add support for LDP Non-RDF Source
+ *	   Samuel Padgett - respond with text/turtle when Accept header missing
+ *	   Samuel Padgett - support Prefer header
  *******************************************************************************/
 package org.eclipse.lyo.ldp.server.service;
 
@@ -93,128 +93,128 @@ public abstract class LDPService {
 	protected abstract ILDPContainer getRootContainer();
 	protected abstract LDPResourceManager getResourceManger();
 	
-    public LDPService() { }
-    
-    /**
-     * @return Does NOT include segment for container, use getRootContainer().getURI() for that.
-     */
+	public LDPService() { }
+	
+	/**
+	 * @return Does NOT include segment for container, use getRootContainer().getURI() for that.
+	 */
 	protected String getPublicURI() { return fPublicURI ; }
 	
-    @GET
-    @Produces(LDPConstants.CT_TEXT_TURTLE)
-    public Response getTextTurtle() {	
-        return getResource(LDPConstants.CT_TEXT_TURTLE);
-    }
-    
-    @GET
-    @Produces(LDPConstants.CT_APPLICATION_XTURTLE)
-    public Response getApplicationXTurtle() {	
-        return getResource(LDPConstants.CT_APPLICATION_XTURTLE);
-    }
+	@GET
+	@Produces(LDPConstants.CT_TEXT_TURTLE)
+	public Response getTextTurtle() {	
+		return getResource(LDPConstants.CT_TEXT_TURTLE);
+	}
+	
+	@GET
+	@Produces(LDPConstants.CT_APPLICATION_XTURTLE)
+	public Response getApplicationXTurtle() {	
+		return getResource(LDPConstants.CT_APPLICATION_XTURTLE);
+	}
 
-    @GET
-    @Produces({ LDPConstants.CT_APPLICATION_JSON, LDPConstants.CT_APPLICATION_LD_JSON })
-    public Response getJSON() {	
-        return getResource(LDPConstants.CT_APPLICATION_JSON);
-    }
+	@GET
+	@Produces({ LDPConstants.CT_APPLICATION_JSON, LDPConstants.CT_APPLICATION_LD_JSON })
+	public Response getJSON() { 
+		return getResource(LDPConstants.CT_APPLICATION_JSON);
+	}
 
-    @GET
-    @Produces(LDPConstants.CT_APPLICATION_RDFXML)
-    public Response getApplicationRDFXML() {	
-        return getResource(LDPConstants.CT_APPLICATION_RDFXML);
-    }
+	@GET
+	@Produces(LDPConstants.CT_APPLICATION_RDFXML)
+	public Response getApplicationRDFXML() {	
+		return getResource(LDPConstants.CT_APPLICATION_RDFXML);
+	}
 
-    @GET
-    @Produces("*/*")
-    public Response getNonRdfSource() {
-    	return getResource(null);
-    }
+	@GET
+	@Produces("*/*")
+	public Response getNonRdfSource() {
+		return getResource(null);
+	}
 
-    @OPTIONS
-    public Response options() {
-    	String resourceURI = getConanicalURL(fRequestUrl.getRequestUri());
-    	ILDPResource ldpR = getResourceManger().get(resourceURI);
-    	if (ldpR == null) {
-    		return Response.status(Status.NOT_FOUND).build();
-    	}
-    	
-    	return ldpR.options();
-    }
+	@OPTIONS
+	public Response options() {
+		String resourceURI = getConanicalURL(fRequestUrl.getRequestUri());
+		ILDPResource ldpR = getResourceManger().get(resourceURI);
+		if (ldpR == null) {
+			return Response.status(Status.NOT_FOUND).build();
+		}
+		
+		return ldpR.options();
+	}
  
-    @PUT
-    @Consumes({ LDPConstants.CT_APPLICATION_RDFXML, LDPConstants.CT_TEXT_TURTLE, LDPConstants.CT_APPLICATION_XTURTLE })
-    public Response putRDFSource(InputStream content) {
-    	// Set the initial container representation. Should only be called once.
-    	// May be invoked when query params are used, like ?_admin or ?_meta.
-    	String resourceURI = getConanicalURL(fRequestUrl.getRequestUri());
-    	ILDPResource ldpR = getResourceManger().get(resourceURI);
-    	boolean created = false;
-    	if (ldpR != null) {
-    		ldpR.putUpdate(content, stripCharset(fRequestHeaders.getMediaType().toString()), null, fRequestHeaders);
-    	} else {
-    		created = getRootContainer().putCreate(fRequestUrl.getRequestUri().toString(),  content, stripCharset(fRequestHeaders.getMediaType().toString()), null, fRequestHeaders);
-    	}
-    	return Response.status((created) ? Status.CREATED : Status.NO_CONTENT).build();
-    }
-    
-    @PUT
-    @Consumes("*/*")
-    public Response putNonRDFSource(InputStream content) {
-    	String resourceURI = getConanicalURL(fRequestUrl.getRequestUri());
-    	ILDPResource ldpR = getResourceManger().get(resourceURI);
-    	if (ldpR == null) return Response.status(Status.NOT_FOUND).build();
-    	// We don't allow changing an LDP-RS to an LDP-NR.
-    	if (!(ldpR instanceof LDPNonRDFSource)) return Response.status(Status.CONFLICT).build();
-    	
-    	ldpR.putUpdate(content, stripCharset(fRequestHeaders.getMediaType().toString()), null, fRequestHeaders);
+	@PUT
+	@Consumes({ LDPConstants.CT_APPLICATION_RDFXML, LDPConstants.CT_TEXT_TURTLE, LDPConstants.CT_APPLICATION_XTURTLE })
+	public Response putRDFSource(InputStream content) {
+		// Set the initial container representation. Should only be called once.
+		// May be invoked when query params are used, like ?_admin or ?_meta.
+		String resourceURI = getConanicalURL(fRequestUrl.getRequestUri());
+		ILDPResource ldpR = getResourceManger().get(resourceURI);
+		boolean created = false;
+		if (ldpR != null) {
+			ldpR.putUpdate(content, stripCharset(fRequestHeaders.getMediaType().toString()), null, fRequestHeaders);
+		} else {
+			created = getRootContainer().putCreate(fRequestUrl.getRequestUri().toString(),	content, stripCharset(fRequestHeaders.getMediaType().toString()), null, fRequestHeaders);
+		}
+		return Response.status((created) ? Status.CREATED : Status.NO_CONTENT).build();
+	}
+	
+	@PUT
+	@Consumes("*/*")
+	public Response putNonRDFSource(InputStream content) {
+		String resourceURI = getConanicalURL(fRequestUrl.getRequestUri());
+		ILDPResource ldpR = getResourceManger().get(resourceURI);
+		if (ldpR == null) return Response.status(Status.NOT_FOUND).build();
+		// We don't allow changing an LDP-RS to an LDP-NR.
+		if (!(ldpR instanceof LDPNonRDFSource)) return Response.status(Status.CONFLICT).build();
+		
+		ldpR.putUpdate(content, stripCharset(fRequestHeaders.getMediaType().toString()), null, fRequestHeaders);
 
-    	return Response.status(Status.NO_CONTENT).build();
-    }
-    
-    @POST
-    @Consumes({ LDPConstants.CT_APPLICATION_RDFXML, LDPConstants.CT_TEXT_TURTLE, LDPConstants.CT_APPLICATION_XTURTLE, LDPConstants.CT_APPLICATION_JSON, LDPConstants.CT_APPLICATION_LD_JSON })
-    public Response post(@HeaderParam(LDPConstants.HDR_SLUG) String slug, InputStream content) {
-    	ILDPContainer ldpC = getRequestContainer();
-    	String loc = ldpC.post(content, stripCharset(fRequestHeaders.getMediaType().toString()), null, slug, hasResourceTypeHeader(fRequestHeaders) );
-    	if (loc != null)
-    		return Response.status(Status.CREATED).header(HttpHeaders.LOCATION, loc)
+		return Response.status(Status.NO_CONTENT).build();
+	}
+	
+	@POST
+	@Consumes({ LDPConstants.CT_APPLICATION_RDFXML, LDPConstants.CT_TEXT_TURTLE, LDPConstants.CT_APPLICATION_XTURTLE, LDPConstants.CT_APPLICATION_JSON, LDPConstants.CT_APPLICATION_LD_JSON })
+	public Response post(@HeaderParam(LDPConstants.HDR_SLUG) String slug, InputStream content) {
+		ILDPContainer ldpC = getRequestContainer();
+		String loc = ldpC.post(content, stripCharset(fRequestHeaders.getMediaType().toString()), null, slug, hasResourceTypeHeader(fRequestHeaders) );
+		if (loc != null)
+			return Response.status(Status.CREATED).header(HttpHeaders.LOCATION, loc)
 					.header(LDPConstants.HDR_LINK, "<" + ldpC.getTypeURI() + ">; " + LDPConstants.HDR_LINK_TYPE).build();
-    	else
-    		return Response.status(Status.CONFLICT).build();
-    }
-    
-    /**
-     * Given a set of request headers, return true if any of them are (roughly):
-     *   Link: <http://www.w3.org/ns/ldp#Resource>; rel='type'
-     */
-    public static boolean hasResourceTypeHeader(HttpHeaders headers) {
-    	List<String> linkHeaders = headers.getRequestHeader(LDPConstants.HDR_LINK);
-        for (String header : linkHeaders) {
-            for (String s : header.split(",")) {
-                if (isLinkTypeResource(s)) {
-                    return true;
-                }
-            }
-        }
-    	return false;
-    }
-    
-    /**
-     * Given a specific Link request header value, return true if any of them are (roughly):
-     *   <http://www.w3.org/ns/ldp#Resource>; rel='type'
-     */
-    public static boolean isLinkTypeResource(String s) {
-    	String[] parts = s.split(";");
-    	if (parts.length < 2) return false;
-    	String p0 = parts[0].trim();
-    	String p1 = parts[1].trim();
-    	if (p0.contains(LDPConstants.CLASS_RESOURCE)) {
-    		return isRelType(p1);
-    	} else if (p1.contains(LDPConstants.CLASS_RESOURCE)) {
-    		return isRelType(p0);
-    	}
-    	return false;
-    }
+		else
+			return Response.status(Status.CONFLICT).build();
+	}
+	
+	/**
+	 * Given a set of request headers, return true if any of them are (roughly):
+	 *	 Link: <http://www.w3.org/ns/ldp#Resource>; rel='type'
+	 */
+	public static boolean hasResourceTypeHeader(HttpHeaders headers) {
+		List<String> linkHeaders = headers.getRequestHeader(LDPConstants.HDR_LINK);
+		for (String header : linkHeaders) {
+			for (String s : header.split(",")) {
+				if (isLinkTypeResource(s)) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+	
+	/**
+	 * Given a specific Link request header value, return true if any of them are (roughly):
+	 *	 <http://www.w3.org/ns/ldp#Resource>; rel='type'
+	 */
+	public static boolean isLinkTypeResource(String s) {
+		String[] parts = s.split(";");
+		if (parts.length < 2) return false;
+		String p0 = parts[0].trim();
+		String p1 = parts[1].trim();
+		if (p0.contains(LDPConstants.CLASS_RESOURCE)) {
+			return isRelType(p1);
+		} else if (p1.contains(LDPConstants.CLASS_RESOURCE)) {
+			return isRelType(p0);
+		}
+		return false;
+	}
 
 	protected static boolean isRelType(String p0) {
 		String[] type = p0.split("=");
@@ -230,170 +230,170 @@ public abstract class LDPService {
 	}
 
 	protected ILDPContainer getRequestContainer() {
-	    // Look up content at Request-URI
-    	//   if null return 404
-    	//   if not container return 400
-    	//   else follow model for container
-    	ILDPResource ldpR = getResourceManger().get(getConanicalURL(fRequestUrl.getRequestUri()));
-    	if (ldpR == null) throw new WebApplicationException(Status.NOT_FOUND);
-    	else if (!(ldpR instanceof ILDPContainer)) throw new WebApplicationException(Status.BAD_REQUEST);  // TODO: Provide some details in response
-    	
-    	//   else follow model for POST against container
-    	ILDPContainer ldpC = (ILDPContainer)ldpR;
-	    return ldpC;
-    }
-    
-    @POST
-    @Path("{id:.*}")
-    @Consumes(LDPConstants.CT_APPLICATION_SPARQLQUERY)
-    @Produces(LDPConstants.CT_APPLICATION_SPARQLRESULTSJSON)
-    public StreamingOutput postQuery(final InputStream content, @PathParam("id") String id) {
-    	//TODO Implement complete SPARQL protocol. This impl only supports SELECT queries via POST directly.
-    	if ("sparql".equals(id))
-            return new StreamingOutput() {
-            	public void write(OutputStream output) throws IOException, WebApplicationException {
-            		try {
-            			ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
-            			IOUtils.copy(content, byteStream);
-            			getRootContainer().query(output, byteStream.toString(), LDPConstants.CT_APPLICATION_SPARQLRESULTSJSON);
-            		} catch (Exception e) { 
-            			throw new WebApplicationException(Response.status(Status.BAD_REQUEST).build()); 
-            		}
-            	}
-        	};
-    	else 
-    		return null;
-    }
+		// Look up content at Request-URI
+		//	 if null return 404
+		//	 if not container return 400
+		//	 else follow model for container
+		ILDPResource ldpR = getResourceManger().get(getConanicalURL(fRequestUrl.getRequestUri()));
+		if (ldpR == null) throw new WebApplicationException(Status.NOT_FOUND);
+		else if (!(ldpR instanceof ILDPContainer)) throw new WebApplicationException(Status.BAD_REQUEST);  // TODO: Provide some details in response
+		
+		//	 else follow model for POST against container
+		ILDPContainer ldpC = (ILDPContainer)ldpR;
+		return ldpC;
+	}
+	
+	@POST
+	@Path("{id:.*}")
+	@Consumes(LDPConstants.CT_APPLICATION_SPARQLQUERY)
+	@Produces(LDPConstants.CT_APPLICATION_SPARQLRESULTSJSON)
+	public StreamingOutput postQuery(final InputStream content, @PathParam("id") String id) {
+		//TODO Implement complete SPARQL protocol. This impl only supports SELECT queries via POST directly.
+		if ("sparql".equals(id))
+			return new StreamingOutput() {
+				public void write(OutputStream output) throws IOException, WebApplicationException {
+					try {
+						ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
+						IOUtils.copy(content, byteStream);
+						getRootContainer().query(output, byteStream.toString(), LDPConstants.CT_APPLICATION_SPARQLRESULTSJSON);
+					} catch (Exception e) { 
+						throw new WebApplicationException(Response.status(Status.BAD_REQUEST).build()); 
+					}
+				}
+			};
+		else 
+			return null;
+	}
 
-    /*
-     * POST non-RDF source
-     */
-    @POST
-    @Consumes("*/*")
-    public Response postNonRDFSource(@HeaderParam(LDPConstants.HDR_SLUG) String slug, InputStream content) {
-    	return getRequestContainer().postNonRDFSource(content, stripCharset(fRequestHeaders.getMediaType().toString()), slug);
-    }
+	/*
+	 * POST non-RDF source
+	 */
+	@POST
+	@Consumes("*/*")
+	public Response postNonRDFSource(@HeaderParam(LDPConstants.HDR_SLUG) String slug, InputStream content) {
+		return getRequestContainer().postNonRDFSource(content, stripCharset(fRequestHeaders.getMediaType().toString()), slug);
+	}
  
-    @DELETE
-    public Response delete() {
-    	String uri = getConanicalURL(fRequestUrl.getRequestUri());
-    	ILDPResource ldpR = getResourceManger().get(uri);
-    	if (ldpR == null) return Response.status(Status.NOT_FOUND).build();
-    	// FIXME: Check if this is the root container before allowing delete.
-    	ldpR.delete();
-        return Response.status(Status.NO_CONTENT).build();
-    }
-    
-    @PATCH
-    @Path("id")
-    @Consumes(LDPConstants.CT_TEXT_TURTLE)    
-    public Response patch(final InputStream content, @PathParam("id") String id) {
-    	getRootContainer().patch(getConanicalURL(fRequestUrl.getRequestUri()), content, stripCharset(fRequestHeaders.getMediaType().toString()), null);
+	@DELETE
+	public Response delete() {
+		String uri = getConanicalURL(fRequestUrl.getRequestUri());
+		ILDPResource ldpR = getResourceManger().get(uri);
+		if (ldpR == null) return Response.status(Status.NOT_FOUND).build();
+		// FIXME: Check if this is the root container before allowing delete.
+		ldpR.delete();
+		return Response.status(Status.NO_CONTENT).build();
+	}
+	
+	@PATCH
+	@Path("id")
+	@Consumes(LDPConstants.CT_TEXT_TURTLE)	  
+	public Response patch(final InputStream content, @PathParam("id") String id) {
+		getRootContainer().patch(getConanicalURL(fRequestUrl.getRequestUri()), content, stripCharset(fRequestHeaders.getMediaType().toString()), null);
 
-      	return Response.status(Status.OK).build();
-    }
-    
-    private Response getResource(final String type) {	
-    	String resourceURI = getConanicalURL(fRequestUrl.getRequestUri());
-    	ILDPResource ldpR = getResourceManger().get(resourceURI);
-    	if (ldpR == null) return Response.status(Status.NOT_FOUND).build();
-    	return ldpR.get(type, getPreferencesFromRequest());
-    }
+		return Response.status(Status.OK).build();
+	}
+	
+	private Response getResource(final String type) {	
+		String resourceURI = getConanicalURL(fRequestUrl.getRequestUri());
+		ILDPResource ldpR = getResourceManger().get(resourceURI);
+		if (ldpR == null) return Response.status(Status.NOT_FOUND).build();
+		return ldpR.get(type, getPreferencesFromRequest());
+	}
 
-    /**
-     * Gets the <code>include</code> and <code>omit</code> values in the
-     * HTTP <code>Prefer</code> header for this request.
-     * 
-     * @param include a list of include values to populate
-     * @param omit a list of omit values to populate
-     * 
-     * @see <a href="http://tools.ietf.org/html/draft-snell-http-prefer-12">Prefer Header for HTTP</a>
-     */
-    protected MultivaluedMap<String, String> getPreferencesFromRequest() {
-        MultivaluedHashMap<String, String> preferencesMap = new MultivaluedHashMap<String, String>();
-        List<String> preferences = fRequestHeaders.getRequestHeaders().get(LDPConstants.HDR_PREFER);
-        if (preferences != null) {
-            for (String preference : preferences) {
-                // for example...
-                // Prefer: return=representation; omit="http://www.w3.org/ns/ldp#PreferMembership http://www.w3.org/ns/ldp#PreferContainment"
-                // Split tokens separated by ";"
-                String[] tokens = preference.split(";");
-                for (String token : tokens) {
-                    // for example, token might be...
-                    //  omit="http://www.w3.org/ns/ldp#PreferMembership http://www.w3.org/ns/ldp#PreferContainment"
-                    // Trim leading and trailing whitespace and split on the first "="
-                    String[] nameAndValues = token.trim().split("=", 2);
-                    if (nameAndValues.length == 2) {
-                        String name = nameAndValues[0].trim();
+	/**
+	 * Gets the <code>include</code> and <code>omit</code> values in the
+	 * HTTP <code>Prefer</code> header for this request.
+	 * 
+	 * @param include a list of include values to populate
+	 * @param omit a list of omit values to populate
+	 * 
+	 * @see <a href="http://tools.ietf.org/html/draft-snell-http-prefer-12">Prefer Header for HTTP</a>
+	 */
+	protected MultivaluedMap<String, String> getPreferencesFromRequest() {
+		MultivaluedHashMap<String, String> preferencesMap = new MultivaluedHashMap<String, String>();
+		List<String> preferences = fRequestHeaders.getRequestHeaders().get(LDPConstants.HDR_PREFER);
+		if (preferences != null) {
+			for (String preference : preferences) {
+				// for example...
+				// Prefer: return=representation; omit="http://www.w3.org/ns/ldp#PreferMembership http://www.w3.org/ns/ldp#PreferContainment"
+				// Split tokens separated by ";"
+				String[] tokens = preference.split(";");
+				for (String token : tokens) {
+					// for example, token might be...
+					//	omit="http://www.w3.org/ns/ldp#PreferMembership http://www.w3.org/ns/ldp#PreferContainment"
+					// Trim leading and trailing whitespace and split on the first "="
+					String[] nameAndValues = token.trim().split("=", 2);
+					if (nameAndValues.length == 2) {
+						String name = nameAndValues[0].trim();
 
-                        // for example, nameAndValues[1] might be....
-                        // "http://www.w3.org/ns/ldp#PreferMembership http://www.w3.org/ns/ldp#PreferContainment"
-                        // Remove leading and trailing quotation marks and split on spaces
-                        String[] values = nameAndValues[1].replaceAll("^\"|\"$", "").split(" ");
+						// for example, nameAndValues[1] might be....
+						// "http://www.w3.org/ns/ldp#PreferMembership http://www.w3.org/ns/ldp#PreferContainment"
+						// Remove leading and trailing quotation marks and split on spaces
+						String[] values = nameAndValues[1].replaceAll("^\"|\"$", "").split(" ");
 
-                        preferencesMap.addAll(name, values);
-                    }
-                }
-            }
-        }
+						preferencesMap.addAll(name, values);
+					}
+				}
+			}
+		}
  
-        return preferencesMap;
-    }
+		return preferencesMap;
+	}
 
-    String stripCharset(String contentType) {
-    	int i = contentType.indexOf(";");
-    	if (i == -1)
-    		return contentType;
-    	return contentType.substring(0, i);
-    }
-    
-    String getConanicalURL(URI url) {
-    	// TODO: Map request URL to the URL prefix that is stored in repo
-    	return url.toString();
-    }
-    
-    public static String encodeAccept(String[] contentTypes) {
-    	String result = "";
-    	for (int i = 0; i < contentTypes.length; i++) {
+	String stripCharset(String contentType) {
+		int i = contentType.indexOf(";");
+		if (i == -1)
+			return contentType;
+		return contentType.substring(0, i);
+	}
+	
+	String getConanicalURL(URI url) {
+		// TODO: Map request URL to the URL prefix that is stored in repo
+		return url.toString();
+	}
+	
+	public static String encodeAccept(String[] contentTypes) {
+		String result = "";
+		for (int i = 0; i < contentTypes.length; i++) {
 			result += contentTypes[i];
 			if (i+1 < contentTypes.length) result += ", ";
 		}
-    	return result;
-    }
-    
-    public static String parseSlug(String header) {
-    	return header;
-    }
-    
-    /**
-     * Make sure path segment, begins and ends with /
-    */		
-    static public String wrapPathSeg(String pathSeg) {
-    	String str;
-    	if (pathSeg.startsWith("//")) {
-    		int i=0;
-    		for(;i<pathSeg.length(); i++) {
-    			if (pathSeg.charAt(i) != '/') break;
-    		}
-    		str = pathSeg.substring(i-1);
-    	} else if (pathSeg.charAt(0)=='/')
-    		str = pathSeg;
-    	else 
-   			str = "/"+pathSeg;
+		return result;
+	}
+	
+	public static String parseSlug(String header) {
+		return header;
+	}
+	
+	/**
+	 * Make sure path segment, begins and ends with /
+	*/		
+	static public String wrapPathSeg(String pathSeg) {
+		String str;
+		if (pathSeg.startsWith("//")) {
+			int i=0;
+			for(;i<pathSeg.length(); i++) {
+				if (pathSeg.charAt(i) != '/') break;
+			}
+			str = pathSeg.substring(i-1);
+		} else if (pathSeg.charAt(0)=='/')
+			str = pathSeg;
+		else 
+			str = "/"+pathSeg;
 
-    	if (str.endsWith("//"))  {
-    		int i=str.length()-1;
-    		for (;i>0;i--){
-    			if (str.charAt(i) != '/') break;
-    		}
-    		str = str.substring(0, i+2);
-    	} else if (!str.endsWith("/")) {
-    		str = str +"/";
-    	} else if (str.length() == 1)
-    		str = "";
-    	
-    	return str;
-    }
-    
+		if (str.endsWith("//"))	 {
+			int i=str.length()-1;
+			for (;i>0;i--){
+				if (str.charAt(i) != '/') break;
+			}
+			str = str.substring(0, i+2);
+		} else if (!str.endsWith("/")) {
+			str = str +"/";
+		} else if (str.length() == 1)
+			str = "";
+		
+		return str;
+	}
+	
 }
 
