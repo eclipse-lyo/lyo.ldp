@@ -16,6 +16,7 @@
  *     Samuel Padgett - add Allow header to GET responses
  *     Samuel Padgett - add request headers to put() parameters
  *     Samuel Padgett - add support for LDP Non-RDF Source
+ *     Samuel Padgett - support read-only properties and rel="describedby"
  *******************************************************************************/
 package org.eclipse.lyo.ldp.server.jena;
 
@@ -29,6 +30,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.util.Calendar;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import javax.ws.rs.HttpMethod;
@@ -39,6 +41,7 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.ResponseBuilder;
 import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.StreamingOutput;
+import javax.ws.rs.core.UriBuilder;
 
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.http.HttpStatus;
@@ -48,11 +51,14 @@ import org.eclipse.lyo.ldp.server.LDPRDFSource;
 import org.eclipse.lyo.ldp.server.jena.store.TDBGraphStore;
 import org.eclipse.lyo.ldp.server.jena.vocabulary.LDP;
 import org.eclipse.lyo.ldp.server.jena.vocabulary.Lyo;
+import org.eclipse.lyo.ldp.server.service.LDPService;
 
 import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.rdf.model.ModelFactory;
 import com.hp.hpl.jena.rdf.model.Property;
+import com.hp.hpl.jena.rdf.model.RDFNode;
 import com.hp.hpl.jena.rdf.model.Resource;
+import com.hp.hpl.jena.rdf.model.Statement;
 import com.hp.hpl.jena.rdf.model.StmtIterator;
 import com.hp.hpl.jena.vocabulary.DCTerms;
 
@@ -60,6 +66,8 @@ import com.hp.hpl.jena.vocabulary.DCTerms;
 public class JenaLDPRDFSource extends LDPRDFSource {
 
 	public static String UNSPECIFIED_USER = "http://unspecified.user"; // TODO: How to handle this properly?
+	public static final String CONSTRAINTS_URI =
+			UriBuilder.fromPath(LDPService.ROOT_APP_URL).path("constraints.ttl").build().toString();
 
     /**
      * A companion resource "next to" the "real" resource, used to hold implementation
@@ -81,55 +89,55 @@ public class JenaLDPRDFSource extends LDPRDFSource {
 	}
 
 	@Override
-	public void putUpdate(InputStream stream, String contentType, String user,
-			HttpHeaders requestHeaders) {
+	public void putUpdate(InputStream stream, String contentType, String user, HttpHeaders requestHeaders) {
 		fGraphStore.writeLock();
 		try {
-			Model model = readModel(getURI(), stream, contentType);
-			Resource newResource = model.getResource(getURI());
-
-			Model before = fGraphStore.getGraph(getURI());
-			// We shouldn't have gotten this far but to be safe
-			if (before == null)
-				throw new WebApplicationException(HttpStatus.SC_NOT_FOUND);
-
-			updateResource(model, newResource, user, requestHeaders,
-					getETag(before));
+			updateResource(stream, contentType, requestHeaders);
 			fGraphStore.commit();
 		} finally {
 			fGraphStore.end();
 		}
 	}
+
+	protected void updateResource(InputStream stream, String contentType, HttpHeaders requestHeaders) {
+	    Model model = readModel(getURI(), stream, contentType);
+
+	    Model before = fGraphStore.getGraph(getURI());
+	    // We shouldn't have gotten this far but to be safe
+	    if (before == null)
+	    	throw new WebApplicationException(HttpStatus.SC_NOT_FOUND);
+
+	    // Check the If-Match request header.
+	    checkIfMatch(requestHeaders, before);
+
+	    for (String property : getReadOnlyProperties()) {
+	    	failIfReadOnlyPropertyChanged(before, model, property);
+	    }
+
+	    // Update dcterms:modified
+	    Calendar time = Calendar.getInstance();
+	    Resource newResource = model.getResource(getURI());
+	    model.removeAll(newResource, DCTerms.modified, null);
+	    model.add(newResource, DCTerms.modified, model.createTypedLiteral(time));
+
+	    fGraphStore.putGraph(getURI(), model);
+    }
+
+	protected void checkIfMatch(HttpHeaders requestHeaders, Model before) {
+	    if (requestHeaders != null) {
+	    	String ifMatch = requestHeaders.getHeaderString(HttpHeaders.IF_MATCH);
+	    	if (ifMatch == null) {
+	    		// condition required
+	    		throw new WebApplicationException(build(Response.status(428)));
+	    	}
+	    	final String originalETag = getETag(before);
+	    	// FIXME: Does not handle wildcards or comma-separated values...
+	    	if (!originalETag.equals(ifMatch)) {
+	    	    fail(Status.PRECONDITION_FAILED);
+	    	}
+	    }
+    }
 	
-	/**
-	 * model, newResource and beforeETag must not be null
-	 */
-	protected void updateResource(Model model, Resource newResource, String user, HttpHeaders requestHeaders, String beforeETag) {
-		// Check the If-Match request header.
-		if (requestHeaders != null) {
-			String ifMatch = requestHeaders.getHeaderString(HttpHeaders.IF_MATCH);
-			if (ifMatch == null) {
-				// condition required
-				throw new WebApplicationException(build(Response.status(428)));
-			}
-			String originalETag = beforeETag;
-			// FIXME: Does not handle wildcards or comma-separated values...
-			if (!originalETag.equals(ifMatch)) {
-			    fail(Status.PRECONDITION_FAILED);
-			}
-		}
-
-		// FIXME: Never used?
-		if (user == null) user = UNSPECIFIED_USER;
-
-		// Update dcterms:modified
-		Calendar time = Calendar.getInstance();
-		model.removeAll(newResource, DCTerms.modified, null);
-		model.add(newResource, DCTerms.modified, model.createTypedLiteral(time));
-
-		fGraphStore.putGraph(getURI(), model);
-	}
-
 	@Override
 	public void patch(String resourceURI, InputStream stream,
 			String contentType, String user) {
@@ -370,6 +378,14 @@ public class JenaLDPRDFSource extends LDPRDFSource {
 	    return allowedMethods;
     }
 	
+	protected Set<String> getReadOnlyProperties() {
+		HashSet<String> readOnly = new HashSet<String>();
+		readOnly.add(DCTerms.created.getURI());
+		readOnly.add(DCTerms.modified.getURI());
+		
+		return readOnly;
+	}
+	
 	protected Model readModel(String baseURI, InputStream stream, String contentType) {
 		final Model model;
 		if (LDPConstants.CT_APPLICATION_JSON.equals(contentType) || LDPConstants.CT_APPLICATION_LD_JSON.equals(contentType)) {
@@ -402,5 +418,40 @@ public class JenaLDPRDFSource extends LDPRDFSource {
 		}
 
 		return model;
+	}
+	
+	protected void failIfReadOnlyPropertyChanged(Model before, Model after, String property) {
+		Resource newResource = after.getResource(getURI());
+		List<Statement> originalTriples = before.listStatements(before.getResource(getURI()), before.getProperty(property), (RDFNode) null).toList();
+		List<Statement> newTriples = newResource.listProperties(after.getProperty(property)).toList();
+		if (newTriples.size() != originalTriples.size()) {
+			failReadOnlyProperty(property);
+		}
+
+		for (Statement s : originalTriples) {
+		    if (!newResource.hasProperty(s.getPredicate(), s.getObject())) {
+		    	failReadOnlyProperty(property);
+		    }
+		}
+	}
+
+	protected Response buildErrorResponse(Model body) {
+		ByteArrayOutputStream out = new ByteArrayOutputStream();
+		body.write(out, "TURTLE");
+
+		return build(Response.status(Status.CONFLICT)
+		        .link(CONSTRAINTS_URI, "\"describedby\"")
+		        .entity(out.toByteArray()));
+	}
+	
+	protected void failReadOnlyProperty(String uri) {
+		Model responseBody = ModelFactory.createDefaultModel();
+		Resource error = responseBody.createResource(Lyo.Error);
+		error.addProperty(DCTerms.title, "Cannot change property");
+		error.addProperty(
+		        DCTerms.description,
+		        "The property <" + uri + "> is read-only and cannot be assigned by clients.");
+
+		throw new WebApplicationException(buildErrorResponse(responseBody));
 	}
 }

@@ -13,10 +13,12 @@
  *  
  *     Steve Speicher - initial API and implementation
  *     Samuel Padgett - add support for LDP Non-RDF Source
+ *     Samuel Padgett - support read-only properties and rel="describedby"
  *******************************************************************************/
 package org.eclipse.lyo.ldp.server.jena.vocabulary;
 
 import com.hp.hpl.jena.rdf.model.Property;
+import com.hp.hpl.jena.rdf.model.Resource;
 import com.hp.hpl.jena.rdf.model.ResourceFactory;
 
 public class Lyo {
@@ -24,7 +26,7 @@ public class Lyo {
 	 * The namespace of the vocabulary as a resource
 	 */
 	public static final String NS = "http://eclipse.org/lyo/ns#";
-	
+
 	// RDF Property names both namespace and local
 	public static final String PROP_DESCRIBES = "describes";
 	public static final String PROP_DESCRIBES_RESOURCE = nsName(PROP_DESCRIBES);
@@ -34,7 +36,10 @@ public class Lyo {
 	public static final Property deleted = property(PROP_DELETED_RESOURCE);
 	public static final String PROP_IS_RES_INTERACT = "isResourceInteractionModel";
 	public static final String PROP_IS_RES_INTERACT_RESOURCE = nsName(PROP_IS_RES_INTERACT);
-	public static final Property isResourceInteractionModel = property(PROP_IS_RES_INTERACT_RESOURCE);	
+	public static final Property isResourceInteractionModel = property(PROP_IS_RES_INTERACT_RESOURCE);
+
+	/** An Error resource for describing errors */
+	public static final Resource Error = ResourceFactory.createResource(nsName("Error"));
 
 	/**
 	 * Config graph property describing the container an LDP-NR belongs to.
@@ -50,9 +55,9 @@ public class Lyo {
 	public static String nsName(String local) {
 		return NS + local;
 	}
-	
-    protected static final Property property(String name)
-    { 
-    	return ResourceFactory.createProperty(name);
-    }
+
+	protected static final Property property(String name)
+	{
+		return ResourceFactory.createProperty(name);
+	}
 }

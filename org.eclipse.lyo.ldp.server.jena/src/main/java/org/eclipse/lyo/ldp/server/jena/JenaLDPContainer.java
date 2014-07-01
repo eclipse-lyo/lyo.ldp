@@ -27,6 +27,7 @@
  *     Samuel Padgett - fix null resource prefix for root container
  *     Samuel Padgett - add support for LDP Non-RDF Source
  *     Samuel Padgett - support Prefer header
+ *     Samuel Padgett - support read-only properties and rel="describedby"
  *******************************************************************************/
 package org.eclipse.lyo.ldp.server.jena;
 
@@ -46,7 +47,6 @@ import javax.ws.rs.core.Response.ResponseBuilder;
 import javax.ws.rs.core.Response.Status;
 
 import org.apache.commons.io.output.ByteArrayOutputStream;
-import org.apache.http.HttpStatus;
 import org.eclipse.lyo.ldp.server.ILDPContainer;
 import org.eclipse.lyo.ldp.server.LDPConstants;
 import org.eclipse.lyo.ldp.server.jena.store.GraphStore;
@@ -58,7 +58,6 @@ import org.eclipse.lyo.ldp.server.service.LDPService;
 import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.rdf.model.ModelFactory;
 import com.hp.hpl.jena.rdf.model.Property;
-import com.hp.hpl.jena.rdf.model.RDFNode;
 import com.hp.hpl.jena.rdf.model.Resource;
 import com.hp.hpl.jena.rdf.model.Statement;
 import com.hp.hpl.jena.vocabulary.DCTerms;
@@ -163,23 +162,6 @@ public class JenaLDPContainer extends JenaLDPRDFSource implements ILDPContainer
 	}
 		
 	/* (non-Javadoc)
-	 * @see org.eclipse.lyo.ldp.server.impl.ILDPResource#putUpdate(java.io.InputStream, java.lang.String, java.lang.String)
-	 */
-	@Override
-	public void putUpdate(InputStream stream, String contentType, String user, HttpHeaders requestHeaders)
-	{
-		fGraphStore.writeLock();
-		try {
-			if (fGraphStore.getGraph(getURI()) != null) {
-				updateResource(stream, contentType, user, requestHeaders);
-			}
-			fGraphStore.commit();
-		} finally {
-			fGraphStore.end();
-		}
-	}
-	
-	/* (non-Javadoc)
 	 * @see org.eclipse.lyo.ldp.server.impl.ILDPContainer#putCreate(java.lang.String, java.io.InputStream, java.lang.String, java.lang.String)
 	 */
 	@Override
@@ -200,7 +182,7 @@ public class JenaLDPContainer extends JenaLDPRDFSource implements ILDPContainer
 				createResource(resourceURI, false, stream, contentType, user);	
 				create = true;
 			} else {
-				updateResource(stream, contentType, user, requestHeaders);
+				updateResource(stream, contentType, requestHeaders);
 			}
 			fGraphStore.commit();
 		} finally {
@@ -227,7 +209,7 @@ public class JenaLDPContainer extends JenaLDPRDFSource implements ILDPContainer
 			fGraphStore.end();
 		}
 	}
-
+	
 	/**
 	 * Create resource and add membership triples
 	 * @param resourceURI The NEW resource being added (including any query params, etc)
@@ -240,6 +222,12 @@ public class JenaLDPContainer extends JenaLDPRDFSource implements ILDPContainer
 	protected String createResource(String resourceURI, boolean addToContainer, InputStream stream, String contentType, String user)
 	{
 		Model model = readModel(resourceURI, stream, contentType);
+		for (String property : getReadOnlyProperties()) {
+			if (model.contains(null, model.createProperty(property))) {
+				failReadOnlyProperty(property);
+			}
+		}
+
 		Calendar time = Calendar.getInstance(); // to update dcterms:modified
 
 		// Add membership triple
@@ -307,31 +295,6 @@ public class JenaLDPContainer extends JenaLDPRDFSource implements ILDPContainer
 	    containerResource.removeAll(DCTerms.modified);
 	    containerResource.addLiteral(DCTerms.modified, containerModel.createTypedLiteral(time));
     }
-	
-	protected void updateResource(InputStream stream, String contentType, String user, HttpHeaders requestHeaders)
-	{
-		Model model = readModel(getURI(), stream, contentType);
-		Resource newResource = model.getResource(getURI());
-
-		Model before = fGraphStore.getGraph(getURI());
-		// We shouldn't have gotten this far but to be safe
-		if (before == null) throw new WebApplicationException(HttpStatus.SC_NOT_FOUND);
-		
-		// Make sure we're not updating any containment triples.
-		List<Statement> originalContainmentTriples = before.listStatements(before.getResource(getURI()), LDP.contains, (RDFNode) null).toList();
-		List<Statement> newContainmentTriples = newResource.listProperties(LDP.contains).toList();
-		if (newContainmentTriples.size() != originalContainmentTriples.size()) {
-			fail(Status.FORBIDDEN);
-		}
-
-		for (Statement s : originalContainmentTriples) {
-		    if (!newResource.hasProperty(s.getPredicate(), s.getResource())) {
-		        fail(Status.FORBIDDEN);
-		    }
-		}
-
-		updateResource(model, newResource, user, requestHeaders, getETag(before));
-	}
 	
 	protected void patchResource(String resourceURI, String baseURI, InputStream stream, String contentType, String user)
 	{
@@ -422,7 +385,16 @@ public class JenaLDPContainer extends JenaLDPRDFSource implements ILDPContainer
     public Set<String> getAllowedMethods() {
 		Set<String> allow = super.getAllowedMethods();
 		allow.add(HttpMethod.POST);
+
 	    return allow;
+    }
+	
+	@Override
+    protected Set<String> getReadOnlyProperties() {
+		Set<String> readOnly = super.getReadOnlyProperties();
+		readOnly.add(LDP.contains.getURI());
+
+	    return readOnly;
     }
 
 	@Override

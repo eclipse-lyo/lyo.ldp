@@ -15,10 +15,12 @@
  *******************************************************************************/
 package org.eclipse.lyo.ldp.server;
 
+
 public abstract class LDPRDFSource extends LDPResource implements ILDPRDFSource {
 
 	public LDPRDFSource(String resourceURI, Object model) {
 		super(resourceURI, model);
 		this.fRDFType = LDPConstants.CLASS_RDFSOURCE;
 	}
+
 }

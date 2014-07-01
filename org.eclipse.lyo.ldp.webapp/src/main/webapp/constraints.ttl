@@ -1,0 +1,24 @@
+@prefix dcterms: <http://purl.org/dc/terms/> .
+@prefix lyo: <http://eclipse.org/lyo/ns#> .
+
+[ a lyo:Constraint ;
+    dcterms:title "You cannot modify ldp:contains directly" ;
+    dcterms:description "You can't modify an LDP container's containment triples directly via PUT. Resources are automatically added on POST." ;
+    lyo:property ldp:contains ;
+    lyo:readOnly true
+] .
+
+[ a lyo:Constraint ;
+    dcterms:title "The property dcterms:created is read only" ;
+    dcterms:description "Property dcterms:created is managed by the server and cannot be assigned or modified by clients." ;
+    lyo:property dcterms:created ;
+    lyo:readOnly true
+] .
+
+[ a lyo:Constraint ;
+    dcterms:title "The property dcterms:modified is read only" ;
+    dcterms:description "Property dcterms:modified is managed by the server and cannot be assigned or modified by clients." ;
+    lyo:property dcterms:modified ;
+    lyo:readOnly true
+] .
+
