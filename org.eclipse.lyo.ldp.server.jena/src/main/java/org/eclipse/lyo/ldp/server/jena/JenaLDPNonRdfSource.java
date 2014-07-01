@@ -353,8 +353,8 @@ public class JenaLDPNonRdfSource extends LDPNonRDFSource {
 		String associatedURI = JenaLDPResourceManager.mintAssociatedRDFSourceURI(fURI);
 		return response
 				.allow(getAllowedMethods())
-				.header(LDPConstants.HDR_LINK, "<" + getTypeURI() + ">; " + LDPConstants.HDR_LINK_TYPE)
-				.header(LDPConstants.HDR_LINK, "<" + associatedURI + ">; " + LDPConstants.HDR_LINK_DESCRIBEDBY)
+				.link(getTypeURI(), LDPConstants.LINK_REL_TYPE)
+				.link(associatedURI, LDPConstants.LINK_REL_DESCRIBEDBY)
 				.build();
 	}
 }

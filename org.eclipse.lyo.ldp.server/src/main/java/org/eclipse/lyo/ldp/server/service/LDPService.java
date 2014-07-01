@@ -177,8 +177,9 @@ public abstract class LDPService {
 		ILDPContainer ldpC = getRequestContainer();
 		String loc = ldpC.post(content, stripCharset(fRequestHeaders.getMediaType().toString()), null, slug, hasResourceTypeHeader(fRequestHeaders) );
 		if (loc != null)
-			return Response.status(Status.CREATED).header(HttpHeaders.LOCATION, loc)
-					.header(LDPConstants.HDR_LINK, "<" + ldpC.getTypeURI() + ">; " + LDPConstants.HDR_LINK_TYPE).build();
+			return Response.status(Status.CREATED)
+					.header(HttpHeaders.LOCATION, loc)
+					.link(ldpC.getTypeURI(), LDPConstants.LINK_REL_TYPE).build();
 		else
 			return Response.status(Status.CONFLICT).build();
 	}

@@ -35,7 +35,7 @@ public class HttpHeaderResponseFilter implements ContainerResponseFilter {
 			ContainerResponseContext responseContext) throws IOException {
 		// TODO: Are there other responses that shouldn't have the ldp:Resource Link header? HTTP DELETE? Other 4xx errors?
 		if (responseContext.getStatus() != HttpServletResponse.SC_NOT_FOUND) {
-			responseContext.getHeaders().add(LDPConstants.HDR_LINK, "<"+LDPConstants.CLASS_RESOURCE+">; " + LDPConstants.HDR_LINK_TYPE);
+			responseContext.getHeaders().add(LDPConstants.HDR_LINK, "<"+LDPConstants.CLASS_RESOURCE+">;rel=" + LDPConstants.LINK_REL_TYPE);
 		}
 
 		// If POST is allowed, add in an Accept-Post header.

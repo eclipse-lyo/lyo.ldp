@@ -56,12 +56,13 @@ public class LDPConstants
 	public static final String HDR_ACCEPT_POST = "Accept-Post";
 	public static final String HDR_ETAG = "ETag";
 	public static final String HDR_LINK = "Link";
-	public static final String HDR_LINK_DESCRIBEDBY = "rel=\"describedby\"";
-	public static final String HDR_LINK_TYPE = "rel=\"type\"";
-	public static final String HDR_LINK_NEXT = "rel=\"next\"";
 	public static final String HDR_SLUG = "Slug";
 	public static final String HDR_PREFER = "Prefer";
 	public static final String HDR_PREFERENCE_APPLIED = "Preference-Applied";
+	
+	// Link relations
+	public static final String LINK_REL_TYPE = "type";
+	public static final String LINK_REL_DESCRIBEDBY = "describedby";
 	
 	// RDF Property names both namespace and local
 	public static final String PROP_LNAME_MEMBERSHIP_RESOURCE = "membershipResource";

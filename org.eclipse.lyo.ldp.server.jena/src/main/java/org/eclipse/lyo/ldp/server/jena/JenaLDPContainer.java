@@ -432,7 +432,7 @@ public class JenaLDPContainer extends JenaLDPRDFSource implements ILDPContainer
 			return build(Response
 					.status(Status.CREATED)
 					.header(HttpHeaders.LOCATION, uri)
-					.header(LDPConstants.HDR_LINK, "<" + associatedURI + ">; " + LDPConstants.HDR_LINK_DESCRIBEDBY));
+					.link(associatedURI, LDPConstants.LINK_REL_DESCRIBEDBY));
 		} finally {
 			fGraphStore.end();
 		}

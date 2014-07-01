@@ -356,7 +356,7 @@ public class JenaLDPRDFSource extends LDPRDFSource {
 	protected Response build(ResponseBuilder response) {
 	   return response
 				.allow(getAllowedMethods())
-				.header(LDPConstants.HDR_LINK, "<" + getTypeURI() + ">; " + LDPConstants.HDR_LINK_TYPE)
+				.link(getTypeURI(), LDPConstants.LINK_REL_TYPE)
 				.build();
 	}
 
@@ -440,7 +440,7 @@ public class JenaLDPRDFSource extends LDPRDFSource {
 		body.write(out, "TURTLE");
 
 		return build(Response.status(Status.CONFLICT)
-				.link(CONSTRAINTS_URI, "\"describedby\"")
+				.link(CONSTRAINTS_URI, LDPConstants.LINK_REL_DESCRIBEDBY)
 				.entity(out.toByteArray()));
 	}
 	
