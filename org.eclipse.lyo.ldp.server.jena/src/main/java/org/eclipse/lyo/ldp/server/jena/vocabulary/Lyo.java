@@ -40,6 +40,7 @@ public class Lyo {
 
 	/** An Error resource for describing errors */
 	public static final Resource Error = ResourceFactory.createResource(nsName("Error"));
+	public static final Property details = ResourceFactory.createProperty(nsName("details"));
 
 	/**
 	 * Config graph property describing the container an LDP-NR belongs to.

@@ -408,18 +408,33 @@ public class JenaLDPRDFSource extends LDPRDFSource {
 				Method toRDFMethod = jsonldClass.getMethod("toRDF", Object.class, jsonldTripleCallback);
 				model = (Model) toRDFMethod.invoke(null, input, jenaTripleCallback.newInstance());
 			} catch (Exception e) {
-				fail(Status.INTERNAL_SERVER_ERROR);
+				failParsingRDF(contentType, e);
 				return null;
 			}
 		} else {
 			model = ModelFactory.createDefaultModel();
 			String lang = WebContent.contentTypeToLang(contentType).getName();
-			model.read(stream, baseURI, lang);
+			try {
+				model.read(stream, baseURI, lang);
+			} catch (Exception e) {
+				failParsingRDF(contentType, e);
+			}
 		}
 
 		return model;
 	}
-	
+
+	protected void failParsingRDF(String contentType, Exception e) {
+		Model responseBody = ModelFactory.createDefaultModel();
+		Resource error = responseBody.createResource(Lyo.Error);
+		error.addProperty(DCTerms.title, "Error parsing RDF");
+		error.addProperty(
+				DCTerms.description,
+				"The request body content could not be parsed as " + contentType);
+		error.addProperty(Lyo.details, e.getMessage());
+		throw new WebApplicationException(buildErrorResponse(responseBody, Status.BAD_REQUEST));
+	}
+
 	protected void failIfReadOnlyPropertyChanged(Model before, Model after, String property) {
 		Resource newResource = after.getResource(getURI());
 		List<Statement> originalTriples = before.listStatements(before.getResource(getURI()), before.getProperty(property), (RDFNode) null).toList();
@@ -436,10 +451,14 @@ public class JenaLDPRDFSource extends LDPRDFSource {
 	}
 
 	protected Response buildErrorResponse(Model body) {
+		return buildErrorResponse(body, Status.CONFLICT);
+	}
+
+	protected Response buildErrorResponse(Model body, Status status) {
 		ByteArrayOutputStream out = new ByteArrayOutputStream();
 		body.write(out, "TURTLE");
 
-		return build(Response.status(Status.CONFLICT)
+		return build(Response.status(status)
 				.link(CONSTRAINTS_URI, LDPConstants.LINK_REL_DESCRIBEDBY)
 				.entity(out.toByteArray()));
 	}
