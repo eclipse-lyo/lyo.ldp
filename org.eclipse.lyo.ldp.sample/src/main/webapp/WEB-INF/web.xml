@@ -27,4 +27,28 @@
 		<extension>ttl</extension>
 		<mime-type>text/turtle</mime-type> 
 	</mime-mapping>
+	
+	<security-constraint>
+	<display-name>authorizedUsers</display-name>
+	<web-resource-collection>
+		<web-resource-name>ALL URLs</web-resource-name>
+		<url-pattern>/*</url-pattern>
+	</web-resource-collection>
+	<auth-constraint>
+		<role-name>LDP</role-name>
+	</auth-constraint>
+	<!--user-data-constraint> <transport-guarantee>CONFIDENTIAL</transport-guarantee> 
+		</user-data-constraint -->
+	</security-constraint>
+
+	<login-config>
+		<auth-method>BASIC</auth-method>
+		<realm-name>LDP</realm-name>
+	</login-config>
+
+	<security-role>
+		<description>access to the Linked Data Platform</description>
+		<role-name>LDP</role-name>
+	</security-role>
+	
 </web-app>
