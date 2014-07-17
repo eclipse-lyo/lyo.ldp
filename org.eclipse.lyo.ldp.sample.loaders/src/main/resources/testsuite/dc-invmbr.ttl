@@ -3,7 +3,7 @@
 @prefix skos: 	<http://www.w3.org/2004/02/skos/core#>.
 
 <>
-   a ldp:DirectContainer, ldp:Container;
+   a ldp:DirectContainer, ldp:Container, ldp:RDFSource;
    dcterms:title "TestSuite example of a DirectContainer with ldp:isMemberOfRelation of skos:inScheme";
    ldp:membershipResource <>;
    ldp:isMemberOfRelation skos:inScheme.

@@ -2,5 +2,5 @@
 @prefix ldp:     <http://www.w3.org/ns/ldp#>.
 
 <>
-   a ldp:BasicContainer, ldp:Container;
+   a ldp:BasicContainer, ldp:Container, ldp:RDFSource;
    dcterms:title "TestSuite example of a BasicContainer".

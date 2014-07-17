@@ -2,7 +2,7 @@
 @prefix ldp:     <http://www.w3.org/ns/ldp#>.
 
 <>
-   a ldp:DirectContainer, ldp:Container;
+   a ldp:DirectContainer, ldp:Container, ldp:RDFSource;
    dcterms:title "TestSuite example of a DirectContainer with default values";
    ldp:membershipResource <>;
    ldp:hasMemberRelation ldp:member.

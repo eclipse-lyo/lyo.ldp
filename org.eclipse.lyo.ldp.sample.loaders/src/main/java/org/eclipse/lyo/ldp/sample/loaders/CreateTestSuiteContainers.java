@@ -67,6 +67,7 @@ public class CreateTestSuiteContainers {
 		Resource r = m.getResource("");
 		r.addProperty(RDF.type, LDP.DirectContainer);
 		r.addProperty(RDF.type, LDP.Container);
+		r.addProperty(RDF.type, LDP.RDFSource);
 		r.addProperty(LDP.membershipResource, m.getResource(mr1));
 		r.addProperty(LDP.hasMemberRelation, LDP.member);
 
@@ -75,11 +76,12 @@ public class CreateTestSuiteContainers {
 
 		c = post(rootContainer, stringWriter.toString(), "dc-diffmr/", false);
 		System.out.println("Created ldp:DirectContainer (diff mbrshp res) at: \t" + c);
-		
+
 		m = ModelFactory.createDefaultModel();
 		r = m.getResource("");
 		r.addProperty(RDF.type, LDP.DirectContainer);
 		r.addProperty(RDF.type, LDP.Container);
+		r.addProperty(RDF.type, LDP.RDFSource);
 		r.addProperty(LDP.membershipResource, m.getResource(mr2));
 		r.addProperty(LDP.isMemberOfRelation, m.createResource("http://www.w3.org/2004/02/skos/core#inScheme"));
 

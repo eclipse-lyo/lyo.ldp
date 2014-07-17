@@ -43,7 +43,8 @@ public class LDP
 	public static final Property pageOf = property(LDPConstants.PROP_PAGEOF);
 	public static final Property nextPage = property(LDPConstants.PROP_NEXTPAGE);
 	public static final Property containerSortPredicates = property(LDPConstants.PROP_CONTAINER_SORT_PREDICATE);
-	 
+ 
+	public static final Resource RDFSource = resource(LDPConstants.CLASS_RDFSOURCE);
 	public static final Resource Container = resource(LDPConstants.CLASS_CONTAINER);
 	public static final Resource BasicContainer = resource(LDPConstants.CLASS_BASIC_CONTAINER);
 	public static final Resource DirectContainer = resource(LDPConstants.CLASS_DIRECT_CONTAINER);
