@@ -24,10 +24,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.PrintWriter;
-import java.io.Writer;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Method;
 import java.util.Calendar;
 import java.util.HashSet;
 import java.util.List;
@@ -45,7 +41,8 @@ import javax.ws.rs.core.UriBuilder;
 
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.http.HttpStatus;
-import org.apache.jena.riot.WebContent;
+import org.apache.jena.riot.Lang;
+import org.apache.jena.riot.RDFLanguages;
 import org.eclipse.lyo.ldp.server.LDPConstants;
 import org.eclipse.lyo.ldp.server.LDPRDFSource;
 import org.eclipse.lyo.ldp.server.jena.store.TDBGraphStore;
@@ -204,17 +201,19 @@ public class JenaLDPRDFSource extends LDPRDFSource {
 			graph = amendResponseGraph(graph, preferences);
 			StreamingOutput out;
 			if (LDPConstants.CT_APPLICATION_JSON.equals(contentType)) {
-				out = getJSONLD(graph);
-			} else {
-				final String lang = WebContent.contentTypeToLang(contentType).getName();
-				final Model responseModel = graph;
-				out = new StreamingOutput() {
-					@Override
-					public void write(OutputStream output) throws IOException, WebApplicationException {
-						responseModel.write(output, lang);
-					}
-				};
+				contentType = LDPConstants.CT_APPLICATION_LD_JSON;
 			}
+			final Lang lang = RDFLanguages.contentTypeToLang(contentType);
+			if (lang == null || (lang.equals(Lang.JSONLD) && !isJSONLDPresent())) {
+				fail(Status.NOT_ACCEPTABLE);
+			}
+			final Model responseModel = graph;
+			out = new StreamingOutput() {
+				@Override
+				public void write(OutputStream output) throws IOException, WebApplicationException {
+					responseModel.write(output, lang.getName());
+				}
+			};
 
 			ResponseBuilder response = Response.ok(out).header(LDPConstants.HDR_ETAG, eTag);
 			amendResponse(response, preferences);
@@ -258,56 +257,6 @@ public class JenaLDPRDFSource extends LDPRDFSource {
 		return graph;
 	}
 	
-	private StreamingOutput getJSONLD(Model graph) {
-		if (!isJSONLDPresent()) {
-			fail(Status.UNSUPPORTED_MEDIA_TYPE);
-			return null;
-		}
-
-		try {
-			// Use Java reflection for the optional jsonld-java depedency.
-			Class<?> jsonldClass = Class.forName("com.github.jsonldjava.core.JSONLD");
-			Class<?> rdfParserClass = Class.forName("com.github.jsonldjava.core.RDFParser");
-			Class<?> jsonldUtilsClass = Class.forName("com.github.jsonldjava.utils.JSONUtils");
-			Class<?> jenaRDFParserClass = Class.forName("com.github.jsonldjava.impl.JenaRDFParser");
-			Class<?> optionsClass = Class.forName("com.github.jsonldjava.core.Options");
-
-			//Object json = JSONLD.fromRDF(graph, new JenaRDFParser());
-			Method fromRDFMethod = jsonldClass.getMethod("fromRDF", Object.class, rdfParserClass);
-			Object json = fromRDFMethod.invoke(null, graph, jenaRDFParserClass.newInstance());
-
-			InputStream is = getClass().getClassLoader().getResourceAsStream("context.jsonld");
-
-			//Object context = JSONUtils.fromInputStream(is);
-			Method fromInputStreamMethod = jsonldUtilsClass.getMethod("fromInputStream", InputStream.class);
-			Object context = fromInputStreamMethod.invoke(null, is);
-			
-			//json = JSONLD.compact(json, context, new Options("", true));
-			Method compactMethod = jsonldClass.getMethod("compact", Object.class, Object.class, optionsClass);
-			Constructor<?> optionsContructor = optionsClass.getDeclaredConstructor(String.class, Boolean.class);
-			Object options = optionsContructor.newInstance("", true);
-			final Object compactedJson = compactMethod.invoke(null, json, context, options);
-
-			//JSONUtils.writePrettyPrint(new PrintWriter(outStream), json);
-			final Method writePrettyPrintMethod = jsonldUtilsClass.getMethod("writePrettyPrint", Writer.class, Object.class);
-			StreamingOutput out = new StreamingOutput() {
-				@Override
-				public void write(OutputStream output) throws IOException, WebApplicationException {
-					try {
-						writePrettyPrintMethod.invoke(null, new PrintWriter(output), compactedJson);
-					} catch (Exception e) {
-						fail(Status.INTERNAL_SERVER_ERROR);
-					}
-				}
-			};
-			
-			return out;
-		} catch (Exception e) {
-			fail(Status.INTERNAL_SERVER_ERROR);
-			return null;
-		}
-	}
-	
 	public TDBGraphStore getGraphStore() {
 		return fGraphStore;
 	}
@@ -317,8 +266,7 @@ public class JenaLDPRDFSource extends LDPRDFSource {
 	 */
 	protected boolean isJSONLDPresent() {
 		try {
-			Class.forName("com.github.jsonldjava.core.JSONLD");
-			Class.forName("com.github.jsonldjava.impl.JenaRDFParser");
+			Class.forName("com.github.jsonldjava.core.JsonLdApi");
 			return true;
 		} catch (Throwable t) {
 			return false;
@@ -387,38 +335,18 @@ public class JenaLDPRDFSource extends LDPRDFSource {
 	}
 	
 	protected Model readModel(String baseURI, InputStream stream, String contentType) {
-		final Model model;
-		if (LDPConstants.CT_APPLICATION_JSON.equals(contentType) || LDPConstants.CT_APPLICATION_LD_JSON.equals(contentType)) {
-			if (!isJSONLDPresent()) {
-				fail(Status.UNSUPPORTED_MEDIA_TYPE);
-				return null;
-			}
-
-			try {
-				// Use reflection to invoke the optional jsonld-java dependency.
-				Class<?> jsonldTripleCallback = Class.forName("com.github.jsonldjava.core.JSONLDTripleCallback");
-				Class<?> jenaTripleCallback = Class.forName("com.github.jsonldjava.impl.JenaTripleCallback");
-				Class<?> jsonldUtilsClass = Class.forName("com.github.jsonldjava.utils.JSONUtils");
-				Class<?> jsonldClass = Class.forName("com.github.jsonldjava.core.JSONLD");
-
-				//final JSONLDTripleCallback callback = new JenaTripleCallback();
-				//model = (Model) JSONLD.toRDF(JSONUtils.fromInputStream(stream), callback);
-				Method fromInputStreamMethod = jsonldUtilsClass.getMethod("fromInputStream", InputStream.class);
-				Object input = fromInputStreamMethod.invoke(null, stream);
-				Method toRDFMethod = jsonldClass.getMethod("toRDF", Object.class, jsonldTripleCallback);
-				model = (Model) toRDFMethod.invoke(null, input, jenaTripleCallback.newInstance());
-			} catch (Exception e) {
-				failParsingRDF(contentType, e);
-				return null;
-			}
-		} else {
-			model = ModelFactory.createDefaultModel();
-			String lang = WebContent.contentTypeToLang(contentType).getName();
-			try {
-				model.read(stream, baseURI, lang);
-			} catch (Exception e) {
-				failParsingRDF(contentType, e);
-			}
+		final Model model = ModelFactory.createDefaultModel();
+		if (LDPConstants.CT_APPLICATION_JSON.equals(contentType)) {
+			contentType = LDPConstants.CT_APPLICATION_LD_JSON;
+		}
+		final Lang lang = RDFLanguages.contentTypeToLang(contentType);
+		if (lang == null || (lang.equals(Lang.JSONLD) && !isJSONLDPresent())) {
+			fail(Status.UNSUPPORTED_MEDIA_TYPE);
+		}
+		try {
+			model.read(stream, baseURI, lang.getName());
+		} catch (Exception e) {
+			failParsingRDF(contentType, e);
 		}
 
 		return model;
