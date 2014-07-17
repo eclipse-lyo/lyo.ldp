@@ -36,6 +36,8 @@
                 <groupId>org.mortbay.jetty</groupId>
                 <artifactId>jetty-maven-plugin</artifactId>
                 <configuration>
+                	<webAppXml>${basedir}/src/test/resources/jetty-test.xml</webAppXml>
+					<useTestScope>true</useTestScope>
                     <webAppConfig>
                         <contextPath>/ldp</contextPath>
                     </webAppConfig>

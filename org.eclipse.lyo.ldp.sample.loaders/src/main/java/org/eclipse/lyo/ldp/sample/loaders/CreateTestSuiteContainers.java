@@ -15,12 +15,16 @@
  *******************************************************************************/
 package org.eclipse.lyo.ldp.sample.loaders;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringWriter;
 
+import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpStatus;
+import org.apache.wink.client.ClientConfig;
 import org.apache.wink.client.ClientResponse;
 import org.apache.wink.client.RestClient;
+import org.apache.wink.client.handlers.BasicAuthSecurityHandler;
 import org.eclipse.lyo.ldp.server.jena.vocabulary.LDP;
 
 import com.hp.hpl.jena.rdf.model.Model;
@@ -29,7 +33,15 @@ import com.hp.hpl.jena.rdf.model.Resource;
 import com.hp.hpl.jena.vocabulary.RDF;
 
 public class CreateTestSuiteContainers {
-	private static RestClient client = new RestClient();
+	private static final String userPass = "ldpuser";
+	private static ClientConfig config = new ClientConfig();
+	private static BasicAuthSecurityHandler basicAuthSecHandler = new BasicAuthSecurityHandler(userPass, userPass);
+	static {
+		basicAuthSecHandler.setUserName(userPass); 
+		basicAuthSecHandler.setPassword(userPass); 
+		config.handlers(basicAuthSecHandler);
+	}
+	private static RestClient client = new RestClient(config);	
 
 	public static void main(String[] args) {
 		String rootContainer = getRootContainerURI(args);
@@ -37,18 +49,18 @@ public class CreateTestSuiteContainers {
 				.println("Populating test suite data to LDP container: "
 						+ rootContainer);
 		
-		String mr1 = post(rootContainer, asStream("diffmr.ttl"), "diffmr1", false);
+		String mr1 = post(rootContainer, resource("diffmr.ttl"), "diffmr1", false);
 		System.out.println("Created ldp:RDFSource at: \t\t" + mr1);
-		String mr2 = post(rootContainer, asStream("diffmr.ttl"), "diffmr2", false);
+		String mr2 = post(rootContainer, resource("diffmr.ttl"), "diffmr2", false);
 		System.out.println("Created ldp:RDFSource at: \t\t" + mr2);
 		
-		String c = post(rootContainer, asStream("bc.ttl"), "bc/", false);
+		String c = post(rootContainer, resource("bc.ttl"), "bc/", false);
 		System.out.println("Created ldp:BasicContainer at: \t\t" + c);
 
-		c = post(rootContainer, asStream("dc-simple.ttl"), "dc-simple/", false);
+		c = post(rootContainer, resource("dc-simple.ttl"), "dc-simple/", false);
 		System.out.println("Created ldp:DirectContainer (simple) at: \t" + c);
 
-		c = post(rootContainer, asStream("dc-invmbr.ttl"), "dc-invmbr/", false);
+		c = post(rootContainer, resource("dc-invmbr.ttl"), "dc-invmbr/", false);
 		System.out.println("Created ldp:DirectContainer (inverse mbr) at: \t" + c);
 
 		Model m = ModelFactory.createDefaultModel();
@@ -77,7 +89,7 @@ public class CreateTestSuiteContainers {
 		c = post(rootContainer, stringWriter.toString(), "dc-invmbr-diffmr/", false);
 		System.out.println("Created ldp:DirectContainer (diff mbrshp res + inv mbr) at: \t" + c);
 		
-		c = post(rootContainer, asStream("bc.ttl"), "bc-asres/", true);
+		c = post(rootContainer, resource("bc.ttl"), "bc-asres/", true);
 		System.out.println("Created ldp:BasicContainer (interaction model of ldp:Resource) at: \t\t" + c);
 
 		System.out.println("Completed successfully!");
@@ -116,8 +128,16 @@ public class CreateTestSuiteContainers {
 		return args[0];
 	}
 
-	private static InputStream asStream(String resource) {
-		return CreateTestSuiteContainers.class.getClassLoader()
-				.getResourceAsStream("testsuite/"+resource);
+	/**
+	 * Change the way the requestEntity is created, so that the request can be
+	 * repeatable in the case of an authentication challenge
+	 */
+	private static String resource(String resource) {
+		try {
+			InputStream in = CreateAssets.class.getClassLoader().getResourceAsStream("testsuite/"+resource);
+			return IOUtils.toString(in, "UTF-8");
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
 	}
 }

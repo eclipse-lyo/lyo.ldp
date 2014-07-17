@@ -18,14 +18,18 @@
  *******************************************************************************/
 package org.eclipse.lyo.ldp.sample.loaders;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringWriter;
 
 import javax.ws.rs.core.Response.Status.Family;
 
+import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpStatus;
+import org.apache.wink.client.ClientConfig;
 import org.apache.wink.client.ClientResponse;
 import org.apache.wink.client.RestClient;
+import org.apache.wink.client.handlers.BasicAuthSecurityHandler;
 
 import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.rdf.model.ModelFactory;
@@ -37,33 +41,41 @@ public class CreateBugs {
 	private static final String BT_NS = "http://example.org/vocab/bugtracker#";
 	private static final Property RELATED_BUG = ResourceFactory.createProperty(BT_NS, "relatedBug");
 
-	private static RestClient client = new RestClient();
+	private static final String userPass = "ldpuser";
+	private static ClientConfig config = new ClientConfig();
+	private static BasicAuthSecurityHandler basicAuthSecHandler = new BasicAuthSecurityHandler(userPass, userPass);
+	static {
+		basicAuthSecHandler.setUserName(userPass); 
+		basicAuthSecHandler.setPassword(userPass); 
+		config.handlers(basicAuthSecHandler);
+	}
+	private static RestClient client = new RestClient(config);
 
 	public static void main(String[] args) {
 		String rootContainer = getRootContainerURI(args);
 		System.out.println("Populating sample bug tracker data to LDP container: " + rootContainer);
 		
-		String btContainer = post(rootContainer, asStream("bugTracker.ttl"), "bugTracker");
+		String btContainer = post(rootContainer, resource("bugTracker.ttl"), "bugTracker");
 		System.out.println("Created Bug Tracker container at " + btContainer);
 		
-		String productA = post(btContainer, asStream("productA.ttl"), "productA");
+		String productA = post(btContainer, resource("productA.ttl"), "productA");
 		System.out.println("Created Product A container at " + productA);
 
-		String productB = post(btContainer, asStream("productB.ttl"), "productB");
+		String productB = post(btContainer, resource("productB.ttl"), "productB");
 		System.out.println("Created Product B container at " + productB);
 		
 		// Create Product A bugs.
-		String bug1 = post(productA, asStream("bug1.ttl"), "bug1");
+		String bug1 = post(productA, resource("bug1.ttl"), "bug1");
 		System.out.println("Created Bug 1 at " + bug1);
-		String bug2 = post(productA, asStream("bug2.ttl"), "bug2");
+		String bug2 = post(productA, resource("bug2.ttl"), "bug2");
 		System.out.println("Created Bug 2 at " + bug2);
 
 		// Create Product B bugs.
-		String bug10 = post(productB, asStream("bug10.ttl"), "bug10");
+		String bug10 = post(productB, resource("bug10.ttl"), "bug10");
 		System.out.println("Created Bug 10 at " + bug10);
-		String bug11 = post(productB, asStream("bug11.ttl"), "bug11");
+		String bug11 = post(productB, resource("bug11.ttl"), "bug11");
 		System.out.println("Created Bug 11 at " + bug11);
-		String bug12 = post(productB, asStream("bug12.ttl"), "bug12");
+		String bug12 = post(productB, resource("bug12.ttl"), "bug12");
 		System.out.println("Created Bug 12 at " + bug12);
 		
 		// Create some bt:relatedBug links.
@@ -137,7 +149,16 @@ public class CreateBugs {
 		return stringWriter.toString();
 	}
 
-	private static InputStream asStream(String resource) {
-		return CreateBugs.class.getClassLoader().getResourceAsStream("bugs/"+resource);
+	/**
+	 * Change the way the requestEntity is created, so that the request can be
+	 * repeatable in the case of an authentication challenge
+	 */
+	private static String resource(String resource) {
+		try {
+			InputStream in = CreateAssets.class.getClassLoader().getResourceAsStream("bugs/"+resource);
+			return IOUtils.toString(in, "UTF-8");
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
 	}
 }
