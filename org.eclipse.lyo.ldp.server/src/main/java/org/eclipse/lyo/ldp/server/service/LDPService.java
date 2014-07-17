@@ -32,9 +32,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URI;
+import java.security.Principal;
 import java.util.List;
 
 import javax.servlet.ServletContext;
+import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
@@ -68,6 +70,7 @@ public abstract class LDPService {
 	public static final String LDP_ROOTURI = "ldp.rooturi";
 
 	
+	@Context HttpServletRequest fRequest;
 	@Context HttpHeaders fRequestHeaders;
 	@Context UriInfo fRequestUrl;
 	@Context ServletContext context;
@@ -165,17 +168,17 @@ public abstract class LDPService {
 		if (ldpR == null) return Response.status(Status.NOT_FOUND).build();
 		// We don't allow changing an LDP-RS to an LDP-NR.
 		if (!(ldpR instanceof LDPNonRDFSource)) return Response.status(Status.CONFLICT).build();
-		
-		ldpR.putUpdate(content, stripCharset(fRequestHeaders.getMediaType().toString()), null, fRequestHeaders);
+
+		ldpR.putUpdate(content, stripCharset(fRequestHeaders.getMediaType().toString()), getCurrentUser(), fRequestHeaders);
 
 		return Response.status(Status.NO_CONTENT).build();
 	}
 	
 	@POST
 	@Consumes({ LDPConstants.CT_APPLICATION_RDFXML, LDPConstants.CT_TEXT_TURTLE, LDPConstants.CT_APPLICATION_XTURTLE, LDPConstants.CT_APPLICATION_JSON, LDPConstants.CT_APPLICATION_LD_JSON })
-	public Response post(@HeaderParam(LDPConstants.HDR_SLUG) String slug, InputStream content) {
-		ILDPContainer ldpC = getRequestContainer();
-		String loc = ldpC.post(content, stripCharset(fRequestHeaders.getMediaType().toString()), null, slug, hasResourceTypeHeader(fRequestHeaders) );
+	public Response post(@HeaderParam(LDPConstants.HDR_SLUG) final String slug, final InputStream content) {
+		final ILDPContainer ldpC = getRequestContainer();
+		String loc = ldpC.post(content, stripCharset(fRequestHeaders.getMediaType().toString()), getCurrentUser(), slug, hasResourceTypeHeader(fRequestHeaders) );
 		if (loc != null)
 			return Response.status(Status.CREATED)
 					.header(HttpHeaders.LOCATION, loc)
@@ -183,7 +186,12 @@ public abstract class LDPService {
 		else
 			return Response.status(Status.CONFLICT).build();
 	}
-	
+
+	private String getCurrentUser() {
+		final Principal principal = fRequest.getUserPrincipal();
+		return (principal == null) ? null : principal.getName();
+	}
+
 	/**
 	 * Given a set of request headers, return true if any of them are (roughly):
 	 *	 Link: <http://www.w3.org/ns/ldp#Resource>; rel='type'
@@ -272,7 +280,7 @@ public abstract class LDPService {
 	@POST
 	@Consumes("*/*")
 	public Response postNonRDFSource(@HeaderParam(LDPConstants.HDR_SLUG) String slug, InputStream content) {
-		return getRequestContainer().postNonRDFSource(content, stripCharset(fRequestHeaders.getMediaType().toString()), slug);
+		return getRequestContainer().postNonRDFSource(content, stripCharset(fRequestHeaders.getMediaType().toString()), getCurrentUser(), slug);
 	}
  
 	@DELETE

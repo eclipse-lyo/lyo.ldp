@@ -62,7 +62,6 @@ import com.hp.hpl.jena.vocabulary.DCTerms;
 
 public class JenaLDPRDFSource extends LDPRDFSource {
 
-	public static String UNSPECIFIED_USER = "http://unspecified.user"; // TODO: How to handle this properly?
 	public static final String CONSTRAINTS_URI =
 			UriBuilder.fromPath(LDPService.ROOT_APP_URL).path("constraints.ttl").build().toString();
 
@@ -89,14 +88,14 @@ public class JenaLDPRDFSource extends LDPRDFSource {
 	public void putUpdate(InputStream stream, String contentType, String user, HttpHeaders requestHeaders) {
 		fGraphStore.writeLock();
 		try {
-			updateResource(stream, contentType, requestHeaders);
+			updateResource(stream, contentType, user, requestHeaders);
 			fGraphStore.commit();
 		} finally {
 			fGraphStore.end();
 		}
 	}
 
-	protected void updateResource(InputStream stream, String contentType, HttpHeaders requestHeaders) {
+	protected void updateResource(InputStream stream, String contentType, String user, HttpHeaders requestHeaders) {
 		Model model = readModel(getURI(), stream, contentType);
 
 		Model before = fGraphStore.getGraph(getURI());
@@ -112,10 +111,16 @@ public class JenaLDPRDFSource extends LDPRDFSource {
 		}
 
 		// Update dcterms:modified
-		Calendar time = Calendar.getInstance();
-		Resource newResource = model.getResource(getURI());
-		model.removeAll(newResource, DCTerms.modified, null);
-		model.add(newResource, DCTerms.modified, model.createTypedLiteral(time));
+		final Calendar time = Calendar.getInstance();
+		final Resource thisResource = model.getResource(getURI());
+		model.removeAll(thisResource, DCTerms.modified, null);
+		model.add(thisResource, DCTerms.modified, model.createTypedLiteral(time));
+
+		// Update dcterms:contributor
+		if (user != null) {
+			final Resource userResource = model.getResource(JenaLDPResourceManager.mintUserURI(user));
+			model.add(thisResource, DCTerms.contributor, userResource);
+		}
 
 		fGraphStore.putGraph(getURI(), model);
 	}
@@ -330,10 +335,10 @@ public class JenaLDPRDFSource extends LDPRDFSource {
 		HashSet<String> readOnly = new HashSet<String>();
 		readOnly.add(DCTerms.created.getURI());
 		readOnly.add(DCTerms.modified.getURI());
-		
+
 		return readOnly;
 	}
-	
+
 	protected Model readModel(String baseURI, InputStream stream, String contentType) {
 		final Model model = ModelFactory.createDefaultModel();
 		if (LDPConstants.CT_APPLICATION_JSON.equals(contentType)) {

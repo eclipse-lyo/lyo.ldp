@@ -182,7 +182,7 @@ public class JenaLDPContainer extends JenaLDPRDFSource implements ILDPContainer
 				createResource(resourceURI, false, stream, contentType, user);	
 				create = true;
 			} else {
-				updateResource(stream, contentType, requestHeaders);
+				updateResource(stream, contentType, user, requestHeaders);
 			}
 			fGraphStore.commit();
 		} finally {
@@ -237,15 +237,18 @@ public class JenaLDPContainer extends JenaLDPRDFSource implements ILDPContainer
 
 		// Add dcterms:creator, dcterms:created, dcterms:contributor, and dcterms:modified
 		Resource subject = model.getResource(resourceURI);
-		if (user == null) user = UNSPECIFIED_USER;
-		if (!model.contains(subject, DCTerms.creator))
-			model.add(subject, DCTerms.creator, model.createResource(user));
-		if (!model.contains(subject, DCTerms.contributor))
-			model.add(subject, DCTerms.contributor, model.createResource(user));
-		if (!model.contains(subject, DCTerms.created))
-			model.add(subject, DCTerms.created, model.createTypedLiteral(time));
-		if (!model.contains(subject, DCTerms.modified))
-			model.add(subject, DCTerms.modified, model.createTypedLiteral(time));
+		if (user != null) {
+			Resource userResource = model.getResource(JenaLDPResourceManager.mintUserURI(user));
+			if (!subject.hasProperty(DCTerms.creator)) {
+				model.add(subject, DCTerms.creator, userResource);
+			}
+
+			if (!subject.hasProperty(DCTerms.contributor)) {
+				model.add(subject, DCTerms.contributor, userResource);
+			}
+		}
+		model.add(subject, DCTerms.created, model.createTypedLiteral(time));
+		model.add(subject, DCTerms.modified, model.createTypedLiteral(time));
 
 		fGraphStore.putGraph(resourceURI, model);
 
@@ -398,7 +401,7 @@ public class JenaLDPContainer extends JenaLDPRDFSource implements ILDPContainer
 	}
 
 	@Override
-	public Response postNonRDFSource(InputStream content, String stripCharset, String slug) {
+	public Response postNonRDFSource(InputStream content, String stripCharset, String user, String slug) {
 		fGraphStore.writeLock();
 		try {
 			String uri = fGraphStore.mintURI(fURI, fResourceURIPrefix, slug);
@@ -426,7 +429,13 @@ public class JenaLDPContainer extends JenaLDPRDFSource implements ILDPContainer
 			if (slug != null) {
 				associatedResource.addProperty(Lyo.slug, slug);
 			}
-			
+
+			if (user != null) {
+				Resource userResource = associatedModel.getResource(JenaLDPResourceManager.mintUserURI(user));
+				associatedModel.add(associatedResource, DCTerms.creator, userResource);
+				associatedModel.add(associatedResource, DCTerms.contributor, userResource);
+			}
+
 			fGraphStore.commit();
 
 			return build(Response

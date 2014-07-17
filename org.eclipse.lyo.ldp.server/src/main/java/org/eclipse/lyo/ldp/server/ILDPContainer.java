@@ -55,13 +55,13 @@ public interface ILDPContainer extends ILDPRDFSource {
 
 	/**
 	 * Post a new LDP-NR (non-RDF source) to the container.
-	 * 
 	 * @param stream the input stream containing the posted resource representation.
 	 * @param contentType the Content-Type of the input stream.
 	 * @param nameHint Value from Slug header or other source, used to determine the newly created resource's URL 
+	 * 
 	 * @return the new resource URI
 	 */
-	public abstract Response postNonRDFSource(InputStream content, String stripCharset, String slug);
+	public abstract Response postNonRDFSource(InputStream content, String stripCharset, String user, String slug);
 	
 	
 	/**

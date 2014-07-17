@@ -18,11 +18,14 @@
  *******************************************************************************/
 package org.eclipse.lyo.ldp.server.jena;
 
+import javax.ws.rs.core.UriBuilder;
+
 import org.eclipse.lyo.ldp.server.ILDPResource;
 import org.eclipse.lyo.ldp.server.LDPResourceManager;
 import org.eclipse.lyo.ldp.server.jena.store.TDBGraphStore;
 import org.eclipse.lyo.ldp.server.jena.vocabulary.LDP;
 import org.eclipse.lyo.ldp.server.jena.vocabulary.Lyo;
+import org.eclipse.lyo.ldp.server.service.LDPService;
 
 import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.rdf.model.Resource;
@@ -78,7 +81,11 @@ public class JenaLDPResourceManager implements LDPResourceManager {
 	public static String mintAssociatedRDFSourceURI(String uri) {
 		return	uri + ASSOCIATED_LDP_RS_PARAM;
 	}
-	
+
+	public static String mintUserURI(String user) {
+		return UriBuilder.fromPath(LDPService.ROOT_APP_URL).path("user").path(user).build().toString();
+	}
+
 	public static boolean isConfigURI(String uri) {
 		return uri.endsWith(CONFIG_PARAM);
 	}

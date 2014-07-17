@@ -90,7 +90,7 @@ public class JenaLDPNonRdfSource extends LDPNonRDFSource {
 
 			// Update the file contents.
 			writeToFile(stream, file);
-			
+
 			// Update config graph with new content type.
 			Resource associatedResource = associatedModel.getResource(associatedURI);
 			associatedResource.removeAll(DCTerms.format);
@@ -103,7 +103,11 @@ public class JenaLDPNonRdfSource extends LDPNonRDFSource {
 			Calendar time = Calendar.getInstance();
 			associatedResource.removeAll(DCTerms.modified);
 			associatedResource.addLiteral(DCTerms.modified, associatedModel.createTypedLiteral(time));
-			
+			if (user != null) {
+				Resource userResource = associatedModel.getResource(JenaLDPResourceManager.mintUserURI(user));
+				associatedModel.add(associatedResource, DCTerms.contributor, userResource);
+			}
+
 			fGraphStore.commit();
 		} catch (UnsupportedEncodingException e) {
 			e.printStackTrace();

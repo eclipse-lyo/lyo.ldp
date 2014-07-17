@@ -155,7 +155,7 @@ public class CreateBugs {
 	 */
 	private static String resource(String resource) {
 		try {
-			InputStream in = CreateAssets.class.getClassLoader().getResourceAsStream("bugs/"+resource);
+			InputStream in = CreateBugs.class.getClassLoader().getResourceAsStream("bugs/"+resource);
 			return IOUtils.toString(in, "UTF-8");
 		} catch (IOException e) {
 			throw new RuntimeException(e);
