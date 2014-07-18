@@ -17,11 +17,8 @@
  *******************************************************************************/
 package org.eclipse.lyo.ldp.sample.loaders;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.io.StringWriter;
 
-import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpStatus;
 import org.apache.wink.client.ClientConfig;
 import org.apache.wink.client.ClientResponse;
@@ -35,25 +32,26 @@ import com.hp.hpl.jena.vocabulary.RDF;
 
 public class CreateAssets {
 
-	private static final String userPass = "ldpuser";
 	private static ClientConfig config = new ClientConfig();
-	private static BasicAuthSecurityHandler basicAuthSecHandler = new BasicAuthSecurityHandler(userPass, userPass);
-	static {
-		basicAuthSecHandler.setUserName(userPass); 
-		basicAuthSecHandler.setPassword(userPass); 
-		config.handlers(basicAuthSecHandler);
-	}
-	private static RestClient client = new RestClient(config);
+	private static BasicAuthSecurityHandler basicAuthSecHandler;
+
+	private static RestClient client;
+	
+	private static final String RESOURCE_TYPE = "networth/";
 
 	private static final String[] ASSETS = {
 		"a1", "a2", "a3", "a4", "a5"
 	};
 
 	public static void main(String[] args) {
-		String rootContainer = getRootContainerURI(args);
+		basicAuthSecHandler = Loader.getCredentials(args);
+		config.handlers(basicAuthSecHandler);
+		client = new RestClient(config);		
+		String rootContainer = Loader.getRootContainerURI(args);
+		
 		System.out.println("Populating sample net worth data to LDP container: " + rootContainer);
 		
-		String netWorth = post(rootContainer, resource("nw1.ttl"), "netWorth");
+		String netWorth = post(rootContainer, Loader.resource(RESOURCE_TYPE, "nw1.ttl"), "netWorth");
 		System.out.println("Created membership resource at " + netWorth);
 		
 		Model m = ModelFactory.createDefaultModel();
@@ -69,7 +67,7 @@ public class CreateAssets {
 		System.out.println("Created asset container at " + assetContainerURL);
 		
 		for (String asset : ASSETS) {
-			String uri = post(assetContainerURL, resource(asset + ".ttl"), asset);
+			String uri = post(assetContainerURL, Loader.resource(RESOURCE_TYPE, asset + ".ttl"), asset);
 			System.out.println("Created asset " + uri);
 		}
 
@@ -93,25 +91,4 @@ public class CreateAssets {
 		return location;
 	}
 
-	private static String getRootContainerURI(String[] args) {
-		if (args.length != 1) {
-			System.err.println("Usage: java com.eclipse.lyo.ldp.sample.networth.CreateAssets <container_url>");
-			System.exit(1);
-		}
-
-		return args[0];
-	}
-
-	/**
-	 * Change the way the requestEntity is created, so that the request can be
-	 * repeatable in the case of an authentication challenge
-	 */
-	private static String resource(String resource) {
-		try {
-			InputStream in = CreateAssets.class.getClassLoader().getResourceAsStream("networth/"+resource);
-			return IOUtils.toString(in, "UTF-8");
-		} catch (IOException e) {
-			throw new RuntimeException(e);
-		}
-	}
 }
