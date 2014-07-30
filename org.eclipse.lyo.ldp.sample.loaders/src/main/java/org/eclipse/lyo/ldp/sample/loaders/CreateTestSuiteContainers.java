@@ -11,7 +11,8 @@
  *	
  *	Contributors:
  *	
-\ *		Steve Speicher - initial implementation
+ *		Steve Speicher - initial implementation
+ *		Samuel Padgett - use double quotes for rel="type"
  *******************************************************************************/
 package org.eclipse.lyo.ldp.sample.loaders;
 
@@ -101,7 +102,7 @@ public class CreateTestSuiteContainers {
 					client.resource(uri).contentType("text/turtle").header("Slug", slug);
 		
 		if (asRes)
-			resource.header("Link", "<http://www.w3.org/ns/ldp#Resource>; rel='type'");
+			resource.header("Link", "<http://www.w3.org/ns/ldp#Resource>; rel=\"type\"");
 			
 		ClientResponse response = resource.post(requestEntity);
 		if (response.getStatusCode() != HttpStatus.SC_CREATED) {
