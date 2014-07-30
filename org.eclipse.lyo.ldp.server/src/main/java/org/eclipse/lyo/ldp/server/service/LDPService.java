@@ -69,6 +69,19 @@ public abstract class LDPService {
 	public static final String LDP_CONTENT_SEGMENT = "ldp.contseg";
 	public static final String LDP_ROOTURI = "ldp.rooturi";
 
+	/**
+	 * Regular expression that matches Link headers with URI
+	 * {@link LDPConstants#CLASS_RESOURCE} and linknrelation {@code "type"}. These all match:
+	 * <ul>
+	 * <li>{@code <http://www.w3.org/ns/ldp#Resource>; rel="type"}</li>
+	 * <li>{@code <http://www.w3.org/ns/ldp#Resource>;rel=type}</li>
+	 * <li>{@code <http://www.w3.org/ns/ldp#Resource>; rel="type http://example.net/relation/other"}</li>
+	 * </ul>
+	 * 
+	 * @see #hasResourceTypeHeader(HttpHeaders)
+	 */
+	private static final String LINK_TYPE_RESOURCE_REGEX
+                = "<\\s*http://www\\.w3\\.org/ns/ldp#Resource\\s*\\>\\s*;\\s*rel\\s*=\\s*((\"\\s*([^\"]+\\s+)*type(\\s+[^\"]+)*\\s*\")|\\s*type\\s*)";
 	
 	@Context HttpServletRequest fRequest;
 	@Context HttpHeaders fRequestHeaders;
@@ -194,33 +207,14 @@ public abstract class LDPService {
 
 	/**
 	 * Given a set of request headers, return true if any of them are (roughly):
-	 *	 Link: <http://www.w3.org/ns/ldp#Resource>; rel='type'
+	 *	 Link: <http://www.w3.org/ns/ldp#Resource>; rel="type"
 	 */
 	public static boolean hasResourceTypeHeader(HttpHeaders headers) {
 		List<String> linkHeaders = headers.getRequestHeader(LDPConstants.HDR_LINK);
 		for (String header : linkHeaders) {
-			for (String s : header.split(",")) {
-				if (isLinkTypeResource(s)) {
-					return true;
-				}
+			if (header.matches(LINK_TYPE_RESOURCE_REGEX)) {
+				return true;
 			}
-		}
-		return false;
-	}
-	
-	/**
-	 * Given a specific Link request header value, return true if any of them are (roughly):
-	 *	 <http://www.w3.org/ns/ldp#Resource>; rel='type'
-	 */
-	public static boolean isLinkTypeResource(String s) {
-		String[] parts = s.split(";");
-		if (parts.length < 2) return false;
-		String p0 = parts[0].trim();
-		String p1 = parts[1].trim();
-		if (p0.contains(LDPConstants.CLASS_RESOURCE)) {
-			return isRelType(p1);
-		} else if (p1.contains(LDPConstants.CLASS_RESOURCE)) {
-			return isRelType(p0);
 		}
 		return false;
 	}
