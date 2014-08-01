@@ -81,7 +81,7 @@ public abstract class LDPService {
 	 * @see #hasResourceTypeHeader(HttpHeaders)
 	 */
 	private static final String LINK_TYPE_RESOURCE_REGEX
-                = "<\\s*http://www\\.w3\\.org/ns/ldp#Resource\\s*\\>\\s*;\\s*rel\\s*=\\s*((\"\\s*([^\"]+\\s+)*type(\\s+[^\"]+)*\\s*\")|\\s*type\\s*)";
+                = "<\\s*http://www\\.w3\\.org/ns/ldp#Resource\\s*\\>\\s*;\\s*rel\\s*=\\s*((\"\\s*([^\"]+\\s+)*type(\\s+[^\"]+)*\\s*\")|\\s*type[\\s,$])";
 	
 	@Context HttpServletRequest fRequest;
 	@Context HttpHeaders fRequestHeaders;
