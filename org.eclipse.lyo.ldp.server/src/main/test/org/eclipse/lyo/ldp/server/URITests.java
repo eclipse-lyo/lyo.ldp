@@ -42,26 +42,39 @@ public class URITests extends TestSuite {
 	}
 	
 	@Test
-	public void testLinkTypeSuccess() {
+	public void testLinkSimple() {
 		// typical success case
-		assertTrue(LDPService.isLinkTypeResource("<http://www.w3.org/ns/ldp#Resource>; rel='type'"));
+		assertTrue("<http://www.w3.org/ns/ldp#Resource>; rel=\"type\"".matches(LDPService.LINK_TYPE_RESOURCE_REGEX));
+	}
 		
-		// reverse order, no problem
-		assertTrue(LDPService.isLinkTypeResource("rel='type'; <http://www.w3.org/ns/ldp#Resource>"));
-
-		// no trailing '
-		assertTrue(LDPService.isLinkTypeResource("<http://www.w3.org/ns/ldp#Resource>; rel='type"));
+	@Test
+	public void testLinkExtraSegments() {
+		assertTrue("<http://www.w3.org/ns/ldp#Resource>; rel=\"type\"; title=\"I have a title\"".matches(LDPService.LINK_TYPE_RESOURCE_REGEX));
+	}
 		
-		// extra segments
-		assertTrue(LDPService.isLinkTypeResource("<http://www.w3.org/ns/ldp#Resource>; rel='type'; title='I have a title'"));
+	@Test
+	public void testLinkNoQuotes() {
+		assertTrue("<http://www.w3.org/ns/ldp#Resource>;rel=type".matches(LDPService.LINK_TYPE_RESOURCE_REGEX));
+	}
+	
+	@Test
+	public void testLinkNoQuotesExtraSegments() {
+		assertTrue("<http://www.w3.org/ns/ldp#Resource>;rel=type;title=mytitle".matches(LDPService.LINK_TYPE_RESOURCE_REGEX));
+	}
+		
+	@Test
+	public void testLinkMultipleRelations() {
+		// multiple link relations
+		assertTrue("<http://www.w3.org/ns/ldp#Resource>; rel=\"type http://example.com/some/other/link\"".matches(LDPService.LINK_TYPE_RESOURCE_REGEX));
+		assertTrue("<http://www.w3.org/ns/ldp#Resource>; rel=\"http://example.com/some/other/link type\"".matches(LDPService.LINK_TYPE_RESOURCE_REGEX));
 	}
 	
 	@Test
 	public void testLinkTypeFailures() {
 		// wrong URL type
-		assertFalse(LDPService.isLinkTypeResource("<http://www.w3.org/ns/ldp#BasicContainer>; rel='type'"));
+		assertFalse("<http://www.w3.org/ns/ldp#BasicContainer>; rel=\"type\"".matches(LDPService.LINK_TYPE_RESOURCE_REGEX));
 
 		// wrong rel value of 'next'
-		assertFalse(LDPService.isLinkTypeResource("<http://www.w3.org/ns/ldp#Resource>; rel='next'"));
+		assertFalse("<http://www.w3.org/ns/ldp#Resource>; rel=\"next\"".matches(LDPService.LINK_TYPE_RESOURCE_REGEX));
 	}
 }

@@ -74,14 +74,15 @@ public abstract class LDPService {
 	 * {@link LDPConstants#CLASS_RESOURCE} and linknrelation {@code "type"}. These all match:
 	 * <ul>
 	 * <li>{@code <http://www.w3.org/ns/ldp#Resource>; rel="type"}</li>
+	 * <li>{@code <http://www.w3.org/ns/ldp#Resource>; rel="type"; title="LDP Resource"}</li>
 	 * <li>{@code <http://www.w3.org/ns/ldp#Resource>;rel=type}</li>
 	 * <li>{@code <http://www.w3.org/ns/ldp#Resource>; rel="type http://example.net/relation/other"}</li>
 	 * </ul>
 	 * 
 	 * @see #hasResourceTypeHeader(HttpHeaders)
 	 */
-	private static final String LINK_TYPE_RESOURCE_REGEX
-                = "<\\s*http://www\\.w3\\.org/ns/ldp#Resource\\s*\\>\\s*;\\s*rel\\s*=\\s*((\"\\s*([^\"]+\\s+)*type(\\s+[^\"]+)*\\s*\")|\\s*type[\\s,$])";
+	public static final String LINK_TYPE_RESOURCE_REGEX
+                = "<http://www\\.w3\\.org/ns/ldp#Resource\\>\\s*;\\s*rel\\s*=\\s*((\"\\s*([^\"]+\\s+)*type(\\s+[^\"]+)*\\s*\")|\\s*type)([\\s;,]+.*|\\z)";
 	
 	@Context HttpServletRequest fRequest;
 	@Context HttpHeaders fRequestHeaders;
