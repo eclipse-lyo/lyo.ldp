@@ -21,7 +21,7 @@ import junit.framework.TestSuite;
 import org.eclipse.lyo.ldp.server.service.LDPService;
 import org.junit.Test;
 
-public class URITests extends TestSuite {
+public class URITest extends TestSuite {
 	
 	@Test
 	public void testURITools1 () {		
