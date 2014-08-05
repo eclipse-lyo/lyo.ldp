@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2013 IBM Corporation.
+ * Copyright (c) 2013, 2014 IBM Corporation.
  *
  *	All rights reserved. This program and the accompanying materials
  *	are made available under the terms of the Eclipse Public License v1.0
@@ -14,6 +14,7 @@
  *	   Frank Budinsky - initial API and implementation
  *	   Steve Speicher - initial API and implementation
  *	   Samuel Padgett - initial API and implementation
+ *	   Samuel Padgett - add HttpHeaderResponseFilter to sample application
  *******************************************************************************/
 package org.eclipse.lyo.ldp.webapp.service;
 
@@ -26,11 +27,14 @@ import org.eclipse.lyo.ldp.server.jena.JenaLDPService;
 import org.eclipse.lyo.ldp.server.service.HttpHeaderResponseFilter;
 
 public class LDPApplication extends Application {
+	
 	@Override
 	public Set<Class<?>> getClasses() {
 		Set<Class<?>> classes = new HashSet<Class<?>>();
 		classes.add(JenaLDPService.class);
+		classes.add(VisualizationService.class);
 		classes.add(HttpHeaderResponseFilter.class);
 		return classes;
 	}
+
 }

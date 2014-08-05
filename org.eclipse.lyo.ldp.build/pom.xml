@@ -14,6 +14,5 @@
         <module>../org.eclipse.lyo.ldp.server.jena</module>
         <module>../org.eclipse.lyo.ldp.webapp</module>
         <module>../org.eclipse.lyo.ldp.sample.loaders</module>
-        <module>../org.eclipse.lyo.ldp.sample</module>
     </modules>
 </project>

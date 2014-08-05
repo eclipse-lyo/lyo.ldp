@@ -15,7 +15,7 @@
  *	   Steve Speicher - initial API and implementation
  *	   Samuel Padgett - initial API and implementation
  *******************************************************************************/
-package org.eclipse.lyo.ldp.sample;
+package org.eclipse.lyo.ldp.webapp.service;
 
 import java.io.File;
 
