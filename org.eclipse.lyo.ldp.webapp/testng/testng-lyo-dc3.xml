@@ -18,6 +18,7 @@
          See: http://www.w3.org/TR/ldp/#ldpc-post-createrdf
       -->
     <parameter name="containerAsResource" value="http://oslclnx2.rtp.raleigh.ibm.com:8080/ldp/resources/bc-asres" />
+    <parameter name="readOnlyProp" value="http://purl.org/dc/terms/created" />
     
     <!-- Default values to plug into Properties in the Earl Report  -->
     <parameter name="language" value = "Java" />
