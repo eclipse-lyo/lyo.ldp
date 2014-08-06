@@ -30,7 +30,6 @@
 		</dependency>
 	</dependencies>
 	<build>
-		<finalName>ldp</finalName>
 		<plugins>
 			<plugin>
 				<groupId>org.mortbay.jetty</groupId>
