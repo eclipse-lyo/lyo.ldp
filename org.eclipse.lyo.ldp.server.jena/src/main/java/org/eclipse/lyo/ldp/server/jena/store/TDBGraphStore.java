@@ -23,6 +23,8 @@ package org.eclipse.lyo.ldp.server.jena.store;
 import java.io.OutputStream;
 import java.util.Calendar;
 
+import javax.ws.rs.core.UriBuilder;
+
 import org.eclipse.lyo.ldp.server.LDPConstants;
 import org.eclipse.lyo.ldp.server.jena.JenaLDPResourceManager;
 import org.eclipse.lyo.ldp.server.jena.vocabulary.Lyo;
@@ -141,6 +143,8 @@ public class TDBGraphStore implements GraphStore
 	public String mintURI(String containerURI, String graphURIPrefix, String nameHint) {
 		String graphURI = null;
 		if (nameHint != null && nameHint.length() > 0) {
+			// Strip special characters from the slug
+			nameHint = nameHint.replaceAll("[^\\w\\s\\-_]", "");
 			graphURI = appendURISegment(containerURI,  nameHint);
 			if (previouslyUsed(graphURI)) graphURI = null;
 		} 
@@ -211,9 +215,8 @@ public class TDBGraphStore implements GraphStore
 		} finally { end(); }
 	}
 
-
 	public static String appendURISegment(String base, String append)
 	{
-		return base.endsWith("/") ? base + append : base + "/" + append;
+		return UriBuilder.fromUri(base).path(append).build().toString();
 	}
 }

@@ -7,16 +7,17 @@
         <listener class-name='org.w3.ldp.testsuite.reporter.LdpEarlReporter'/>
     </listeners>
 
-    <!-- <parameter name="basicContainer" value="http://oslclnx2.rtp.raleigh.ibm.com:8080/ldp/resources/bc/" /> -->
-    <parameter name="directContainer" value="http://oslclnx2.rtp.raleigh.ibm.com:8080/ldp/resources/dc-invmbr/" />
-    <!-- <parameter name="indirectContainer" value="http://localhost:8080/ldp/resources/" /> -->
+    <parameter name="auth" value="ldpuser:ldpuser" />
+    <!-- <parameter name="basicContainer" value="http://oslclnx2.rtp.raleigh.ibm.com:8080/ldp/resources/bc" /> -->
+    <parameter name="directContainer" value="http://oslclnx2.rtp.raleigh.ibm.com:8080/ldp/resources/dc-invmbr" />
+    <!-- <parameter name="indirectContainer" value="http://localhost:8080/ldp/resources" /> -->
     
     <!-- A resource whose internal RDF state has a type triple of one of container types
          but whose interaction model was created with header on POST request of:
            Link: <http://www.w3c.org/ldp/ns#Resource>;rel="type"
          See: http://www.w3.org/TR/ldp/#ldpc-post-createrdf
       -->
-    <parameter name="containerAsResource" value="http://oslclnx2.rtp.raleigh.ibm.com:8080/ldp/resources/bc-asres/" />
+    <parameter name="containerAsResource" value="http://oslclnx2.rtp.raleigh.ibm.com:8080/ldp/resources/bc-asres" />
     
     <!-- Default values to plug into Properties in the Earl Report  -->
     <parameter name="language" value = "Java" />

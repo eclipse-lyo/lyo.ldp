@@ -54,13 +54,13 @@ public class CreateTestSuiteContainers {
 		String mr2 = post(rootContainer, Loader.resource(RESOURCE_TYPE, "diffmr.ttl"), "diffmr2", false);
 		System.out.println("Created ldp:RDFSource at: \t\t" + mr2);
 		
-		String c = post(rootContainer, Loader.resource(RESOURCE_TYPE, "bc.ttl"), "bc/", false);
+		String c = post(rootContainer, Loader.resource(RESOURCE_TYPE, "bc.ttl"), "bc", false);
 		System.out.println("Created ldp:BasicContainer at: \t\t" + c);
 
-		c = post(rootContainer, Loader.resource(RESOURCE_TYPE, "dc-simple.ttl"), "dc-simple/", false);
+		c = post(rootContainer, Loader.resource(RESOURCE_TYPE, "dc-simple.ttl"), "dc-simple", false);
 		System.out.println("Created ldp:DirectContainer (simple) at: \t" + c);
 
-		c = post(rootContainer, Loader.resource(RESOURCE_TYPE, "dc-invmbr.ttl"), "dc-invmbr/", false);
+		c = post(rootContainer, Loader.resource(RESOURCE_TYPE, "dc-invmbr.ttl"), "dc-invmbr", false);
 		System.out.println("Created ldp:DirectContainer (inverse mbr) at: \t" + c);
 
 		Model m = ModelFactory.createDefaultModel();
@@ -74,7 +74,7 @@ public class CreateTestSuiteContainers {
 		StringWriter stringWriter = new StringWriter();
 		m.write(stringWriter, "TURTLE", "");
 
-		c = post(rootContainer, stringWriter.toString(), "dc-diffmr/", false);
+		c = post(rootContainer, stringWriter.toString(), "dc-diffmr", false);
 		System.out.println("Created ldp:DirectContainer (diff mbrshp res) at: \t" + c);
 
 		m = ModelFactory.createDefaultModel();
@@ -88,10 +88,10 @@ public class CreateTestSuiteContainers {
 		stringWriter = new StringWriter();
 		m.write(stringWriter, "TURTLE", "");
 
-		c = post(rootContainer, stringWriter.toString(), "dc-invmbr-diffmr/", false);
+		c = post(rootContainer, stringWriter.toString(), "dc-invmbr-diffmr", false);
 		System.out.println("Created ldp:DirectContainer (diff mbrshp res + inv mbr) at: \t" + c);
 		
-		c = post(rootContainer, Loader.resource(RESOURCE_TYPE, "bc.ttl"), "bc-asres/", true);
+		c = post(rootContainer, Loader.resource(RESOURCE_TYPE, "bc.ttl"), "bc-asres", true);
 		System.out.println("Created ldp:BasicContainer (interaction model of ldp:Resource) at: \t\t" + c);
 
 		System.out.println("Completed successfully!");
