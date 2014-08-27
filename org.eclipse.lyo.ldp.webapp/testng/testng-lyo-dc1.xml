@@ -9,7 +9,7 @@
 
     <parameter name="auth" value="ldpuser:ldpuser" />
     <!-- <parameter name="basicContainer" value="http://oslclnx2.rtp.raleigh.ibm.com:8080/ldp/resources/bc" /> -->
-    <parameter name="directContainer" value="http://oslclnx2.rtp.raleigh.ibm.com:8080/ldp/resources/dc-simple" />
+    <parameter name="directContainer" value="http://localhost:8080/ldp/resources/dc-simple" />
     <!-- <parameter name="indirectContainer" value="http://localhost:8080/ldp/resources" /> -->
     
     <!-- A resource whose internal RDF state has a type triple of one of container types
@@ -17,14 +17,14 @@
            Link: <http://www.w3c.org/ldp/ns#Resource>;rel="type"
          See: http://www.w3.org/TR/ldp/#ldpc-post-createrdf
       -->
-    <parameter name="containerAsResource" value="http://oslclnx2.rtp.raleigh.ibm.com:8080/ldp/resources/bc-asres" />
+    <parameter name="containerAsResource" value="http://localhost:8080/ldp/resources/bc-asres" />
     <parameter name="readOnlyProp" value="http://purl.org/dc/terms/created" />
     
-    <!-- Default values to plug into Properties in the Earl Report  -->
+    <!-- Lyo Properties in the Earl Report  -->
     <parameter name="language" value = "Java" />
-    <parameter name="homepage" value ="http://wiki.eclipse.org/Lyo/LDPImpl" />
-    <parameter name="referencePage" value="http://eclipse.org/lyo#dc1" />
-    <parameter name="subjectName" value="Eclipse Lyo-DC1" />
+    <parameter name="homepage" value ="http://wiki.eclipse.org/Lyo/LDPImpl#dc1" />
+    <parameter name="assertor" value="http://stevespeicher.me#self" />
+    <parameter name="shortname" value="Eclipse Lyo-DC1" />
     <parameter name="software" value="Reference Implementation" />
     <parameter name="mail" value="sspeiche@gmail.com" />
     <parameter name="developer" value="Steve Speicher" />
@@ -37,7 +37,7 @@
 
     <!-- Optional RDF member resource parameter. If left out, the tests will
         try to create a resource in one of the containers. -->
-    <parameter name="memberResource" value="http://oslclnx2.rtp.raleigh.ibm.com:8080/ldp/resources/diffmr1"/>
+    <parameter name="memberResource" value="http://localhost:8080/ldp/resources/diffmr1"/>
 
     <test name="All Tests">
         <groups>
