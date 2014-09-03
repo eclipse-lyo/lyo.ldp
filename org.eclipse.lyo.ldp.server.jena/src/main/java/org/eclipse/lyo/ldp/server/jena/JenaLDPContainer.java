@@ -4,19 +4,19 @@
  *	All rights reserved. This program and the accompanying materials
  *	are made available under the terms of the Eclipse Public License v1.0
  *	and Eclipse Distribution License v. 1.0 which accompanies this distribution.
- *	
+ *
  *	The Eclipse Public License is available at http://www.eclipse.org/legal/epl-v10.html
  *	and the Eclipse Distribution License is available at
  *	http://www.eclipse.org/org/documents/edl-v10.php.
- *	
+ *
  *	Contributors:
- *	
+ *
  *	   Frank Budinsky - initial API and implementation
  *	   Steve Speicher - initial API and implementation
  *	   Samuel Padgett - initial API and implementation
  *	   Samuel Padgett - make jsonld-java dependency optional
  *	   Steve Speicher - updates for recent LDP spec changes
- *	   Steve Speicher - make root URI configurable 
+ *	   Steve Speicher - make root URI configurable
  *	   Samuel Padgett - remove membership and containment triples on delete and update dcterms:modified
  *	   Samuel Padgett - add ETag and Link headers with correct types on GET requests
  *	   Samuel Padgett - fix NPEx creating root container on first launch
@@ -28,6 +28,8 @@
  *	   Samuel Padgett - add support for LDP Non-RDF Source
  *	   Samuel Padgett - support Prefer header
  *	   Samuel Padgett - support read-only properties and rel="describedby"
+ *	   Samuel Padgett - add an anchor parameter to the Link response header
+ *						on LDP-NR creation
  *******************************************************************************/
 package org.eclipse.lyo.ldp.server.jena;
 
@@ -41,6 +43,7 @@ import java.util.Set;
 import javax.ws.rs.HttpMethod;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.Link;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.ResponseBuilder;
@@ -130,7 +133,7 @@ public class JenaLDPContainer extends JenaLDPRDFSource implements ILDPContainer
 		}
 		fResourceURIPrefix = appendURISegment(fURI, prefix);
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see org.eclipse.lyo.ldp.server.impl.ILDPContainer#query(java.io.OutputStream, java.lang.String, java.lang.String)
 	 */
@@ -138,7 +141,7 @@ public class JenaLDPContainer extends JenaLDPRDFSource implements ILDPContainer
 	{
 		fGraphStore.query(outStream, queryString, resultsFormat);
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see org.eclipse.lyo.ldp.server.impl.ILDPContainer#post(java.io.InputStream, java.lang.String, java.lang.String)
 	 */
@@ -160,7 +163,7 @@ public class JenaLDPContainer extends JenaLDPRDFSource implements ILDPContainer
 			fGraphStore.end();
 		}
 	}
-		
+
 	/* (non-Javadoc)
 	 * @see org.eclipse.lyo.ldp.server.impl.ILDPContainer#putCreate(java.lang.String, java.io.InputStream, java.lang.String, java.lang.String)
 	 */
@@ -179,7 +182,7 @@ public class JenaLDPContainer extends JenaLDPRDFSource implements ILDPContainer
 							"Can not create a resource for URI that has already been used for a deleted resource at: "+resourceURI).build());
 				}
 				fGraphStore.createCompanionGraph(resourceURI, JenaLDPResourceManager.mintConfigURI(resourceURI));
-				createResource(resourceURI, false, stream, contentType, user);	
+				createResource(resourceURI, false, stream, contentType, user);
 				create = true;
 			} else {
 				updateResource(stream, contentType, user, requestHeaders);
@@ -188,10 +191,10 @@ public class JenaLDPContainer extends JenaLDPRDFSource implements ILDPContainer
 		} finally {
 			fGraphStore.end();
 		}
-		
+
 		return create;
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see org.eclipse.lyo.ldp.server.impl.ILDPContainer#patch(java.lang.String, java.io.InputStream, java.lang.String, java.lang.String)
 	 */
@@ -209,7 +212,7 @@ public class JenaLDPContainer extends JenaLDPRDFSource implements ILDPContainer
 			fGraphStore.end();
 		}
 	}
-	
+
 	/**
 	 * Create resource and add membership triples
 	 * @param resourceURI The NEW resource being added (including any query params, etc)
@@ -252,13 +255,13 @@ public class JenaLDPContainer extends JenaLDPRDFSource implements ILDPContainer
 
 		fGraphStore.putGraph(resourceURI, model);
 
-		return resourceURI; 
+		return resourceURI;
 	}
 
 	/**
 	 * Adds containment triples and, if a direct container, membership triples
 	 * for this resource.
-	 * 
+	 *
 	 * @param resourceURI the URI of the resource to add
 	 * @param resourceModel the RDF content or null for non-RDF source (needed for the ldp:isMemberOfRelation)
 	 * @param time the current time (for dcterms:modified properties)
@@ -267,7 +270,7 @@ public class JenaLDPContainer extends JenaLDPRDFSource implements ILDPContainer
 		final String containerURI = getContainerURIForResource(resourceURI);
 		final Model containerModel = fGraphStore.getGraph(containerURI);
 		final Resource containerResource = containerModel.getResource(containerURI);
-		
+
 		// TODO: Push direct container specific logic down to JeanLDPDirectContainer.
 
 		// Can't do it yet since this might not be the container for the resource. PATCH and PUT to create
@@ -298,12 +301,12 @@ public class JenaLDPContainer extends JenaLDPRDFSource implements ILDPContainer
 		containerResource.removeAll(DCTerms.modified);
 		containerResource.addLiteral(DCTerms.modified, containerModel.createTypedLiteral(time));
 	}
-	
+
 	protected void patchResource(String resourceURI, String baseURI, InputStream stream, String contentType, String user)
 	{
 		Model model = readModel(baseURI, stream, contentType);
 		Resource subject = model.getResource(resourceURI);
-		
+
 		// Update dcterms:modified
 
 		Calendar time = Calendar.getInstance();
@@ -311,11 +314,11 @@ public class JenaLDPContainer extends JenaLDPRDFSource implements ILDPContainer
 		subject.addLiteral(DCTerms.modified, model.createTypedLiteral(time));
 
 		// TODO: Process patch contents
-	   
+
 		/*fGraphStore.putGraph(resourceURI, model);
 		model.close(); */
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see org.eclipse.lyo.ldp.server.impl.ILDPContainer#delete(java.lang.String)
 	 */
@@ -324,7 +327,7 @@ public class JenaLDPContainer extends JenaLDPRDFSource implements ILDPContainer
 		// TODO: Need to determine if we need any other Container-specific
 		super.delete();
 	}
-	
+
 	@Override
 	protected Model amendResponseGraph(Model container, MultivaluedMap<String, String> preferences)
 	{
@@ -335,15 +338,15 @@ public class JenaLDPContainer extends JenaLDPRDFSource implements ILDPContainer
 		if (!includeContainment(preferences)) {
 			result.getResource(fURI).removeAll(LDP.contains);
 		}
-		
+
 		return result;
 	}
-	
+
 	protected boolean isReturnRepresentationPreferenceApplied(MultivaluedMap<String, String> preferences) {
 		// Return true if any recognized include or omit preferences are in the request.
 		final List<String> include = preferences.get(LDPConstants.PREFER_INCLUDE);
 		final List<String> omit = preferences.get(LDPConstants.PREFER_OMIT);
-		
+
 		if (include != null
 				&& (include.contains(LDPConstants.PREFER_MINIMAL_CONTAINER) || include.contains(LDPConstants.PREFER_CONTAINMENT))) {
 			return true;
@@ -366,7 +369,7 @@ public class JenaLDPContainer extends JenaLDPRDFSource implements ILDPContainer
 		Statement stmt = containerResource.getProperty(LDP.hasMemberRelation);
 		return stmt != null ? containerGraph.getProperty(stmt.getObject().asResource().getURI()) : LDP.member;
 	}
-	
+
 	public static Property getIsMemberOfRelation(Model containerGraph, Resource containerResource)
 	{
 		Statement stmt = containerResource.getProperty(LDP.isMemberOfRelation);
@@ -391,7 +394,7 @@ public class JenaLDPContainer extends JenaLDPRDFSource implements ILDPContainer
 
 		return allow;
 	}
-	
+
 	@Override
 	protected Set<String> getReadOnlyProperties() {
 		Set<String> readOnly = super.getReadOnlyProperties();
@@ -405,7 +408,7 @@ public class JenaLDPContainer extends JenaLDPRDFSource implements ILDPContainer
 		fGraphStore.writeLock();
 		try {
 			String uri = fGraphStore.mintURI(fURI, fResourceURIPrefix, slug);
-			
+
 			// Config graph for internal metadata (e.g., tracking resource deletion)
 			String configURI = JenaLDPResourceManager.mintConfigURI(uri);
 			Model configModel = fGraphStore.createCompanionGraph(uri, configURI);
@@ -438,10 +441,15 @@ public class JenaLDPContainer extends JenaLDPRDFSource implements ILDPContainer
 
 			fGraphStore.commit();
 
-			return build(Response
-					.status(Status.CREATED)
-					.header(HttpHeaders.LOCATION, uri)
-					.link(associatedURI, LDPConstants.LINK_REL_DESCRIBEDBY));
+			return build(
+					Response
+						.status(Status.CREATED)
+						.header(HttpHeaders.LOCATION, uri)
+						.links(Link.fromUri(associatedURI)
+								.rel(LDPConstants.LINK_REL_DESCRIBEDBY)
+								.param(LDPConstants.LINK_PARAM_ANCHOR, uri)
+								.build())
+			);
 		} finally {
 			fGraphStore.end();
 		}
@@ -450,19 +458,19 @@ public class JenaLDPContainer extends JenaLDPRDFSource implements ILDPContainer
 	protected boolean includeContainment(MultivaluedMap<String, String> preferences) {
 		final List<String> include = preferences.get(LDPConstants.PREFER_INCLUDE);
 		final List<String> omit = preferences.get(LDPConstants.PREFER_OMIT);
-		
+
 		final boolean omitContainment = (omit != null && omit.contains(LDPConstants.PREFER_CONTAINMENT));
 		if (include != null) {
 			if (include.contains(LDPConstants.PREFER_CONTAINMENT)) {
 				return true;
 			}
-	
+
 			if (include.contains(LDPConstants.PREFER_MINIMAL_CONTAINER) ||
 					include.contains(LDPConstants.DEPRECATED_PREFER_EMPTY_CONTAINER)) {
 				return false;
 			}
 		}
-		
+
 		return !omitContainment;
 	 }
 }
