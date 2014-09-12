@@ -4,13 +4,13 @@
  *	All rights reserved. This program and the accompanying materials
  *	are made available under the terms of the Eclipse Public License v1.0
  *	and Eclipse Distribution License v. 1.0 which accompanies this distribution.
- *	
+ *
  *	The Eclipse Public License is available at http://www.eclipse.org/legal/epl-v10.html
  *	and the Eclipse Distribution License is available at
  *	http://www.eclipse.org/org/documents/edl-v10.php.
- *	
+ *
  *	Contributors:
- *	
+ *
  *	   Steve Speicher - support for various container types
  *	   Samuel Padgett - use TDB transactions
  *	   Samuel Padgett - add Allow header to GET responses
@@ -70,8 +70,8 @@ public class JenaLDPRDFSource extends LDPRDFSource {
 	 * specific data.
 	 */
 	protected String fConfigGraphURI;
-	protected final TDBGraphStore fGraphStore; // GraphStore in which to store the container and member resources	
-	
+	protected final TDBGraphStore fGraphStore; // GraphStore in which to store the container and member resources
+
 	protected JenaLDPRDFSource(String resourceURI, TDBGraphStore graphStore)
 	{
 		super(resourceURI, graphStore);
@@ -79,7 +79,7 @@ public class JenaLDPRDFSource extends LDPRDFSource {
 		fGraphStore = graphStore;
 		fConfigGraphURI = JenaLDPResourceManager.mintConfigURI(fURI);
 	}
-	
+
 	protected Model getConfigModel() {
 		return fGraphStore.getGraph(fConfigGraphURI);
 	}
@@ -139,7 +139,7 @@ public class JenaLDPRDFSource extends LDPRDFSource {
 			}
 		}
 	}
-	
+
 	@Override
 	public void patch(String resourceURI, InputStream stream,
 			String contentType, String user) {
@@ -179,7 +179,7 @@ public class JenaLDPRDFSource extends LDPRDFSource {
 
 			// Delete the resource itself
 			fGraphStore.deleteGraph(getURI());
-			
+
 			// Keep track of the deletion by logging the delete time
 			final String configURI = JenaLDPResourceManager.mintConfigURI(getURI());
 			Model configModel = fGraphStore.getGraph(configURI);
@@ -187,7 +187,7 @@ public class JenaLDPRDFSource extends LDPRDFSource {
 				configModel = fGraphStore.createCompanionGraph(getURI(), configURI);
 			}
 			configModel.getResource(getURI()).addLiteral(Lyo.deleted, configModel.createTypedLiteral(time));
-			
+
 			fGraphStore.commit();
 		} finally {
 			fGraphStore.end();
@@ -234,10 +234,10 @@ public class JenaLDPRDFSource extends LDPRDFSource {
 
 	/**
 	 * Create a weak ETag value from a Jena model.
-	 * 
+	 *
 	 * @param m the model that represents the HTTP response body
 	 * @return an ETag value
-	 * 
+	 *
 	 * @see <a href="http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.19">HTTP 1.1: Section 14.19 - ETag</a>
 	 */
 	protected String getETag(Model m) {
@@ -249,19 +249,19 @@ public class JenaLDPRDFSource extends LDPRDFSource {
 		// Create a weak entity tag from the MD5 hash.
 		return "W/\"" + md5 + "\"";
 	}
-	
+
 	/**
 	 * For sub-classes to implement, given the graph for resource R, amend some triples before
 	 * response set to client
 	 * @param graph
-	 * @param preferences 
+	 * @param preferences
 	 * @return the amended model
 	 */
 	protected Model amendResponseGraph(Model graph, MultivaluedMap<String, String> preferences) {
 		// Nothing to do unless we're a container, which is handled by subclasses.
 		return graph;
 	}
-	
+
 	public TDBGraphStore getGraphStore() {
 		return fGraphStore;
 	}
@@ -284,7 +284,7 @@ public class JenaLDPRDFSource extends LDPRDFSource {
 	 */
 	protected String getContainerURIForResource(String resourceURI) {
 		// Determine which container this resource belongs (so we can remove the right membership and containment triples)
-		Model globalModel = fGraphStore.getGraph("urn:x-arq:UnionGraph");		
+		Model globalModel = fGraphStore.getGraph("urn:x-arq:UnionGraph");
 		StmtIterator stmts = globalModel.listStatements(null, LDP.contains, globalModel.getResource(resourceURI));
 		String containerURI = null;
 		if (stmts.hasNext()) {
@@ -294,14 +294,14 @@ public class JenaLDPRDFSource extends LDPRDFSource {
 		}
 		return containerURI;
 	}
-	
+
 	protected void fail(Status status) {
 		throw new WebApplicationException(build(Response.status(status)));
 	}
-	
+
 	/**
 	 * Helper to add standard content (Allow header, Link header) to this response.
-	 * 
+	 *
 	 * @param response
 	 *			  the response builder to add to
 	 * @return the response with additional content common to all responses
@@ -317,7 +317,7 @@ public class JenaLDPRDFSource extends LDPRDFSource {
 	public Response options() {
 		return build(Response.ok());
 	}
-	
+
 	@Override
 	public Set<String> getAllowedMethods() {
 		HashSet<String> allowedMethods = new HashSet<String>();
@@ -330,7 +330,7 @@ public class JenaLDPRDFSource extends LDPRDFSource {
 
 		return allowedMethods;
 	}
-	
+
 	protected Set<String> getReadOnlyProperties() {
 		HashSet<String> readOnly = new HashSet<String>();
 		readOnly.add(DCTerms.created.getURI());
@@ -392,10 +392,10 @@ public class JenaLDPRDFSource extends LDPRDFSource {
 		body.write(out, "TURTLE");
 
 		return build(Response.status(status)
-				.link(CONSTRAINTS_URI, LDPConstants.LINK_REL_DESCRIBEDBY)
+				.link(CONSTRAINTS_URI, LDPConstants.LINK_REL_CONSTRAINEDBY)
 				.entity(out.toByteArray()));
 	}
-	
+
 	protected void failReadOnlyProperty(String uri) {
 		Model responseBody = ModelFactory.createDefaultModel();
 		Resource error = responseBody.createResource(Lyo.Error);

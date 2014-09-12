@@ -65,6 +65,7 @@ public class LDPConstants
 	public static final String LINK_PARAM_ANCHOR = "anchor";
 	public static final String LINK_REL_TYPE = "type";
 	public static final String LINK_REL_DESCRIBEDBY = "describedby";
+	public static final String LINK_REL_CONSTRAINEDBY = nsName("constrainedBy");
 
 	// RDF Property names both namespace and local
 	public static final String PROP_LNAME_MEMBERSHIP_RESOURCE = "membershipResource";
