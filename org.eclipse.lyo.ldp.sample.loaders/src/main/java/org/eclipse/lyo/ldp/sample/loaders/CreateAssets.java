@@ -14,16 +14,16 @@
  *	   Frank Budinsky - initial API and implementation
  *	   Steve Speicher - initial API and implementation
  *	   Samuel Padgett - initial API and implementation
+ *	   Samuel Padgett - add Link header with interaction model on POST
  *******************************************************************************/
 package org.eclipse.lyo.ldp.sample.loaders;
 
+import static org.eclipse.lyo.ldp.sample.loaders.Loader.*;
+
 import java.io.StringWriter;
 
-import org.apache.http.HttpStatus;
-import org.apache.wink.client.ClientConfig;
-import org.apache.wink.client.ClientResponse;
 import org.apache.wink.client.RestClient;
-import org.apache.wink.client.handlers.BasicAuthSecurityHandler;
+import org.eclipse.lyo.ldp.server.LDPConstants;
 
 import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.rdf.model.ModelFactory;
@@ -31,12 +31,6 @@ import com.hp.hpl.jena.rdf.model.Resource;
 import com.hp.hpl.jena.vocabulary.RDF;
 
 public class CreateAssets {
-
-	private static ClientConfig config = new ClientConfig();
-	private static BasicAuthSecurityHandler basicAuthSecHandler;
-
-	private static RestClient client;
-	
 	private static final String RESOURCE_TYPE = "networth/";
 
 	private static final String[] ASSETS = {
@@ -44,14 +38,14 @@ public class CreateAssets {
 	};
 
 	public static void main(String[] args) {
-		basicAuthSecHandler = Loader.getCredentials(args);
-		config.handlers(basicAuthSecHandler);
-		client = new RestClient(config);		
-		String rootContainer = Loader.getRootContainerURI(args);
+		RestClient client = createClient(args);
+		String rootContainer = getRootContainerURI(args);
 		
 		System.out.println("Populating sample net worth data to LDP container: " + rootContainer);
 		
-		String netWorth = post(rootContainer, Loader.resource(RESOURCE_TYPE, "nw1.ttl"), "netWorth");
+		String netWorth = post(client, rootContainer,
+				resource(RESOURCE_TYPE, "nw1.ttl"), "netWorth",
+				LDPConstants.CLASS_DIRECT_CONTAINER);
 		System.out.println("Created membership resource at " + netWorth);
 		
 		Model m = ModelFactory.createDefaultModel();
@@ -63,32 +57,16 @@ public class CreateAssets {
 		StringWriter stringWriter = new StringWriter();
 		m.write(stringWriter, "TURTLE", "");
 		
-		String assetContainerURL = post(rootContainer, stringWriter.toString(), "assetContainer");
+		String assetContainerURL = post(client, rootContainer,
+				stringWriter.toString(), "assetContainer",
+				LDPConstants.CLASS_DIRECT_CONTAINER);
 		System.out.println("Created asset container at " + assetContainerURL);
 		
 		for (String asset : ASSETS) {
-			String uri = post(assetContainerURL, Loader.resource(RESOURCE_TYPE, asset + ".ttl"), asset);
+			String uri = post(client, assetContainerURL, resource(RESOURCE_TYPE, asset + ".ttl"), asset);
 			System.out.println("Created asset " + uri);
 		}
 
 		System.out.println("Done!");
 	}
-	
-	private static String post(String uri, Object requestEntity, String slug) {
-		org.apache.wink.client.Resource resource = client.resource(uri);
-		ClientResponse response = resource.contentType("text/turtle").header("Slug", slug).post(requestEntity);
-		if (response.getStatusCode() != HttpStatus.SC_CREATED) {
-			System.err.println("ERROR: Failed to create resource. Status: " + response.getStatusCode());
-			System.exit(1);
-		}
-		
-		String location = response.getHeaders().getFirst("Location");
-		if (location == null) {
-			System.err.println("ERROR: No Location header in 201 response.");
-			System.exit(1);
-		}
-		
-		return location;
-	}
-
 }

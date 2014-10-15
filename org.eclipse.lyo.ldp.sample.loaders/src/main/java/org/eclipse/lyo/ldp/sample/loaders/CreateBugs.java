@@ -15,19 +15,20 @@
  *	   Steve Speicher - initial API and implementation
  *	   Samuel Padgett - initial API and implementation
  *	   Samuel Padgett - add If-Match headers to PUT requests
+ *	   Samuel Padgett - add Link header with interaction model on POST
  *******************************************************************************/
 package org.eclipse.lyo.ldp.sample.loaders;
+
+import static org.eclipse.lyo.ldp.sample.loaders.Loader.*;
 
 import java.io.InputStream;
 import java.io.StringWriter;
 
 import javax.ws.rs.core.Response.Status.Family;
 
-import org.apache.http.HttpStatus;
-import org.apache.wink.client.ClientConfig;
 import org.apache.wink.client.ClientResponse;
 import org.apache.wink.client.RestClient;
-import org.apache.wink.client.handlers.BasicAuthSecurityHandler;
+import org.eclipse.lyo.ldp.server.LDPConstants;
 
 import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.rdf.model.ModelFactory;
@@ -39,68 +40,50 @@ public class CreateBugs {
 	private static final String BT_NS = "http://example.org/vocab/bugtracker#";
 	private static final Property RELATED_BUG = ResourceFactory.createProperty(BT_NS, "relatedBug");
 
-	private static ClientConfig config = new ClientConfig();
-	private static BasicAuthSecurityHandler basicAuthSecHandler;
-
-	private static RestClient client;
-	
 	private static final String RESOURCE_TYPE = "bugs/";
 
 	public static void main(String[] args) {
-		basicAuthSecHandler = Loader.getCredentials(args);
-		String rootContainer = Loader.getRootContainerURI(args);
-		config.handlers(basicAuthSecHandler);
-		client = new RestClient(config);
+		RestClient client = createClient(args);
+		String rootContainer = getRootContainerURI(args);
 		
 		System.out.println("Populating sample bug tracker data to LDP container: " + rootContainer);
 		
-		String btContainer = post(rootContainer, Loader.resource(RESOURCE_TYPE,"bugTracker.ttl"), "bugTracker");
+		String btContainer = post(client, rootContainer,
+				resource(RESOURCE_TYPE, "bugTracker.ttl"), "bugTracker",
+				LDPConstants.CLASS_DIRECT_CONTAINER);
 		System.out.println("Created Bug Tracker container at " + btContainer);
 		
-		String productA = post(btContainer, Loader.resource(RESOURCE_TYPE,"productA.ttl"), "productA");
+		String productA = post(client, btContainer,
+				resource(RESOURCE_TYPE, "productA.ttl"), "productA",
+				LDPConstants.CLASS_DIRECT_CONTAINER);
 		System.out.println("Created Product A container at " + productA);
 
-		String productB = post(btContainer, Loader.resource(RESOURCE_TYPE,"productB.ttl"), "productB");
+		String productB = post(client, btContainer,
+				resource(RESOURCE_TYPE, "productB.ttl"), "productB",
+				LDPConstants.CLASS_DIRECT_CONTAINER);
 		System.out.println("Created Product B container at " + productB);
 		
 		// Create Product A bugs.
-		String bug1 = post(productA, Loader.resource(RESOURCE_TYPE,"bug1.ttl"), "bug1");
+		String bug1 = post(client, productA, resource(RESOURCE_TYPE,"bug1.ttl"), "bug1");
 		System.out.println("Created Bug 1 at " + bug1);
-		String bug2 = post(productA, Loader.resource(RESOURCE_TYPE,"bug2.ttl"), "bug2");
+		String bug2 = post(client, productA, resource(RESOURCE_TYPE,"bug2.ttl"), "bug2");
 		System.out.println("Created Bug 2 at " + bug2);
 
 		// Create Product B bugs.
-		String bug10 = post(productB, Loader.resource(RESOURCE_TYPE,"bug10.ttl"), "bug10");
+		String bug10 = post(client, productB, resource(RESOURCE_TYPE,"bug10.ttl"), "bug10");
 		System.out.println("Created Bug 10 at " + bug10);
-		String bug11 = post(productB, Loader.resource(RESOURCE_TYPE,"bug11.ttl"), "bug11");
+		String bug11 = post(client, productB, resource(RESOURCE_TYPE,"bug11.ttl"), "bug11");
 		System.out.println("Created Bug 11 at " + bug11);
-		String bug12 = post(productB, Loader.resource(RESOURCE_TYPE,"bug12.ttl"), "bug12");
+		String bug12 = post(client, productB, resource(RESOURCE_TYPE,"bug12.ttl"), "bug12");
 		System.out.println("Created Bug 12 at " + bug12);
 		
 		// Create some bt:relatedBug links.
-		linkBugs(bug2, bug1);
+		linkBugs(client, bug2, bug1);
 
 		System.out.println("Done!");
 	}
 	
-	private static String post(String uri, Object requestEntity, String slug) {
-		org.apache.wink.client.Resource resource = client.resource(uri);
-		ClientResponse response = resource.contentType("text/turtle").header("Slug", slug).post(requestEntity);
-		if (response.getStatusCode() != HttpStatus.SC_CREATED) {
-			System.err.println("ERROR: Failed to create resource. Status: " + response.getStatusCode());
-			System.exit(1);
-		}
-		
-		String location = response.getHeaders().getFirst("Location");
-		if (location == null) {
-			System.err.println("ERROR: No Location header in 201 response.");
-			System.exit(1);
-		}
-		
-		return location;
-	}
-	
-	private static void linkBugs(String sourceURI, String targetURI) {
+	private static void linkBugs(RestClient client, String sourceURI, String targetURI) {
 		// Get the bug.
 		org.apache.wink.client.Resource resource = client.resource(sourceURI);
 		ClientResponse getResponse = resource.accept("text/turtle").get();

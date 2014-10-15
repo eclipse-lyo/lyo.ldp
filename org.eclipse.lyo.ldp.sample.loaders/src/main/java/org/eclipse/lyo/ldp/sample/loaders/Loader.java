@@ -12,6 +12,7 @@
  *	Contributors:
  *	
  *	   Tori Santonil  - pull common code into utility class
+ *	   Samuel Padgett - add Link header with interaction model on POST
  *******************************************************************************/
 package org.eclipse.lyo.ldp.sample.loaders;
 
@@ -19,11 +20,17 @@ import java.io.IOException;
 import java.io.InputStream;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.http.HttpStatus;
+import org.apache.wink.client.ClientConfig;
+import org.apache.wink.client.ClientResponse;
+import org.apache.wink.client.RestClient;
 import org.apache.wink.client.handlers.BasicAuthSecurityHandler;
 
+/**
+ * Common functions for the different loaders.
+ */
 public class Loader {
-	
-	protected static BasicAuthSecurityHandler getCredentials(String[] args){
+	static BasicAuthSecurityHandler getCredentials(String[] args){
 		BasicAuthSecurityHandler basicAuthSecHandler = new BasicAuthSecurityHandler();
 		argsCheck(args);
 		String auth = args[1];
@@ -50,11 +57,18 @@ public class Loader {
 
 	}
 	
+	static RestClient createClient(String[] args) {
+		BasicAuthSecurityHandler basicAuthSecHandler = getCredentials(args);
+		ClientConfig config = new ClientConfig();
+		config.handlers(basicAuthSecHandler);
+		return new RestClient(config);		
+	}
+
 	/**
 	 * Change the way the requestEntity is created, so that the request can be
 	 * repeatable in the case of an authentication challenge
 	 */
-	protected static String resource(String type, String resource) {
+	static String resource(String type, String resource) {
 		try {
 			InputStream in = CreateTestSuiteContainers.class.getClassLoader().getResourceAsStream(type + resource);
 			return IOUtils.toString(in, "UTF-8");
@@ -63,7 +77,35 @@ public class Loader {
 		}
 	}
 	
-	protected static String getRootContainerURI(String[] args) {
+	static String getRootContainerURI(String[] args) {
 		return args[0];
+	}
+	
+	static String post(RestClient client, String uri, Object requestEntity, String slug) {
+		return post(client, uri, requestEntity, slug, null);
+	}
+
+	static String post(RestClient client, String uri, Object requestEntity, String slug, String type) {
+		org.apache.wink.client.Resource resource = 
+					client.resource(uri).contentType("text/turtle").header("Slug", slug);
+		
+		if (type != null) {
+			resource.header("Link", "<" + type + ">; rel=\"type\"");
+		}
+		
+		ClientResponse response = resource.post(requestEntity);
+		if (response.getStatusCode() != HttpStatus.SC_CREATED) {
+			System.err.println("ERROR: Failed to create resource. Status: "
+					+ response.getStatusCode());
+			System.exit(1);
+		}
+
+		String location = response.getHeaders().getFirst("Location");
+		if (location == null) {
+			System.err.println("ERROR: No Location header in 201 response.");
+			System.exit(1);
+		}
+
+		return location;
 	}
 }
