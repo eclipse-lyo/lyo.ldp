@@ -32,7 +32,6 @@ public class LDPApplication extends Application {
 	public Set<Class<?>> getClasses() {
 		Set<Class<?>> classes = new HashSet<Class<?>>();
 		classes.add(JenaLDPService.class);
-		classes.add(VisualizationService.class);
 		classes.add(HttpHeaderResponseFilter.class);
 		return classes;
 	}
