@@ -23,8 +23,12 @@ import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
 
 import org.eclipse.lyo.ldp.server.jena.store.TDBGraphStore;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class Bootstrap implements ServletContextListener {
+
+	private final static Logger log = LoggerFactory.getLogger(Bootstrap.class);
 
 	@Override
 	public void contextInitialized(ServletContextEvent e) {
@@ -32,6 +36,7 @@ public class Bootstrap implements ServletContextListener {
 		if (datasetDir == null) {
 			File tempdir = (File) e.getServletContext().getAttribute("javax.servlet.context.tempdir");
 			System.setProperty(TDBGraphStore.LDP_DATASET_DIR, tempdir.getPath());
+			log.info("{}={}", TDBGraphStore.LDP_DATASET_DIR, tempdir.getPath());
 		}
 	}
 

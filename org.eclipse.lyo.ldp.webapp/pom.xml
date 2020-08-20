@@ -1,45 +1,65 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 	<modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>org.eclipse.lyo.ldp</groupId>
+        <artifactId>ldp-build</artifactId>
+        <version>2.3.0-SNAPSHOT</version>
+        <relativePath>../org.eclipse.lyo.ldp.build/pom.xml</relativePath>
+    </parent>
 	<groupId>org.eclipse.lyo.ldp</groupId>
 	<artifactId>ldp-webapp</artifactId>
 	<packaging>war</packaging>
-	<version>3.0.0-SNAPSHOT</version>
-	<name>Jena LDP Reference Implementation (webapp)</name>
+	<version>2.3.0-SNAPSHOT</version>
+	<name>LDP Reference Implementation :: Jena Server Webapp</name>
 	<url>http://maven.apache.org</url>
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<maven.compiler.source>1.8</maven.compiler.source>
+		<maven.compiler.target>1.8</maven.compiler.target>
 	</properties>
 	<dependencies>
 		<dependency>
 			<groupId>junit</groupId>
 			<artifactId>junit</artifactId>
-			<version>3.8.1</version>
+			<version>4.12</version>
 			<scope>test</scope>
 		</dependency>
 		<dependency>
 			<groupId>org.eclipse.lyo.ldp</groupId>
 			<artifactId>ldp-server-jena</artifactId>
-			<version>3.0.0-SNAPSHOT</version>
+			<version>2.3.0-SNAPSHOT</version>
 		</dependency>
 		<dependency>
 			<groupId>javax.servlet</groupId>
 			<artifactId>javax.servlet-api</artifactId>
-			<version>3.0.1</version>
+			<version>3.1.0</version>
 			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-api</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-log4j12</artifactId>
 		</dependency>
 	</dependencies>
 	<build>
 		<plugins>
 			<plugin>
-				<groupId>org.mortbay.jetty</groupId>
+				<groupId>org.eclipse.jetty</groupId>
 				<artifactId>jetty-maven-plugin</artifactId>
+				<version>9.3.22.v20171030</version>
 				<configuration>
 					<webAppXml>${basedir}/src/test/resources/jetty-test.xml</webAppXml>
 					<useTestScope>true</useTestScope>
-					<webAppConfig>
+					<webApp>
 						<contextPath>/ldp</contextPath>
-					</webAppConfig>
+					</webApp>
+	                <httpConnector>
+	                	<port>8080</port>
+	                </httpConnector>
 
 					<!-- enable hot deploy -->
 					<reload>automatic</reload>
@@ -49,10 +69,6 @@
 					</scanTargets>
 
 					<systemProperties>
-						<systemProperty>
-							<name>jetty.port</name>
-							<value>8080</value>
-						</systemProperty>
 						<!--Set different root URI, default http://localhost:8080/ldp <systemProperty> 
 							<name>ldp.rooturi</name> <value>http://ldphost:8080/ldp</value> </systemProperty> -->
 						<!-- Directory location for Jena TDB, defaults to in-member <systemProperty> 

@@ -27,9 +27,9 @@ import org.eclipse.lyo.ldp.server.jena.vocabulary.LDP;
 import org.eclipse.lyo.ldp.server.jena.vocabulary.Lyo;
 import org.eclipse.lyo.ldp.server.service.LDPService;
 
-import com.hp.hpl.jena.rdf.model.Model;
-import com.hp.hpl.jena.rdf.model.Resource;
-import com.hp.hpl.jena.vocabulary.RDF;
+import org.apache.jena.rdf.model.Model;
+import org.apache.jena.rdf.model.Resource;
+import org.apache.jena.vocabulary.RDF;
 
 public class JenaLDPResourceManager implements LDPResourceManager {
 

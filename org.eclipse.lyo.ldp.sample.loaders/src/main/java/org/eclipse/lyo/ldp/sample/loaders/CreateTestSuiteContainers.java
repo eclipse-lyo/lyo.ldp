@@ -26,10 +26,10 @@ import org.apache.wink.client.RestClient;
 import org.eclipse.lyo.ldp.server.LDPConstants;
 import org.eclipse.lyo.ldp.server.jena.vocabulary.LDP;
 
-import com.hp.hpl.jena.rdf.model.Model;
-import com.hp.hpl.jena.rdf.model.ModelFactory;
-import com.hp.hpl.jena.rdf.model.Resource;
-import com.hp.hpl.jena.vocabulary.RDF;
+import org.apache.jena.rdf.model.Model;
+import org.apache.jena.rdf.model.ModelFactory;
+import org.apache.jena.rdf.model.Resource;
+import org.apache.jena.vocabulary.RDF;
 
 public class CreateTestSuiteContainers {
 	private static final String RESOURCE_TYPE = "testsuite/";

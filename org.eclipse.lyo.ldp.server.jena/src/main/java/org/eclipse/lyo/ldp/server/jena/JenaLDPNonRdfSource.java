@@ -41,12 +41,12 @@ import org.eclipse.lyo.ldp.server.jena.store.TDBGraphStore;
 import org.eclipse.lyo.ldp.server.jena.vocabulary.LDP;
 import org.eclipse.lyo.ldp.server.jena.vocabulary.Lyo;
 
-import com.hp.hpl.jena.rdf.model.Model;
-import com.hp.hpl.jena.rdf.model.Property;
-import com.hp.hpl.jena.rdf.model.Resource;
-import com.hp.hpl.jena.rdf.model.Statement;
-import com.hp.hpl.jena.vocabulary.DCTerms;
-import com.hp.hpl.jena.vocabulary.RDF;
+import org.apache.jena.rdf.model.Model;
+import org.apache.jena.rdf.model.Property;
+import org.apache.jena.rdf.model.Resource;
+import org.apache.jena.rdf.model.Statement;
+import org.apache.jena.vocabulary.DCTerms;
+import org.apache.jena.vocabulary.RDF;
 
 public class JenaLDPNonRdfSource extends LDPNonRDFSource {
 	protected final TDBGraphStore fGraphStore; // GraphStore in which to store the container and member resources	

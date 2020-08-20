@@ -29,21 +29,21 @@ import org.eclipse.lyo.ldp.server.LDPConstants;
 import org.eclipse.lyo.ldp.server.jena.JenaLDPResourceManager;
 import org.eclipse.lyo.ldp.server.jena.vocabulary.Lyo;
 
-import com.hp.hpl.jena.query.Dataset;
-import com.hp.hpl.jena.query.Query;
-import com.hp.hpl.jena.query.QueryExecution;
-import com.hp.hpl.jena.query.QueryExecutionFactory;
-import com.hp.hpl.jena.query.QueryFactory;
-import com.hp.hpl.jena.query.ReadWrite;
-import com.hp.hpl.jena.query.ResultSet;
-import com.hp.hpl.jena.query.ResultSetFormatter;
-import com.hp.hpl.jena.rdf.model.Model;
-import com.hp.hpl.jena.rdf.model.Resource;
-import com.hp.hpl.jena.tdb.TDB;
-import com.hp.hpl.jena.tdb.TDBFactory;
-import com.hp.hpl.jena.tdb.base.block.FileMode;
-import com.hp.hpl.jena.tdb.sys.SystemTDB;
-import com.hp.hpl.jena.vocabulary.DCTerms;
+import org.apache.jena.query.Dataset;
+import org.apache.jena.query.Query;
+import org.apache.jena.query.QueryExecution;
+import org.apache.jena.query.QueryExecutionFactory;
+import org.apache.jena.query.QueryFactory;
+import org.apache.jena.query.ReadWrite;
+import org.apache.jena.query.ResultSet;
+import org.apache.jena.query.ResultSetFormatter;
+import org.apache.jena.rdf.model.Model;
+import org.apache.jena.rdf.model.Resource;
+import org.apache.jena.tdb.TDB;
+import org.apache.jena.tdb.TDBFactory;
+import org.apache.jena.tdb.base.block.FileMode;
+import org.apache.jena.tdb.sys.SystemTDB;
+import org.apache.jena.vocabulary.DCTerms;
 
 /**
  * This class implements a Graph Store using a Jena TDB dataset.

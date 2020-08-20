@@ -25,11 +25,16 @@ import javax.ws.rs.core.Application;
 
 import org.eclipse.lyo.ldp.server.jena.JenaLDPService;
 import org.eclipse.lyo.ldp.server.service.HttpHeaderResponseFilter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class LDPApplication extends Application {
+
+    private final static Logger log = LoggerFactory.getLogger(LDPApplication.class);
 	
 	@Override
 	public Set<Class<?>> getClasses() {
+	    log.info("Returning application classes");
 		Set<Class<?>> classes = new HashSet<Class<?>>();
 		classes.add(JenaLDPService.class);
 		classes.add(HttpHeaderResponseFilter.class);

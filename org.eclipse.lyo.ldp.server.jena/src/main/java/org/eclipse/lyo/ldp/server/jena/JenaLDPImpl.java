@@ -17,9 +17,9 @@
  *******************************************************************************/
 package org.eclipse.lyo.ldp.server.jena;
 
-import com.hp.hpl.jena.rdf.model.Property;
-import com.hp.hpl.jena.rdf.model.Resource;
-import com.hp.hpl.jena.rdf.model.ResourceFactory;
+import org.apache.jena.rdf.model.Property;
+import org.apache.jena.rdf.model.Resource;
+import org.apache.jena.rdf.model.ResourceFactory;
 
 /**
  * Basic Profile Implementation (Config) Vocabulary

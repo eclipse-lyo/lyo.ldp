@@ -63,11 +63,14 @@ import org.eclipse.lyo.ldp.server.ILDPResource;
 import org.eclipse.lyo.ldp.server.LDPConstants;
 import org.eclipse.lyo.ldp.server.LDPNonRDFSource;
 import org.eclipse.lyo.ldp.server.LDPResourceManager;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Path("/{path:.*}")
 public abstract class LDPService {
-	public static final String LDP_CONTENT_SEGMENT = "ldp.contseg";
-	public static final String LDP_ROOTURI = "ldp.rooturi";
+	private final static Logger log = LoggerFactory.getLogger(LDPService.class);
+	public static final  String LDP_CONTENT_SEGMENT = "ldp.contseg";
+	public static final  String LDP_ROOTURI = "ldp.rooturi";
 
 	/**
 	 * Regular expression that matches Link headers with URI
@@ -109,8 +112,13 @@ public abstract class LDPService {
 	protected abstract void resetContainer();
 	protected abstract ILDPContainer getRootContainer();
 	protected abstract LDPResourceManager getResourceManger();
-	
-	public LDPService() { }
+
+	public LDPService() {
+		log.info(
+				"Initialising LDPService with rooturi={}; contseg={}",
+				ROOT_APP_URL,
+				ROOT_CONTAINER_URL);
+	}
 	
 	/**
 	 * @return Does NOT include segment for container, use getRootContainer().getURI() for that.
@@ -192,7 +200,10 @@ public abstract class LDPService {
 	@Consumes({ LDPConstants.CT_APPLICATION_RDFXML, LDPConstants.CT_TEXT_TURTLE, LDPConstants.CT_APPLICATION_XTURTLE, LDPConstants.CT_APPLICATION_JSON, LDPConstants.CT_APPLICATION_LD_JSON })
 	public Response post(@HeaderParam(LDPConstants.HDR_SLUG) final String slug, final InputStream content) {
 		final ILDPContainer ldpC = getRequestContainer();
-		String loc = ldpC.post(content, stripCharset(fRequestHeaders.getMediaType().toString()), getCurrentUser(), slug, hasResourceTypeHeader(fRequestHeaders) );
+		final String contentType = stripCharset(fRequestHeaders.getMediaType().toString());
+		final String user = getCurrentUser();
+		final boolean isResourceInteractionModel = hasResourceTypeHeader(fRequestHeaders);
+		String loc = ldpC.post(content, contentType, user, slug, isResourceInteractionModel);
 		if (loc != null)
 			return Response.status(Status.CREATED)
 					.header(HttpHeaders.LOCATION, loc)
@@ -212,6 +223,10 @@ public abstract class LDPService {
 	 */
 	public static boolean hasResourceTypeHeader(HttpHeaders headers) {
 		List<String> linkHeaders = headers.getRequestHeader(LDPConstants.HDR_LINK);
+		if (linkHeaders == null) {
+			System.err.println("Null link header");
+			return false;
+		}
 		for (String header : linkHeaders) {
 			if (header.matches(LINK_TYPE_RESOURCE_REGEX)) {
 				return true;
@@ -300,6 +315,7 @@ public abstract class LDPService {
 	private Response getResource(final String type) {	
 		String resourceURI = getConanicalURL(fRequestUrl.getRequestUri());
 		ILDPResource ldpR = getResourceManger().get(resourceURI);
+		log.info("Resource {}={}", resourceURI, ldpR);
 		if (ldpR == null) return Response.status(Status.NOT_FOUND).build();
 		return ldpR.get(type, getPreferencesFromRequest());
 	}

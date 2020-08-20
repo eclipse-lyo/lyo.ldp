@@ -20,7 +20,7 @@ package org.eclipse.lyo.ldp.server.jena.store;
 
 import java.io.OutputStream;
 
-import com.hp.hpl.jena.rdf.model.Model;
+import org.apache.jena.rdf.model.Model;
 
 /**
  * Interface to an RDF Graph Store.
