@@ -1,3 +1,13 @@
 target/
+overlays/
+
+.settings/
+.classpath
+.project
+
 *.iml
 .idea/
+
+.vscode/
+
+.DS_Store
