@@ -4,13 +4,13 @@
   <parent>
     <groupId>org.eclipse.lyo.ldp</groupId>
     <artifactId>ldp-build</artifactId>
-    <version>4.0.0.M2</version>
+    <version>4.0.0-SNAPSHOT</version>
     <relativePath>../org.eclipse.lyo.ldp.build/pom.xml</relativePath>
   </parent>
   <groupId>org.eclipse.lyo.ldp</groupId>
   <artifactId>ldp-server</artifactId>
   <packaging>jar</packaging>
-  <version>4.0.0.M2</version>
+  <version>4.0.0-SNAPSHOT</version>
   <name>Linked Data Platform Reference Implementation</name>
   <url>http://maven.apache.org</url>
   <properties>
