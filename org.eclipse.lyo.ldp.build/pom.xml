@@ -4,7 +4,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.eclipse.lyo.ldp</groupId>
   <artifactId>ldp-build</artifactId>
-  <version>2.3.0-SNAPSHOT</version>
+  <version>4.0.0.M2</version>
   <packaging>pom</packaging>
   <name>LDP Reference Implementation :: Build</name>
   <profiles>
