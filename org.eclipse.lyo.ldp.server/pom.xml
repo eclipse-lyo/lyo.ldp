@@ -32,7 +32,7 @@
     <dependency>
       <groupId>commons-io</groupId>
       <artifactId>commons-io</artifactId>
-      <version>2.4</version>
+      <version>2.7</version>
     </dependency>
     <!-- Use wsdl4j 1.6.2 rather than 1.6.3 since it's in Eclipse Orbit -->
     <dependency>
