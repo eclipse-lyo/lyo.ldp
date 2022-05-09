@@ -1,3 +1,8 @@
+> **⚠️⚠️⚠️ The project is deprecated. See [OSLC 2020 Reference Implementation](https://github.com/oslc-op/refimpl).**
+
+:
+---
+
 # Eclipse Lyo LDP prototype implementation
 
 [![](https://img.shields.io/badge/project-Eclipse%20Lyo-blue?color=418eeb)](https://github.com/eclipse/lyo)
