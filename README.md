@@ -1,6 +1,6 @@
 > **⚠️⚠️⚠️ The project is deprecated. See [OSLC 2020 Reference Implementation](https://github.com/oslc-op/refimpl).**
 
-:
+
 ---
 
 # Eclipse Lyo LDP prototype implementation
